@@ -1,72 +1,175 @@
+/* ── Month nav ─────────────────────────────────────── */
 .month-nav {
   display: flex;
   align-items: center;
-  gap: 10px;
-  font-size: 13px;
+  gap: 8px;
+  font-size: 12px;
   font-family: var(--font-mono);
   color: var(--text2);
+  letter-spacing: 0.04em;
 }
 .month-nav button {
-  font-size: 20px;
+  font-size: 18px;
   color: var(--text3);
-  padding: 2px 6px;
+  padding: 2px 4px;
   transition: color 0.15s;
+  line-height: 1;
 }
 .month-nav button:hover { color: var(--text); }
 
-.budget-hero { padding: 20px; }
-.budget-top { display: flex; justify-content: space-between; margin-bottom: 16px; }
+/* ── Budget hero ───────────────────────────────────── */
+.budget-hero { padding: 20px 18px 18px; }
+
+.budget-top {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
 .budget-label {
   font-size: 10px;
   font-family: var(--font-mono);
   color: var(--text3);
   text-transform: uppercase;
   letter-spacing: 0.14em;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
   font-weight: 500;
 }
+
 .budget-total {
   font-size: 28px;
   font-weight: 300;
   font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
   letter-spacing: -0.03em;
   color: var(--text);
+  line-height: 1;
 }
+
 .budget-track {
-  height: 3px;
-  background: var(--bg3);
+  height: 2px;
+  background: var(--bg4);
   border-radius: 99px;
   overflow: hidden;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
 }
+
 .budget-fill {
   height: 100%;
   border-radius: 99px;
-  background: linear-gradient(90deg, var(--accent), var(--accent2));
-  transition: width 0.5s cubic-bezier(0.16,1,0.3,1);
+  transition: width 0.4s ease;
 }
-.budget-foot { display: flex; justify-content: space-between; }
 
-.cat-row { display: flex; align-items: center; gap: 12px; padding: 13px 16px; }
+.budget-foot {
+  display: flex;
+  justify-content: space-between;
+}
+
+/* ── Category rows ─────────────────────────────────── */
+.cat-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 16px;
+}
 .cat-row.bordered { border-bottom: 0.5px solid var(--border); }
-.cat-icon { font-size: 17px; flex-shrink: 0; width: 28px; text-align: center; }
+
+.cat-icon {
+  font-size: 16px;
+  flex-shrink: 0;
+  width: 26px;
+  text-align: center;
+  line-height: 1;
+}
+
 .cat-body { flex: 1; min-width: 0; }
-.cat-top { display: flex; justify-content: space-between; margin-bottom: 7px; }
-.cat-name { font-size: 13px; color: var(--text); font-weight: 400; }
-.cat-amounts { font-size: 12px; font-family: var(--font-mono); color: var(--text2); letter-spacing: -0.01em; }
-.cat-track { height: 2px; background: var(--bg3); border-radius: 99px; overflow: hidden; }
+
+.cat-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 8px;
+}
+
+.cat-name {
+  font-size: 13px;
+  color: var(--text);
+  font-weight: 400;
+}
+
+.cat-amounts {
+  font-size: 12px;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+.cat-track {
+  height: 2px;
+  background: var(--bg4);
+  border-radius: 99px;
+  overflow: hidden;
+}
+
 .cat-fill {
   height: 100%;
   border-radius: 99px;
-  transition: width 0.4s cubic-bezier(0.16,1,0.3,1);
+  transition: width 0.35s ease;
 }
 
-.entry-row { display: flex; align-items: center; gap: 12px; padding: 13px 16px; }
+/* ── Expense rows ──────────────────────────────────── */
+.entry-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 16px;
+}
 .entry-row.bordered { border-bottom: 0.5px solid var(--border); }
-.entry-icon { width: 36px; height: 36px; border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0; }
+
+.entry-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  flex-shrink: 0;
+}
+
 .entry-body { flex: 1; min-width: 0; }
-.entry-title { font-size: 14px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 400; }
-.entry-sub { font-size: 11px; color: var(--text3); margin-top: 2px; font-family: var(--font-mono); letter-spacing: 0.02em; }
-.entry-amount { font-size: 14px; font-weight: 500; font-family: var(--font-mono); color: var(--text); letter-spacing: -0.01em; }
-.del-btn { font-size: 15px; color: var(--text3); padding: 0 4px; transition: color 0.15s; }
+
+.entry-title {
+  font-size: 14px;
+  color: var(--text);
+  font-weight: 400;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.entry-sub {
+  font-size: 11px;
+  color: var(--text3);
+  margin-top: 2px;
+  font-family: var(--font-mono);
+  letter-spacing: 0.02em;
+}
+
+.entry-amount {
+  font-size: 14px;
+  font-weight: 500;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+  color: var(--text);
+}
+
+.del-btn {
+  font-size: 16px;
+  color: var(--text3);
+  padding: 0 4px;
+  transition: color 0.15s;
+  line-height: 1;
+}
 .del-btn:hover { color: var(--red); }

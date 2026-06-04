@@ -1,33 +1,43 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 
 :root {
-  --bg: #050507;
-  --bg2: #0d0d14;
-  --bg3: #14141e;
-  --bg4: #1c1c28;
-  --glass: rgba(255,255,255,0.04);
-  --glass2: rgba(255,255,255,0.07);
-  --border: rgba(255,255,255,0.07);
-  --border2: rgba(255,255,255,0.14);
-  --text: #ededef;
-  --text2: #8a8f98;
-  --text3: #4a4f5a;
-  --accent: #6366f1;
-  --accent2: #818cf8;
-  --accent-glow: rgba(99,102,241,0.22);
-  --accent-glow2: rgba(99,102,241,0.10);
-  --red: #f87171;
-  --blue: #60a5fa;
-  --amber: #fbbf24;
-  --purple: #a78bfa;
-  --teal: #34d399;
-  --pink: #f472b6;
-  --green: #4ade80;
+  /* surfaces */
+  --bg:  #0e0e0f;
+  --bg2: #161617;
+  --bg3: #1e1e20;
+  --bg4: #262628;
+
+  /* borders */
+  --border:  rgba(255,255,255,0.06);
+  --border2: rgba(255,255,255,0.11);
+
+  /* text — warm off-white, not pure white */
+  --text:  #f0ede8;
+  --text2: #88857f;
+  --text3: #4c4945;
+
+  /* accent — champagne amber */
+  --accent:     #c8a97a;
+  --accent-on:  #0e0e0f;
+  --accent-dim: rgba(200,169,122,0.10);
+
+  /* semantic */
+  --red:    #d96b6b;
+  --blue:   #6b9fd4;
+  --amber:  #d4a043;
+  --purple: #9b7dce;
+  --teal:   #4ab893;
+  --pink:   #d4739a;
+  --green:  #5ab882;
+
+  /* type */
   --font-sans: 'Inter', sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
-  --radius: 16px;
-  --radius-sm: 10px;
-  --radius-lg: 24px;
+
+  /* shape */
+  --radius:    12px;
+  --radius-sm:  8px;
+  --radius-lg: 20px;
 }
 
 html, body, #root {
@@ -47,28 +57,19 @@ input, textarea, select { font-family: var(--font-sans); color: inherit; }
 ::-webkit-scrollbar { display: none; }
 scrollbar-width: none;
 
-@keyframes fadeUp {
-  from { opacity: 0; transform: translateY(16px); }
-  to { opacity: 1; transform: translateY(0); }
-}
 @keyframes fadeIn {
   from { opacity: 0; }
-  to { opacity: 1; }
+  to   { opacity: 1; }
 }
-@keyframes pulse {
-  0%, 80%, 100% { opacity: 0.2; transform: scale(0.7); }
-  40% { opacity: 1; transform: scale(1); }
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 @keyframes slideUp {
-  from { transform: translateX(-50%) translateY(12px); opacity: 0; }
-  to { transform: translateX(-50%) translateY(0); opacity: 1; }
+  from { transform: translateX(-50%) translateY(8px); opacity: 0; }
+  to   { transform: translateX(-50%) translateY(0); opacity: 1; }
 }
-@keyframes blobFloat {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  33% { transform: translate(12px, -18px) scale(1.04); }
-  66% { transform: translate(-8px, 10px) scale(0.97); }
-}
-@keyframes glowPulse {
-  0%, 100% { opacity: 0.6; }
-  50% { opacity: 1; }
+@keyframes pulse {
+  0%, 80%, 100% { opacity: 0.25; transform: scale(0.75); }
+  40%           { opacity: 1;    transform: scale(1); }
 }
