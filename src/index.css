@@ -1,27 +1,33 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 
 :root {
-  --bg: #0a0a0a;
-  --bg2: #141414;
-  --bg3: #1c1c1c;
-  --border: rgba(255,255,255,0.08);
+  --bg: #050507;
+  --bg2: #0d0d14;
+  --bg3: #14141e;
+  --bg4: #1c1c28;
+  --glass: rgba(255,255,255,0.04);
+  --glass2: rgba(255,255,255,0.07);
+  --border: rgba(255,255,255,0.07);
   --border2: rgba(255,255,255,0.14);
-  --text: #f0f0f0;
-  --text2: #888;
-  --text3: #555;
-  --accent: #c8f065;
-  --accent2: #a8d845;
-  --red: #ff5f5f;
-  --blue: #5f9fff;
-  --amber: #ffb347;
+  --text: #ededef;
+  --text2: #8a8f98;
+  --text3: #4a4f5a;
+  --accent: #6366f1;
+  --accent2: #818cf8;
+  --accent-glow: rgba(99,102,241,0.22);
+  --accent-glow2: rgba(99,102,241,0.10);
+  --red: #f87171;
+  --blue: #60a5fa;
+  --amber: #fbbf24;
   --purple: #a78bfa;
-  --teal: #5fffd7;
-  --pink: #ff8fab;
-  --font-sans: 'DM Sans', sans-serif;
-  --font-mono: 'DM Mono', monospace;
-  --radius: 12px;
-  --radius-sm: 8px;
-  --radius-lg: 18px;
+  --teal: #34d399;
+  --pink: #f472b6;
+  --green: #4ade80;
+  --font-sans: 'Inter', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --radius: 16px;
+  --radius-sm: 10px;
+  --radius-lg: 24px;
 }
 
 html, body, #root {
@@ -42,7 +48,7 @@ input, textarea, select { font-family: var(--font-sans); color: inherit; }
 scrollbar-width: none;
 
 @keyframes fadeUp {
-  from { opacity: 0; transform: translateY(12px); }
+  from { opacity: 0; transform: translateY(16px); }
   to { opacity: 1; transform: translateY(0); }
 }
 @keyframes fadeIn {
@@ -54,6 +60,15 @@ scrollbar-width: none;
   40% { opacity: 1; transform: scale(1); }
 }
 @keyframes slideUp {
-  from { transform: translateY(100%); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
+  from { transform: translateX(-50%) translateY(12px); opacity: 0; }
+  to { transform: translateX(-50%) translateY(0); opacity: 1; }
+}
+@keyframes blobFloat {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(12px, -18px) scale(1.04); }
+  66% { transform: translate(-8px, 10px) scale(0.97); }
+}
+@keyframes glowPulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
 }

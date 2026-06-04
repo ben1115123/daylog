@@ -6,14 +6,20 @@
   font-family: var(--font-mono);
   color: var(--text2);
 }
-.month-nav-cal button { font-size: 18px; color: var(--text2); padding: 2px 6px; }
+.month-nav-cal button {
+  font-size: 20px;
+  color: var(--text3);
+  padding: 2px 6px;
+  transition: color 0.15s;
+}
+.month-nav-cal button:hover { color: var(--text); }
 
-.cal-grid-wrap { padding: 14px; }
+.cal-grid-wrap { padding: 14px 14px 10px; }
 
 .cal-dows {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  margin-bottom: 4px;
+  margin-bottom: 6px;
 }
 .cal-dow {
   text-align: center;
@@ -21,13 +27,14 @@
   font-family: var(--font-mono);
   color: var(--text3);
   padding: 4px 0;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.08em;
+  font-weight: 500;
 }
 
 .cal-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 2px;
+  gap: 3px;
 }
 
 .cal-cell {
@@ -37,34 +44,46 @@
   align-items: center;
   justify-content: center;
   font-size: 13px;
-  color: var(--text);
+  color: var(--text2);
   border-radius: var(--radius-sm);
   cursor: pointer;
   position: relative;
-  transition: background 0.1s;
+  transition: all 0.15s;
   font-family: var(--font-mono);
+  font-weight: 400;
 }
-.cal-cell:hover { background: var(--bg3); }
+.cal-cell:hover { background: var(--glass2); color: var(--text); }
 .cal-cell.other { color: var(--text3); cursor: default; }
-.cal-cell.other:hover { background: none; }
-.cal-cell.today { background: var(--accent); color: #0a0a0a; font-weight: 500; }
+.cal-cell.other:hover { background: none; color: var(--text3); }
+
+.cal-cell.today {
+  background: var(--accent);
+  color: #fff;
+  font-weight: 500;
+  box-shadow: 0 0 14px var(--accent-glow);
+}
 .cal-cell.today:hover { background: var(--accent2); }
-.cal-cell.selected { background: var(--bg3); outline: 0.5px solid var(--border2); }
+
+.cal-cell.selected {
+  background: rgba(99,102,241,0.14);
+  color: var(--text);
+  outline: 0.5px solid rgba(99,102,241,0.35);
+}
 
 .ev-dot {
-  width: 4px; height: 4px;
+  width: 3px; height: 3px;
   border-radius: 50%;
-  background: var(--accent);
+  background: var(--accent2);
   position: absolute;
-  bottom: 4px;
+  bottom: 5px;
 }
-.ev-dot-light { background: #0a0a0a; }
+.ev-dot-light { background: rgba(255,255,255,0.6); }
 
 .ev-row {
   display: flex;
   align-items: flex-start;
-  gap: 10px;
-  padding: 14px;
+  gap: 12px;
+  padding: 14px 16px;
 }
 .ev-row.bordered { border-bottom: 0.5px solid var(--border); }
 
@@ -74,28 +93,30 @@
   color: var(--text3);
   min-width: 48px;
   padding-top: 2px;
+  letter-spacing: 0.02em;
 }
 
 .ev-dot-line {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: var(--blue);
+  background: var(--accent2);
   margin-top: 5px;
   flex-shrink: 0;
+  box-shadow: 0 0 6px var(--accent-glow);
 }
 
 .ev-body { flex: 1; min-width: 0; }
-.ev-title { font-size: 14px; color: var(--text); }
+.ev-title { font-size: 14px; color: var(--text); font-weight: 400; }
 .ev-notes { font-size: 12px; color: var(--text3); margin-top: 2px; }
 
 .ev-actions { display: flex; flex-direction: column; gap: 4px; align-items: flex-end; }
 .ev-btn {
-  font-size: 16px;
+  font-size: 15px;
   color: var(--text3);
   padding: 2px 4px;
   transition: color 0.15s;
   font-family: var(--font-mono);
 }
-.ev-btn:hover { color: var(--accent); }
+.ev-btn:hover { color: var(--accent2); }
 .ev-btn.del:hover { color: var(--red); }

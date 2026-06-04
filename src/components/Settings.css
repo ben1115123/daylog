@@ -4,7 +4,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 14px;
+  padding: 13px 16px;
   gap: 12px;
 }
 .setting-row.bordered { border-bottom: 0.5px solid var(--border); }
@@ -16,8 +16,9 @@
   align-items: center;
   gap: 8px;
   flex-shrink: 0;
+  font-weight: 400;
 }
-.setting-icon { font-size: 16px; }
+.setting-icon { font-size: 15px; }
 
 .setting-input {
   background: transparent;
@@ -29,6 +30,7 @@
   text-align: right;
   flex: 1;
   min-width: 0;
+  letter-spacing: -0.01em;
 }
 .setting-input.num { max-width: 80px; }
 .setting-input.api-key { text-align: left; color: var(--text3); font-size: 13px; width: 100%; }
@@ -43,27 +45,34 @@
   font-family: var(--font-mono);
   margin-top: 6px;
   padding-left: 2px;
+  letter-spacing: 0.02em;
 }
 .setting-hint-inline { font-size: 11px; color: var(--text3); font-family: var(--font-mono); }
 
 .save-btn {
   width: 100%;
-  padding: 14px;
-  background: var(--accent);
+  padding: 15px;
+  background: linear-gradient(135deg, var(--accent), #7c3aed);
   border-radius: var(--radius);
   font-size: 14px;
   font-weight: 500;
-  color: #0a0a0a;
-  letter-spacing: 0.02em;
-  transition: opacity 0.15s;
+  color: #fff;
+  letter-spacing: 0.04em;
+  transition: all 0.25s cubic-bezier(0.16,1,0.3,1);
+  box-shadow: 0 4px 20px var(--accent-glow);
 }
-.save-btn:hover { opacity: 0.85; }
+.save-btn:hover {
+  opacity: 0.88;
+  box-shadow: 0 6px 28px var(--accent-glow);
+  transform: translateY(-1px);
+}
 
 .data-btn {
   font-size: 14px;
   color: var(--text2);
   transition: color 0.15s;
+  font-weight: 400;
 }
 .data-btn:hover { color: var(--text); }
-.data-btn.danger { color: var(--red); opacity: 0.7; }
+.data-btn.danger { color: var(--red); opacity: 0.65; }
 .data-btn.danger:hover { opacity: 1; }
