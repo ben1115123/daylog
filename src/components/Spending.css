@@ -1,0 +1,43 @@
+.month-nav {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  font-family: var(--font-mono);
+  color: var(--text2);
+}
+.month-nav button {
+  font-size: 18px;
+  color: var(--text2);
+  padding: 2px 6px;
+  transition: color 0.15s;
+}
+.month-nav button:hover { color: var(--text); }
+
+.budget-hero { padding: 18px; }
+.budget-top { display: flex; justify-content: space-between; margin-bottom: 14px; }
+.budget-label { font-size: 10px; font-family: var(--font-mono); color: var(--text3); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 2px; }
+.budget-total { font-size: 24px; font-weight: 300; font-family: var(--font-mono); letter-spacing: -0.02em; }
+.budget-track { height: 3px; background: var(--bg3); border-radius: 99px; overflow: hidden; margin-bottom: 10px; }
+.budget-fill { height: 100%; border-radius: 99px; transition: width 0.4s ease; }
+.budget-foot { display: flex; justify-content: space-between; }
+
+.cat-row { display: flex; align-items: center; gap: 12px; padding: 12px 14px; }
+.cat-row.bordered { border-bottom: 0.5px solid var(--border); }
+.cat-icon { font-size: 18px; flex-shrink: 0; width: 28px; text-align: center; }
+.cat-body { flex: 1; min-width: 0; }
+.cat-top { display: flex; justify-content: space-between; margin-bottom: 6px; }
+.cat-name { font-size: 13px; color: var(--text); }
+.cat-amounts { font-size: 12px; font-family: var(--font-mono); }
+.cat-track { height: 3px; background: var(--bg3); border-radius: 99px; overflow: hidden; }
+.cat-fill { height: 100%; border-radius: 99px; transition: width 0.3s; }
+
+.entry-row { display: flex; align-items: center; gap: 12px; padding: 12px 14px; }
+.entry-row.bordered { border-bottom: 0.5px solid var(--border); }
+.entry-icon { width: 36px; height: 36px; border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+.entry-body { flex: 1; min-width: 0; }
+.entry-title { font-size: 14px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.entry-sub { font-size: 11px; color: var(--text3); margin-top: 2px; font-family: var(--font-mono); }
+.entry-amount { font-size: 14px; font-weight: 500; font-family: var(--font-mono); color: var(--text); }
+.del-btn { font-size: 16px; color: var(--text3); padding: 0 2px; transition: color 0.15s; }
+.del-btn:hover { color: var(--red); }

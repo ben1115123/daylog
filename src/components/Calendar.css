@@ -1,0 +1,101 @@
+.month-nav-cal {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  font-family: var(--font-mono);
+  color: var(--text2);
+}
+.month-nav-cal button { font-size: 18px; color: var(--text2); padding: 2px 6px; }
+
+.cal-grid-wrap { padding: 14px; }
+
+.cal-dows {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  margin-bottom: 4px;
+}
+.cal-dow {
+  text-align: center;
+  font-size: 10px;
+  font-family: var(--font-mono);
+  color: var(--text3);
+  padding: 4px 0;
+  letter-spacing: 0.05em;
+}
+
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.cal-cell {
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  color: var(--text);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  position: relative;
+  transition: background 0.1s;
+  font-family: var(--font-mono);
+}
+.cal-cell:hover { background: var(--bg3); }
+.cal-cell.other { color: var(--text3); cursor: default; }
+.cal-cell.other:hover { background: none; }
+.cal-cell.today { background: var(--accent); color: #0a0a0a; font-weight: 500; }
+.cal-cell.today:hover { background: var(--accent2); }
+.cal-cell.selected { background: var(--bg3); outline: 0.5px solid var(--border2); }
+
+.ev-dot {
+  width: 4px; height: 4px;
+  border-radius: 50%;
+  background: var(--accent);
+  position: absolute;
+  bottom: 4px;
+}
+.ev-dot-light { background: #0a0a0a; }
+
+.ev-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px;
+}
+.ev-row.bordered { border-bottom: 0.5px solid var(--border); }
+
+.ev-time {
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--text3);
+  min-width: 48px;
+  padding-top: 2px;
+}
+
+.ev-dot-line {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--blue);
+  margin-top: 5px;
+  flex-shrink: 0;
+}
+
+.ev-body { flex: 1; min-width: 0; }
+.ev-title { font-size: 14px; color: var(--text); }
+.ev-notes { font-size: 12px; color: var(--text3); margin-top: 2px; }
+
+.ev-actions { display: flex; flex-direction: column; gap: 4px; align-items: flex-end; }
+.ev-btn {
+  font-size: 16px;
+  color: var(--text3);
+  padding: 2px 4px;
+  transition: color 0.15s;
+  font-family: var(--font-mono);
+}
+.ev-btn:hover { color: var(--accent); }
+.ev-btn.del:hover { color: var(--red); }
