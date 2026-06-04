@@ -16,12 +16,12 @@
   padding-bottom: env(safe-area-inset-bottom);
 }
 
-/* ── Bottom navigation ─────────────────────────────── */
+/* ── Bottom nav — tall, airy ───────────────────────── */
 .bottom-nav {
   display: flex;
   background: var(--bg2);
   border-top: 0.5px solid var(--border);
-  padding: 8px 0 calc(8px + env(safe-area-inset-bottom));
+  padding: 12px 0 calc(12px + env(safe-area-inset-bottom));
   flex-shrink: 0;
 }
 
@@ -30,26 +30,24 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
   padding: 6px 0;
   color: var(--text3);
   transition: color 0.15s ease;
   position: relative;
 }
 
-.nav-item.active {
-  color: var(--accent);
-}
+.nav-item.active { color: var(--accent); }
 
+/* thin top-line indicator — functional, not decorative */
 .nav-item.active::before {
   content: '';
   position: absolute;
-  top: 0;
+  top: -12px;
   left: 50%;
   transform: translateX(-50%);
-  width: 18px;
-  height: 1.5px;
-  border-radius: 999px;
+  width: 20px;
+  height: 1px;
   background: var(--accent);
 }
 
@@ -64,19 +62,21 @@
 .nav-label {
   font-size: 10px;
   font-weight: 500;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.07em;
   text-transform: uppercase;
+  font-family: var(--font-mono);
 }
 
 /* ── Screen shell ──────────────────────────────────── */
 .screen {
-  padding: 0 0 2rem;
+  padding: 0 0 2.5rem;
   animation: fadeIn 0.15s ease;
   min-height: 100%;
 }
 
+/* Used by Spending / Calendar / Settings — not Home */
 .screen-header {
-  padding: 52px 20px 16px;
+  padding: 52px 24px 20px;
   position: sticky;
   top: 0;
   background: var(--bg);
@@ -88,32 +88,32 @@
   font-size: 10px;
   font-family: var(--font-mono);
   color: var(--accent);
-  letter-spacing: 0.16em;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
-  margin-bottom: 4px;
+  margin-bottom: 5px;
   font-weight: 400;
 }
 
 .screen-heading {
-  font-size: 24px;
+  font-size: 22px;
   font-weight: 400;
   color: var(--text);
   letter-spacing: -0.02em;
 }
 
-/* ── Content ───────────────────────────────────────── */
+/* ── Shared section / card / empty ────────────────── */
 .section {
-  padding: 20px 20px 0;
+  padding: 28px 24px 0;
 }
 
 .section-label {
   font-size: 10px;
   font-family: var(--font-mono);
-  color: var(--text3);
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  margin-bottom: 12px;
   font-weight: 500;
+  color: var(--text3);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  margin-bottom: 16px;
 }
 
 .card {
@@ -127,16 +127,16 @@
 
 .empty {
   text-align: center;
-  padding: 40px 20px;
+  padding: 44px 24px;
   color: var(--text3);
-  font-size: 13px;
+  font-size: 12px;
   font-family: var(--font-mono);
-  letter-spacing: 0.02em;
+  letter-spacing: 0.04em;
 }
 
 .empty-icon {
   display: block;
-  margin-bottom: 8px;
-  opacity: 0.35;
-  font-size: 24px;
+  margin-bottom: 10px;
+  opacity: 0.3;
+  font-size: 22px;
 }

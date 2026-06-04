@@ -9,31 +9,31 @@
   letter-spacing: 0.04em;
 }
 .month-nav-cal button {
-  font-size: 18px;
+  font-size: 16px;
   color: var(--text3);
-  padding: 2px 4px;
+  padding: 4px 6px;
   transition: color 0.15s;
   line-height: 1;
 }
-.month-nav-cal button:hover { color: var(--text); }
+.month-nav-cal button:hover { color: var(--text2); }
 
 /* ── Calendar grid ─────────────────────────────────── */
-.cal-grid-wrap { padding: 14px 12px 12px; }
+.cal-grid-wrap { padding: 16px 14px 14px; }
 
 .cal-dows {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  margin-bottom: 4px;
+  margin-bottom: 6px;
 }
 
 .cal-dow {
   text-align: center;
   font-size: 10px;
   font-family: var(--font-mono);
+  font-weight: 500;
   color: var(--text3);
   padding: 4px 0;
-  letter-spacing: 0.08em;
-  font-weight: 500;
+  letter-spacing: 0.1em;
 }
 
 .cal-grid {
@@ -68,12 +68,12 @@
   color: var(--accent-on);
   font-weight: 500;
 }
-.cal-cell.today:hover { background: var(--accent); opacity: 0.88; }
+.cal-cell.today:hover { opacity: 0.88; }
 
 .cal-cell.selected {
   background: var(--accent-dim);
   color: var(--text);
-  outline: 0.5px solid rgba(200,169,122,0.25);
+  outline: 0.5px solid rgba(163,154,142,0.2);
 }
 
 .ev-dot {
@@ -84,14 +84,14 @@
   position: absolute;
   bottom: 4px;
 }
-.ev-dot-light { background: var(--accent-on); }
+.ev-dot-light { background: var(--accent-on); opacity: 0.5; }
 
 /* ── Event rows ────────────────────────────────────── */
 .ev-row {
   display: flex;
   align-items: flex-start;
-  gap: 12px;
-  padding: 14px 16px;
+  gap: 14px;
+  padding: 16px 18px;
 }
 .ev-row.bordered { border-bottom: 0.5px solid var(--border); }
 
@@ -112,6 +112,7 @@
   background: var(--accent);
   margin-top: 6px;
   flex-shrink: 0;
+  opacity: 0.7;
 }
 
 .ev-body { flex: 1; min-width: 0; }
@@ -125,22 +126,23 @@
 .ev-notes {
   font-size: 12px;
   color: var(--text3);
-  margin-top: 2px;
+  margin-top: 3px;
+  line-height: 1.5;
 }
 
 .ev-actions {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
   align-items: flex-end;
 }
 
 .ev-btn {
-  font-size: 15px;
+  font-size: 14px;
   color: var(--text3);
   padding: 2px 4px;
   transition: color 0.15s;
   line-height: 1;
 }
-.ev-btn:hover     { color: var(--accent); }
+.ev-btn:hover     { color: var(--text2); }
 .ev-btn.del:hover { color: var(--red); }

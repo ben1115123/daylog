@@ -13,135 +13,196 @@ Smart calendar and spending tracker PWA. React + Vite. AI parsing via Gemini 1.5
 ## Commands
 
 ```bash
-npm run dev      # dev server, localhost:5173
+npm run dev      # dev server — localhost:5173
 npm run build    # production build
 npm run preview  # preview build
 ```
 
+---
+
 ## Design Language
 
-**Vibe:** Premium, minimal, dark. Revolut meets Notion. Confident and clean.
+**Concept:** Mercury meets Notion. Understated confidence. Every screen should feel like a well-designed finance app someone would pay $10/month for.
+
+**Mercury influence:** Deep dark backgrounds, precise typography, serious data presentation, generous whitespace, hairline borders, nothing decorative.
+
+**Notion influence:** Editorial spacing, clean hierarchy, small-caps mono labels, sections feel distinct without heavy dividers, monospace used purposefully for metadata.
+
+---
 
 ### Colour Tokens (`src/index.css`)
 
-| Token | Value | Use |
-|-------|-------|-----|
-| `--bg` | `#0e0e0f` | App background (warm near-black) |
-| `--bg2` | `#161617` | Card surface |
-| `--bg3` | `#1e1e20` | Hover / active surface |
-| `--bg4` | `#262628` | Deep hover / selected |
-| `--border` | `rgba(255,255,255,0.06)` | Hairline borders |
-| `--border2` | `rgba(255,255,255,0.11)` | Visible borders |
-| `--text` | `#f0ede8` | Primary text (warm off-white) |
-| `--text2` | `#88857f` | Secondary text |
-| `--text3` | `#4c4945` | Tertiary / disabled |
-| `--accent` | `#c8a97a` | Champagne amber — primary accent |
+| Token | Value | Role |
+|-------|-------|------|
+| `--bg` | `#0e0e0f` | App background — warm near-black |
+| `--bg2` | `#161617` | Card / elevated surface |
+| `--bg3` | `#1e1e20` | Hover / active state |
+| `--bg4` | `#252527` | Deep selected / track backgrounds |
+| `--border` | `rgba(255,255,255,0.055)` | Hairline borders |
+| `--border2` | `rgba(255,255,255,0.10)` | Visible borders |
+| `--text` | `#f0ede8` | Primary — warm white, never pure |
+| `--text2` | `#78756f` | Secondary — muted mid-tone |
+| `--text3` | `#46433e` | Tertiary / disabled / labels |
+| `--accent` | `#a39a8e` | Warm stone — the *only* accent colour |
 | `--accent-on` | `#0e0e0f` | Text on accent backgrounds |
-| `--accent-dim` | `rgba(200,169,122,0.10)` | Tinted surfaces |
-| `--red` | `#d96b6b` | Destructive / over-budget |
-| `--amber` | `#d4a043` | Warning (distinct from accent) |
+| `--accent-dim` | `rgba(163,154,142,0.09)` | Tinted surfaces |
+| `--red` | `#c86060` | Destructive / over-budget |
+| `--amber` | `#b89050` | Warning (distinct from accent) |
+
+**Accent rule:** `--accent` is warm stone, desaturated, restrained. It is used sparingly — nav active state, screen-title labels, send/save buttons. Never use a bright colour as accent. Never use multiple accent colours.
+
+---
 
 ### Typography
 
-- **Body / UI:** Inter — weights 300, 400, 500
-- **Numbers / Labels:** JetBrains Mono — always use for amounts, dates, codes
-- **Numbers rule:** `font-variant-numeric: tabular-nums` on all monetary/numeric display
-- **Screen heading:** 24px / weight 400 / letter-spacing -0.02em
-- **Section label:** 10px mono / uppercase / letter-spacing 0.14em / color `--text3`
-- **Brand label (screen-title):** 10px mono / uppercase / color `--accent`
+| Role | Font | Notes |
+|------|------|-------|
+| Editorial headline | Fraunces (italic, opsz 300) | Home screen greeting only — "Morning, Ben." |
+| Body / UI | Inter 300–500 | All labels, descriptions, UI copy |
+| Numbers / Dates / Mono labels | JetBrains Mono 300–500 | Amounts, dates, section labels, metadata |
+
+**Rules:**
+- `font-variant-numeric: tabular-nums` on all monetary and numeric display — prevents layout shift when numbers update
+- Monospace for everything data-forward: amounts, percentages, dates, times, category labels
+- Section labels: 10px mono, uppercase, `letter-spacing: 0.16–0.18em`, color `--text3`
+- Screen titles (e.g. "Overview", "Schedule"): 10px mono, `--accent`, `letter-spacing: 0.18em`, uppercase
+- Screen headings: 22px Inter 400, `letter-spacing: -0.02em`
+- Home greeting: 36px Fraunces italic 300, `letter-spacing: -0.01em`
+
+---
 
 ### Cards
 
 ```css
-background: var(--bg2);
+background: var(--bg2);       /* subtle lift from --bg */
 border: 0.5px solid var(--border);
-border-radius: 12px;   /* --radius */
+border-radius: 12px;
 overflow: hidden;
 ```
 
-No glassmorphism. No `backdrop-filter`. Solid surfaces only.
-Hover states use `--bg3`. Selected uses `--bg4` or `--accent-dim`.
+**No glassmorphism.** No `backdrop-filter`. No box-shadow. No gradients. Solid surface only.
+State layers: hover → `--bg3`, selected → `--bg4` or `--accent-dim`.
 
-### Navigation (bottom)
+---
 
-- 4 tabs: Log, Spending, Calendar, More
-- SVG icons (Lucide-style, strokeWidth 1.6) — no emoji
-- Active: `color: var(--accent)` + 1.5px solid amber indicator bar at top
-- Inactive: `color: var(--text3)`
-- Background: `--bg2`, `border-top: 0.5px solid var(--border)`
-- No glow, no pill, no animation on active state
+### Home Screen Structure
+
+The Home screen does **not** use `.screen-header`. It has its own editorial structure:
+
+```
+home-hero        ← Fraunces italic greeting + mono date, not sticky
+─ border ─
+home-input-section  ← borderless textarea, the focal point
+─ border ─
+section: Quick log  ← dot chips (colored dot + text label)
+section: Recent     ← card with entry rows (dot + description + amount)
+```
+
+**Input area:** No card wrapper. No border around the textarea. It breathes. The send button only activates (accent fill) when there is text. The mic button is a subtle outline circle.
+
+**Preset chips:** `○ Label` pattern — a 6px color-coded dot plus plain text. No emoji in the chip. Chips are transparent by default, `--bg2` on hover.
+
+**Recent entries:** Replace the icon-box with a 6px category dot (`entry-cat-dot`). Description + mono meta below. Amount right-aligned in mono.
+
+---
+
+### Spending Screen
+
+Budget numbers are large, mono, tabular — Mercury-style financial dashboard:
+
+```
+spent                    remaining
+RM 2,450                 RM 550
+━━━━━━━━━━━━━━━━━━━━━━  (1px track)
+72% of RM 4,000 budget   14 entries
+```
+
+Progress track height: **1px**. Not 2px. Not 3px. 1px is the right weight for this aesthetic.
+Category rows: small emoji at 70% opacity for functional identification. No coloured box.
+
+---
+
+### Navigation
+
+```css
+.bottom-nav  { padding: 12px 0 calc(12px + env(safe-area-inset-bottom)); }
+.nav-item    { gap: 5px; padding: 6px 0; }
+.nav-label   { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.07em; }
+```
+
+Active state: `color: var(--accent)` + a 1px solid stone indicator line at the top of the nav area. No glow. No animation. No pill. No scale effect.
+
+---
 
 ### Animations
 
-Keep it subtle — this is a finance app, not a demo.
+The minimal list — anything not on this list does not belong:
 
-| Use | Spec |
-|-----|------|
+| What | Spec |
+|------|------|
 | Screen enter | `fadeIn 0.15s ease` |
 | Progress bar fill | `transition: width 0.35–0.4s ease` |
-| Button state change | `transition: all 0.15–0.2s ease` |
-| Toast appear | `slideUp 0.2s ease` |
+| Button state | `transition: all 0.15–0.18s ease` |
+| Toast appear | `slideUp 0.18s ease` |
+| Hover states | `transition: color/background 0.12–0.15s ease` |
 
-No ambient blobs. No glow pulse. No floating animations. No gradient text.
-Respect `prefers-reduced-motion` (browser handles via CSS transitions).
+No ambient animations. No floating elements. No glow pulse. No gradient shimmer. No decorative motion of any kind.
 
-### Spacing
+---
 
-- Section padding: `20px` horizontal, `20px` top
-- Card row padding: `13px 16px`
-- Gap between cards: `8px`
-- Screen header bottom padding: `16px`
-- Bottom safe area: always use `env(safe-area-inset-bottom)`
+### Spacing System
 
-### Accent Usage
+| Context | Value |
+|---------|-------|
+| Screen-header padding | `52px 24px 20px` |
+| Section horizontal padding | `24px` |
+| Section top spacing | `28px` |
+| Card row padding | `14px 18px` |
+| Between cards | `8px` |
+| Bottom content padding | `2.5rem` |
 
-Accent (`--accent` champagne amber) is used for:
-- Active nav indicator
-- `screen-title` label colour
-- Send button (ready state)
-- Save button background
-- Today cell in calendar
-- Event dots
-- Remaining budget (positive)
+Never go below 14px for a row's vertical padding. Mercury-level generosity — nothing cramped.
 
-Do **not** use accent for progress bar fills (use the category colour or `--accent` for budget bar).
-Do **not** add gradients to accent elements — solid only.
+---
 
-### What to Avoid
+### What Never Belongs in This Codebase
 
-- Glassmorphism (`backdrop-filter`)
-- Gradient fills on buttons or progress bars
-- Glow / box-shadow effects on interactive elements
-- Gradient text (`-webkit-background-clip: text`)
-- Ambient background animations
-- Emoji as structural icons (category emoji in data are acceptable)
-- `backdrop-filter` anywhere
-- Animations longer than 400ms
-- Pure black (`#000000`) — use `--bg` (`#0e0e0f`)
-- Pure white — use `--text` (`#f0ede8`)
+- `backdrop-filter` / glassmorphism of any kind
+- `box-shadow` (not even subtle ones)
+- Gradient fills — buttons, progress bars, backgrounds, text
+- `-webkit-background-clip: text` gradient text effects
+- Ambient background animations or blob elements
+- Glow effects (`text-shadow`, coloured `box-shadow`)
+- Any animation > 400ms
+- Bright accent colours — only `--accent` (warm stone `#a39a8e`)
+- Emoji as structural navigation or UI icons (SVG only)
+- Pure black `#000000` or pure white `#ffffff`
+- Multiple accent colours (one restrained accent only)
+
+---
 
 ## File Structure
 
 ```
 src/
-  App.jsx          # root, tab routing, toast state
-  App.css          # shell, nav, screen, card, section
-  index.css        # CSS tokens, global reset, keyframes
-  db.js            # localStorage CRUD
-  gemini.js        # Gemini API call + response parser
-  utils.js         # CAT_META, PRESETS, formatRM, formatDate
+  App.jsx              # root shell, tab router, toast
+  App.css              # app shell, bottom nav, screen-header, card, section
+  index.css            # design tokens, global reset, keyframes
+  db.js                # localStorage CRUD (expenses, events, settings, budgets)
+  gemini.js            # Gemini 1.5 Flash API + response parser
+  utils.js             # CAT_META, PRESETS, formatRM, formatDate, formatTime
   components/
-    Home.jsx/css   # log screen — textarea, presets, recent
-    Spending.jsx/css # budget overview + category breakdown
-    Calendar.jsx/css # month grid + event list
-    Settings.jsx/css # budgets, name, API key, data actions
-    Toast.jsx/css  # ephemeral feedback pill
+    Home.jsx/css       # editorial hero + borderless input + dot chips + recent
+    Spending.jsx/css   # budget hero + category breakdown + expense list
+    Calendar.jsx/css   # month grid + event list
+    Settings.jsx/css   # budgets, name, API key, data actions
+    Toast.jsx/css      # ephemeral feedback (mono text, dark surface)
 ```
 
 ## Environment
 
 ```
-VITE_GEMINI_API_KEY=...   # in .env.local (gitignored)
+VITE_GEMINI_API_KEY=...   # .env.local — gitignored
 ```
 
-Also reads `localStorage.getItem('dl_gemini_key')` as fallback.
+Fallback: `localStorage.getItem('dl_gemini_key')`

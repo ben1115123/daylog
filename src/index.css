@@ -1,43 +1,44 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 
 :root {
-  /* surfaces */
+  /* ── Surfaces ─────────────────────────────────────── */
   --bg:  #0e0e0f;
   --bg2: #161617;
   --bg3: #1e1e20;
-  --bg4: #262628;
+  --bg4: #252527;
 
-  /* borders */
-  --border:  rgba(255,255,255,0.06);
-  --border2: rgba(255,255,255,0.11);
+  /* ── Borders ──────────────────────────────────────── */
+  --border:  rgba(255,255,255,0.055);
+  --border2: rgba(255,255,255,0.10);
 
-  /* text — warm off-white, not pure white */
+  /* ── Text — warm, not pure white ─────────────────── */
   --text:  #f0ede8;
-  --text2: #88857f;
-  --text3: #4c4945;
+  --text2: #78756f;
+  --text3: #46433e;
 
-  /* accent — champagne amber */
-  --accent:     #c8a97a;
+  /* ── Accent — warm stone, restrained ─────────────── */
+  --accent:     #a39a8e;
   --accent-on:  #0e0e0f;
-  --accent-dim: rgba(200,169,122,0.10);
+  --accent-dim: rgba(163,154,142,0.09);
 
-  /* semantic */
-  --red:    #d96b6b;
-  --blue:   #6b9fd4;
-  --amber:  #d4a043;
-  --purple: #9b7dce;
-  --teal:   #4ab893;
-  --pink:   #d4739a;
-  --green:  #5ab882;
+  /* ── Semantic ─────────────────────────────────────── */
+  --red:    #c86060;
+  --blue:   #6b94c0;
+  --amber:  #b89050;
+  --purple: #8a72b0;
+  --teal:   #4aa888;
+  --pink:   #b87290;
+  --green:  #5aa870;
 
-  /* type */
-  --font-sans: 'Inter', sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
+  /* ── Type ─────────────────────────────────────────── */
+  --font-sans:  'Inter', sans-serif;
+  --font-serif: 'Fraunces', serif;
+  --font-mono:  'JetBrains Mono', monospace;
 
-  /* shape */
+  /* ── Shape ────────────────────────────────────────── */
   --radius:    12px;
   --radius-sm:  8px;
-  --radius-lg: 20px;
+  --radius-lg: 16px;
 }
 
 html, body, #root {
@@ -61,15 +62,11 @@ scrollbar-width: none;
   from { opacity: 0; }
   to   { opacity: 1; }
 }
-@keyframes fadeUp {
-  from { opacity: 0; transform: translateY(10px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
 @keyframes slideUp {
-  from { transform: translateX(-50%) translateY(8px); opacity: 0; }
-  to   { transform: translateX(-50%) translateY(0); opacity: 1; }
+  from { transform: translateX(-50%) translateY(6px); opacity: 0; }
+  to   { transform: translateX(-50%) translateY(0);   opacity: 1; }
 }
 @keyframes pulse {
-  0%, 80%, 100% { opacity: 0.25; transform: scale(0.75); }
-  40%           { opacity: 1;    transform: scale(1); }
+  0%, 80%, 100% { opacity: 0.2; transform: scale(0.7); }
+  40%           { opacity: 1;   transform: scale(1); }
 }
