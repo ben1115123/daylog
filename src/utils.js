@@ -1,21 +1,21 @@
 export const CATEGORIES = ['food', 'transport', 'grocery', 'rental', 'subscription', 'sports', 'shopping']
 
 export const CAT_META = {
-  food:         { label: 'Food',         color: '#ffb347', icon: '🍜' },
-  transport:    { label: 'Transport',    color: '#5f9fff', icon: '🚗' },
-  grocery:      { label: 'Grocery',      color: '#ff8fab', icon: '🛒' },
-  rental:       { label: 'Rental',       color: '#a78bfa', icon: '🏠' },
-  subscription: { label: 'Subscription', color: '#c8f065', icon: '📱' },
-  sports:       { label: 'Sports',       color: '#5fffd7', icon: '🏋️' },
-  shopping:     { label: 'Shopping',     color: '#ff5f5f', icon: '🛍️' },
+  food:         { label: 'Food',         color: '#fb923c' },
+  transport:    { label: 'Transport',    color: '#60a5fa' },
+  grocery:      { label: 'Grocery',      color: '#f472b6' },
+  rental:       { label: 'Rental',       color: '#a78bfa' },
+  subscription: { label: 'Subscription', color: '#34d399' },
+  sports:       { label: 'Sports',       color: '#facc15' },
+  shopping:     { label: 'Shopping',     color: '#f87171' },
 }
 
 export const PRESETS = [
-  { id: 'rental',      label: 'Rental',      category: 'rental',       amount: 1000, icon: '🏠', isExpense: true },
-  { id: 'tradingview', label: 'TradingView', category: 'subscription', amount: null, icon: '📈', isExpense: true },
-  { id: 'gym',         label: 'Gym',         category: 'sports',       amount: null, icon: '🏋️', isExpense: false, isEvent: true },
-  { id: 'grab',        label: 'Grab',        category: 'transport',    amount: null, icon: '🚗', isExpense: true },
-  { id: 'groceries',   label: 'Groceries',   category: 'grocery',      amount: null, icon: '🛒', isExpense: true },
+  { id: 'rental',      label: 'Rental',      category: 'rental',       amount: 1000, isExpense: true },
+  { id: 'tradingview', label: 'TradingView', category: 'subscription', amount: null, isExpense: true },
+  { id: 'gym',         label: 'Gym',         category: 'sports',       amount: null, isExpense: false, isEvent: true },
+  { id: 'grab',        label: 'Grab',        category: 'transport',    amount: null, isExpense: true },
+  { id: 'groceries',   label: 'Groceries',   category: 'grocery',      amount: null, isExpense: true },
 ]
 
 export function formatRM(amount) {

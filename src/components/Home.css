@@ -1,36 +1,70 @@
-/* ── Editorial hero ────────────────────────────────── */
-.home-hero {
-  padding: max(56px, calc(env(safe-area-inset-top) + 32px)) 24px 28px;
-  border-bottom: 0.5px solid var(--border);
+.home-screen { padding-bottom: 3rem; }
+
+/* ── Top bar ────────────────────────────────────────── */
+.home-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: max(52px, calc(env(safe-area-inset-top) + 28px)) 24px 0;
 }
 
-.home-date {
+.home-brand {
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.20em;
+  color: var(--accent);
+  text-transform: uppercase;
+}
+
+.home-topdate {
   font-family: var(--font-mono);
   font-size: 11px;
   font-weight: 400;
   color: var(--text3);
-  letter-spacing: 0.06em;
-  margin-bottom: 8px;
-  text-transform: lowercase;
+  letter-spacing: 0.04em;
 }
 
-.home-greeting {
-  font-family: var(--font-serif);
-  font-style: italic;
-  font-size: 36px;
-  font-weight: 300;
-  color: var(--text);
-  letter-spacing: -0.01em;
-  line-height: 1.1;
-}
-
-/* ── Borderless input ──────────────────────────────── */
-.home-input-section {
-  padding: 24px 24px 0;
+/* ── Hero greeting ──────────────────────────────────── */
+.home-hero {
+  padding: 28px 24px 32px;
   border-bottom: 0.5px solid var(--border);
 }
 
-.home-input-section textarea {
+.home-subgreeting {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 400;
+  color: var(--text2);
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+  margin-bottom: 2px;
+}
+
+.home-greeting {
+  font-family: var(--font-display);
+  font-size: 48px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.04em;
+  line-height: 1;
+  margin-bottom: 14px;
+}
+
+.home-datestr {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text3);
+  letter-spacing: 0.04em;
+}
+
+/* ── Input area ─────────────────────────────────────── */
+.home-input-wrap {
+  padding: 20px 24px 0;
+  border-bottom: 0.5px solid var(--border);
+}
+
+.home-input-wrap textarea {
   width: 100%;
   background: transparent;
   border: none;
@@ -40,42 +74,41 @@
   font-weight: 300;
   color: var(--text);
   resize: none;
-  line-height: 1.7;
+  line-height: 1.65;
   padding: 0;
   display: block;
 }
 
-.home-input-section textarea::placeholder {
+.home-input-wrap textarea::placeholder {
   color: var(--text3);
-  font-weight: 300;
 }
 
-.home-input-bar {
+.home-input-footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 0 16px;
+  padding: 12px 0 16px;
 }
 
-.home-input-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.char-hint {
+.input-hint {
   font-size: 11px;
   font-family: var(--font-mono);
   color: var(--text3);
   letter-spacing: 0.04em;
 }
 
+.input-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .mic-btn {
-  width: 32px;
-  height: 32px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
   background: transparent;
-  border: 0.5px solid var(--border);
+  border: 0.5px solid var(--border2);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -83,21 +116,19 @@
   transition: all 0.15s ease;
   flex-shrink: 0;
 }
-
 .mic-btn:hover { border-color: var(--border2); color: var(--text2); }
-
 .mic-btn.active {
   color: var(--red);
-  border-color: rgba(200,96,96,0.3);
-  background: rgba(200,96,96,0.06);
+  border-color: rgba(248,113,113,0.3);
+  background: rgba(248,113,113,0.07);
 }
 
 .send-btn {
-  width: 32px;
-  height: 32px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
-  background: var(--bg2);
-  border: 0.5px solid var(--border2);
+  background: var(--bg3);
+  border: 0.5px solid var(--border);
   color: var(--text3);
   display: flex;
   align-items: center;
@@ -105,14 +136,12 @@
   transition: all 0.18s ease;
   flex-shrink: 0;
 }
-
 .send-btn.ready {
   background: var(--accent);
   border-color: var(--accent);
   color: var(--accent-on);
 }
-
-.send-btn.loading { opacity: 0.5; }
+.send-btn.loading { opacity: 0.45; }
 
 .dots { display: flex; gap: 3px; align-items: center; }
 .dots span {
@@ -123,7 +152,12 @@
 .dots span:nth-child(2) { animation-delay: 0.2s; }
 .dots span:nth-child(3) { animation-delay: 0.4s; }
 
-/* ── Preset chips — dot-based ──────────────────────── */
+/* ── Sections ────────────────────────────────────────── */
+.home-section {
+  padding: 24px 20px 0;
+}
+
+/* ── Preset chips ───────────────────────────────────── */
 .presets-row {
   display: flex;
   gap: 8px;
@@ -133,9 +167,9 @@
 .preset-chip {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 7px;
   padding: 7px 14px;
-  background: transparent;
+  background: var(--bg2);
   border: 0.5px solid var(--border);
   border-radius: 999px;
   font-size: 13px;
@@ -143,12 +177,10 @@
   color: var(--text2);
   transition: all 0.15s ease;
   white-space: nowrap;
-  letter-spacing: 0.01em;
 }
-
 .preset-chip:hover,
 .preset-chip:active {
-  background: var(--bg2);
+  background: var(--bg3);
   border-color: var(--border2);
   color: var(--text);
 }
@@ -158,27 +190,28 @@
   height: 6px;
   border-radius: 50%;
   flex-shrink: 0;
-  opacity: 0.75;
+  opacity: 0.8;
 }
 
-/* ── Recent entry rows ─────────────────────────────── */
+/* ── Entry rows ─────────────────────────────────────── */
 .entry-row {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 14px 18px;
+  gap: 12px;
+  padding: 13px 16px;
 }
-
 .entry-row.bordered {
   border-bottom: 0.5px solid var(--border);
 }
 
-.entry-cat-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
+.entry-icon-wrap {
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-xs);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
-  opacity: 0.7;
 }
 
 .entry-body { flex: 1; min-width: 0; }
@@ -210,11 +243,14 @@
   flex-shrink: 0;
 }
 
-.entry-label {
-  font-size: 10px;
+.entry-badge {
+  font-size: 9px;
   font-family: var(--font-mono);
   color: var(--text3);
-  letter-spacing: 0.08em;
+  letter-spacing: 0.10em;
   text-transform: uppercase;
+  background: var(--bg3);
+  padding: 3px 7px;
+  border-radius: 99px;
   flex-shrink: 0;
 }

@@ -4,7 +4,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 18px;
+  padding: 14px 16px;
   gap: 12px;
 }
 .setting-row.bordered { border-bottom: 0.5px solid var(--border); }
@@ -19,10 +19,14 @@
   flex-shrink: 0;
 }
 
-.setting-icon {
-  font-size: 14px;
-  line-height: 1;
-  opacity: 0.7;
+.setting-cat-icon {
+  width: 26px;
+  height: 26px;
+  border-radius: var(--radius-xs);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
 .setting-input {
@@ -78,11 +82,11 @@
   background: var(--accent);
   border-radius: var(--radius);
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 600;
+  font-family: var(--font-display);
   color: var(--accent-on);
-  letter-spacing: 0.06em;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
-  font-family: var(--font-mono);
   transition: opacity 0.15s ease;
 }
 .save-btn:hover  { opacity: 0.82; }

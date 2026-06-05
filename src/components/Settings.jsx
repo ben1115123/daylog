@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { db, DEFAULT_BUDGETS } from '../db.js'
 import { CATEGORIES, CAT_META } from '../utils.js'
+import { CAT_ICONS } from '../Icons.jsx'
 import './Settings.css'
 
 export default function Settings({ showToast }) {
@@ -12,7 +13,7 @@ export default function Settings({ showToast }) {
     db.saveSettings(settings)
     db.saveBudgets(budgets)
     if (apiKey) localStorage.setItem('dl_gemini_key', apiKey)
-    showToast('✓ Settings saved')
+    showToast('Settings saved')
   }
 
   const clearData = () => {
@@ -28,13 +29,13 @@ export default function Settings({ showToast }) {
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob)
     a.download = `daylog-export-${new Date().toISOString().split('T')[0]}.json`; a.click()
-    showToast('✓ Data exported')
+    showToast('Data exported')
   }
 
   return (
     <div className="screen">
       <div className="screen-header">
-        <div className="screen-title">Preferences</div>
+        <div className="screen-label">Preferences</div>
         <div className="screen-heading">Settings</div>
       </div>
 
@@ -43,30 +44,57 @@ export default function Settings({ showToast }) {
         <div className="card settings-card">
           <div className="setting-row bordered">
             <label className="setting-label">Name</label>
-            <input className="setting-input" value={settings.name} onChange={e => setSettings(s => ({ ...s, name: e.target.value }))} placeholder="Your name" />
+            <input
+              className="setting-input"
+              value={settings.name}
+              onChange={e => setSettings(s => ({ ...s, name: e.target.value }))}
+              placeholder="Your name"
+            />
           </div>
           <div className="setting-row">
             <label className="setting-label">Monthly budget</label>
             <div className="setting-right">
               <span className="setting-unit">RM</span>
-              <input className="setting-input num" type="number" value={settings.totalBudget} onChange={e => setSettings(s => ({ ...s, totalBudget: +e.target.value }))} />
+              <input
+                className="setting-input num"
+                type="number"
+                value={settings.totalBudget}
+                onChange={e => setSettings(s => ({ ...s, totalBudget: +e.target.value }))}
+              />
             </div>
           </div>
         </div>
       </div>
 
       <div className="section" style={{ marginTop: 20 }}>
-        <div className="section-label">Category budgets (RM/month)</div>
+        <div className="section-label">Category budgets</div>
         <div className="card settings-card">
-          {CATEGORIES.map((cat, i) => (
-            <div key={cat} className={`setting-row ${i < CATEGORIES.length - 1 ? 'bordered' : ''}`}>
-              <label className="setting-label">
-                <span className="setting-icon">{CAT_META[cat].icon}</span>
-                {CAT_META[cat].label}
-              </label>
-              <input className="setting-input num" type="number" value={budgets[cat]} onChange={e => setBudgets(b => ({ ...b, [cat]: +e.target.value }))} />
-            </div>
-          ))}
+          {CATEGORIES.map((cat, i) => {
+            const meta = CAT_META[cat]
+            const Icon = CAT_ICONS[cat]
+            return (
+              <div key={cat} className={`setting-row ${i < CATEGORIES.length - 1 ? 'bordered' : ''}`}>
+                <label className="setting-label">
+                  <span
+                    className="setting-cat-icon"
+                    style={{ color: meta.color, background: meta.color + '18' }}
+                  >
+                    {Icon && <Icon size={13} />}
+                  </span>
+                  {meta.label}
+                </label>
+                <div className="setting-right">
+                  <span className="setting-unit">RM</span>
+                  <input
+                    className="setting-input num"
+                    type="number"
+                    value={budgets[cat]}
+                    onChange={e => setBudgets(b => ({ ...b, [cat]: +e.target.value }))}
+                  />
+                </div>
+              </div>
+            )
+          })}
         </div>
       </div>
 
@@ -74,10 +102,16 @@ export default function Settings({ showToast }) {
         <div className="section-label">Gemini API key</div>
         <div className="card settings-card">
           <div className="setting-row">
-            <input className="setting-input api-key" type="password" value={apiKey} onChange={e => setApiKey(e.target.value)} placeholder="AIza..." />
+            <input
+              className="setting-input api-key"
+              type="password"
+              value={apiKey}
+              onChange={e => setApiKey(e.target.value)}
+              placeholder="AIza..."
+            />
           </div>
         </div>
-        <p className="setting-hint">Get a free key at aistudio.google.com</p>
+        <p className="setting-hint">Free key at aistudio.google.com</p>
       </div>
 
       <div className="section" style={{ marginTop: 20 }}>

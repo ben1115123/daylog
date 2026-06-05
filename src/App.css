@@ -16,13 +16,15 @@
   padding-bottom: env(safe-area-inset-bottom);
 }
 
-/* ── Bottom nav — tall, airy ───────────────────────── */
+/* ── Bottom nav ────────────────────────────────────── */
 .bottom-nav {
   display: flex;
+  justify-content: space-around;
   background: var(--bg2);
   border-top: 0.5px solid var(--border);
-  padding: 12px 0 calc(12px + env(safe-area-inset-bottom));
+  padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
   flex-shrink: 0;
+  gap: 4px;
 }
 
 .nav-item {
@@ -30,25 +32,16 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 5px;
-  padding: 6px 0;
+  gap: 4px;
+  padding: 8px 4px;
   color: var(--text3);
   transition: color 0.15s ease;
-  position: relative;
+  border-radius: 10px;
 }
 
-.nav-item.active { color: var(--accent); }
-
-/* thin top-line indicator — functional, not decorative */
-.nav-item.active::before {
-  content: '';
-  position: absolute;
-  top: -12px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 20px;
-  height: 1px;
-  background: var(--accent);
+.nav-item.active {
+  color: var(--accent);
+  background: var(--accent-dim);
 }
 
 .nav-icon {
@@ -60,11 +53,11 @@
 }
 
 .nav-label {
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 500;
-  letter-spacing: 0.07em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  font-family: var(--font-mono);
+  font-family: var(--font-display);
 }
 
 /* ── Screen shell ──────────────────────────────────── */
@@ -76,7 +69,7 @@
 
 /* Used by Spending / Calendar / Settings — not Home */
 .screen-header {
-  padding: 52px 24px 20px;
+  padding: max(52px, calc(env(safe-area-inset-top) + 28px)) 24px 20px;
   position: sticky;
   top: 0;
   background: var(--bg);
@@ -84,26 +77,27 @@
   border-bottom: 0.5px solid var(--border);
 }
 
-.screen-title {
+.screen-label {
   font-size: 10px;
   font-family: var(--font-mono);
-  color: var(--accent);
-  letter-spacing: 0.18em;
+  color: var(--text3);
+  letter-spacing: 0.16em;
   text-transform: uppercase;
   margin-bottom: 5px;
   font-weight: 400;
 }
 
 .screen-heading {
-  font-size: 22px;
-  font-weight: 400;
+  font-size: 24px;
+  font-weight: 600;
+  font-family: var(--font-display);
   color: var(--text);
   letter-spacing: -0.02em;
 }
 
 /* ── Shared section / card / empty ────────────────── */
 .section {
-  padding: 28px 24px 0;
+  padding: 28px 20px 0;
 }
 
 .section-label {
@@ -111,9 +105,9 @@
   font-family: var(--font-mono);
   font-weight: 500;
   color: var(--text3);
-  letter-spacing: 0.18em;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
-  margin-bottom: 16px;
+  margin-bottom: 14px;
 }
 
 .card {
@@ -127,16 +121,9 @@
 
 .empty {
   text-align: center;
-  padding: 44px 24px;
+  padding: 40px 24px;
   color: var(--text3);
   font-size: 12px;
   font-family: var(--font-mono);
   letter-spacing: 0.04em;
-}
-
-.empty-icon {
-  display: block;
-  margin-bottom: 10px;
-  opacity: 0.3;
-  font-size: 22px;
 }

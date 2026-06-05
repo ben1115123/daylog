@@ -1,43 +1,49 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 
 :root {
-  /* ── Surfaces ─────────────────────────────────────── */
-  --bg:  #0e0e0f;
-  --bg2: #161617;
-  --bg3: #1e1e20;
-  --bg4: #252527;
+  /* ── Surfaces — zinc-950 palette ─────────────────── */
+  --bg:  #09090b;
+  --bg2: #111113;
+  --bg3: #18181b;
+  --bg4: #27272a;
 
   /* ── Borders ──────────────────────────────────────── */
-  --border:  rgba(255,255,255,0.055);
-  --border2: rgba(255,255,255,0.10);
+  --border:  rgba(255,255,255,0.06);
+  --border2: rgba(255,255,255,0.13);
 
-  /* ── Text — warm, not pure white ─────────────────── */
-  --text:  #f0ede8;
-  --text2: #78756f;
-  --text3: #46433e;
+  /* ── Text — clean zinc ───────────────────────────── */
+  --text:  #fafafa;
+  --text2: #a1a1aa;
+  --text3: #52525b;
 
-  /* ── Accent — warm stone, restrained ─────────────── */
-  --accent:     #a39a8e;
-  --accent-on:  #0e0e0f;
-  --accent-dim: rgba(163,154,142,0.09);
+  /* ── Accent — emerald sage ───────────────────────── */
+  --accent:        #86efac;
+  --accent-on:     #052e16;
+  --accent-dim:    rgba(134,239,172,0.08);
+  --accent-border: rgba(134,239,172,0.20);
 
   /* ── Semantic ─────────────────────────────────────── */
-  --red:    #c86060;
-  --blue:   #6b94c0;
-  --amber:  #b89050;
-  --purple: #8a72b0;
-  --teal:   #4aa888;
-  --pink:   #b87290;
-  --green:  #5aa870;
+  --red:   #f87171;
+  --amber: #fbbf24;
+
+  /* ── Category palette — Tailwind 400 ─────────────── */
+  --cat-food:         #fb923c;
+  --cat-transport:    #60a5fa;
+  --cat-grocery:      #f472b6;
+  --cat-rental:       #a78bfa;
+  --cat-subscription: #34d399;
+  --cat-sports:       #facc15;
+  --cat-shopping:     #f87171;
 
   /* ── Type ─────────────────────────────────────────── */
-  --font-sans:  'Inter', sans-serif;
-  --font-serif: 'Fraunces', serif;
-  --font-mono:  'JetBrains Mono', monospace;
+  --font-display: 'Space Grotesk', sans-serif;
+  --font-sans:    'Inter', sans-serif;
+  --font-mono:    'JetBrains Mono', monospace;
 
   /* ── Shape ────────────────────────────────────────── */
   --radius:    12px;
   --radius-sm:  8px;
+  --radius-xs:  6px;
   --radius-lg: 16px;
 }
 
@@ -55,15 +61,15 @@ button { font-family: var(--font-sans); cursor: pointer; border: none; backgroun
 input, textarea, select { font-family: var(--font-sans); color: inherit; }
 * { -webkit-overflow-scrolling: touch; }
 
-::-webkit-scrollbar { display: none; }
-scrollbar-width: none;
+* { scrollbar-width: none; }
+*::-webkit-scrollbar { display: none; }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to   { opacity: 1; }
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 @keyframes slideUp {
-  from { transform: translateX(-50%) translateY(6px); opacity: 0; }
+  from { transform: translateX(-50%) translateY(8px); opacity: 0; }
   to   { transform: translateX(-50%) translateY(0);   opacity: 1; }
 }
 @keyframes pulse {

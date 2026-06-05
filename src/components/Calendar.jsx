@@ -6,6 +6,18 @@ import './Calendar.css'
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December']
 const DOWS = ['Su','Mo','Tu','We','Th','Fr','Sa']
 
+const ChevLeft = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="15 18 9 12 15 6"/>
+  </svg>
+)
+
+const ChevRight = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="9 18 15 12 9 6"/>
+  </svg>
+)
+
 export default function Calendar({ showToast }) {
   const now = new Date()
   const [year, setYear] = useState(now.getFullYear())
@@ -23,7 +35,9 @@ export default function Calendar({ showToast }) {
   const prevMonth = () => { if (month === 0) { setMonth(11); setYear(y => y - 1) } else setMonth(m => m - 1) }
   const nextMonth = () => { if (month === 11) { setMonth(0); setYear(y => y + 1) } else setMonth(m => m + 1) }
 
-  const selectedEvents = selected ? events.filter(e => e.date === selected) : events.filter(e => e.date >= todayStr).slice(0, 8)
+  const selectedEvents = selected
+    ? events.filter(e => e.date === selected)
+    : events.filter(e => e.date >= todayStr).slice(0, 8)
 
   const handleDelete = (id) => {
     if (confirm('Delete this event?')) { db.deleteEvent(id); showToast('Deleted') }
@@ -33,12 +47,12 @@ export default function Calendar({ showToast }) {
     const dt = event.date.replace(/-/g, '')
     const time = event.time ? event.time.replace(':', '') + '00' : null
     const dtStart = time ? `DTSTART:${dt}T${time}` : `DTSTART;VALUE=DATE:${dt}`
-    const dtEnd = time ? `DTEND:${dt}T${time}` : `DTEND;VALUE=DATE:${dt}`
+    const dtEnd   = time ? `DTEND:${dt}T${time}`   : `DTEND;VALUE=DATE:${dt}`
     const ics = `BEGIN:VCALENDAR\nVERSION:2.0\nBEGIN:VEVENT\n${dtStart}\n${dtEnd}\nSUMMARY:${event.title}\n${event.notes ? 'DESCRIPTION:' + event.notes + '\n' : ''}END:VEVENT\nEND:VCALENDAR`
     const blob = new Blob([ics], { type: 'text/calendar' })
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob)
     a.download = event.title.replace(/\s+/g, '_') + '.ics'; a.click()
-    showToast('✓ .ics downloaded — tap to add to Calendar')
+    showToast('.ics downloaded — add to Calendar')
   }
 
   const cells = []
@@ -50,13 +64,15 @@ export default function Calendar({ showToast }) {
   return (
     <div className="screen">
       <div className="screen-header">
-        <div className="screen-title">Schedule</div>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div className="screen-heading">Calendar</div>
+        <div className="screen-header-row">
+          <div>
+            <div className="screen-label">Schedule</div>
+            <div className="screen-heading">Calendar</div>
+          </div>
           <div className="month-nav-cal">
-            <button onClick={prevMonth}>‹</button>
+            <button onClick={prevMonth} aria-label="Previous month"><ChevLeft /></button>
             <span>{MONTHS[month].slice(0,3)} {year}</span>
-            <button onClick={nextMonth}>›</button>
+            <button onClick={nextMonth} aria-label="Next month"><ChevRight /></button>
           </div>
         </div>
       </div>
@@ -74,9 +90,13 @@ export default function Calendar({ showToast }) {
               const hasEv = eventDates.has(dateStr)
               const isSel = dateStr === selected
               return (
-                <div key={i} className={`cal-cell ${isToday?'today':''} ${isSel&&!isToday?'selected':''}`} onClick={() => setSelected(isSel ? null : dateStr)}>
+                <div
+                  key={i}
+                  className={`cal-cell ${isToday ? 'today' : ''} ${isSel && !isToday ? 'selected' : ''}`}
+                  onClick={() => setSelected(isSel ? null : dateStr)}
+                >
                   {cell.day}
-                  {hasEv && <span className={`ev-dot ${isToday?'ev-dot-light':''}`} />}
+                  {hasEv && <span className={`ev-dot ${isToday ? 'ev-dot-light' : ''}`} />}
                 </div>
               )
             })}
@@ -87,7 +107,7 @@ export default function Calendar({ showToast }) {
       <div className="section" style={{ marginTop: 20, paddingBottom: 32 }}>
         <div className="section-label">{selected ? `Events — ${selected}` : 'Upcoming'}</div>
         {selectedEvents.length === 0 ? (
-          <div className="empty"><span className="empty-icon">▦</span>{selected ? 'nothing on this day' : 'no upcoming events'}</div>
+          <div className="empty">{selected ? 'nothing on this day' : 'no upcoming events'}</div>
         ) : (
           <div className="card">
             {selectedEvents.map((ev, i) => (
@@ -99,8 +119,18 @@ export default function Calendar({ showToast }) {
                   {ev.notes && <div className="ev-notes">{ev.notes}</div>}
                 </div>
                 <div className="ev-actions">
-                  <button className="ev-btn" onClick={() => exportICS(ev)} title="Export to Apple Calendar">↓</button>
-                  <button className="ev-btn del" onClick={() => handleDelete(ev.id)}>×</button>
+                  <button className="ev-btn" onClick={() => exportICS(ev)} title="Export .ics">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                      <polyline points="7 10 12 15 17 10"/>
+                      <line x1="12" y1="15" x2="12" y2="3"/>
+                    </svg>
+                  </button>
+                  <button className="ev-btn del" onClick={() => handleDelete(ev.id)} title="Delete">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                  </button>
                 </div>
               </div>
             ))}
