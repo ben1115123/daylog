@@ -64,6 +64,7 @@ Time inference: "morning" = 09:00, "lunch" = 12:30, "afternoon" = 14:00, "evenin
 Date inference: infer from relative terms like "tomorrow", "next Friday", "this weekend" based on today's date.`
 
 export async function parseInput(text) {
+  console.log('API KEY:', import.meta.env.VITE_GEMINI_API_KEY?.slice(0, 8))
   if (!GEMINI_API_KEY) throw new Error('No API key configured')
 
   const res = await fetch(GEMINI_URL, {
