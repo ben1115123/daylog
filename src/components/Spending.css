@@ -2,6 +2,7 @@
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
+  margin-bottom: 16px;
 }
 
 /* ── Month nav ─────────────────────────────────────── */
@@ -15,16 +16,40 @@
   letter-spacing: 0.04em;
 }
 .month-nav button {
-  width: 28px;
-  height: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  width: 28px; height: 28px;
+  display: flex; align-items: center; justify-content: center;
   color: var(--text3);
-  transition: color 0.15s;
+  transition: color 0.15s, background 0.15s;
   border-radius: 6px;
 }
 .month-nav button:hover { color: var(--text2); background: var(--bg3); }
+
+/* ── Tab toggle ────────────────────────────────────── */
+.spend-tabs {
+  display: flex;
+  background: var(--bg3);
+  border-radius: 8px;
+  padding: 3px;
+  gap: 2px;
+  margin-top: 4px;
+}
+
+.spend-tab {
+  flex: 1;
+  padding: 6px 0;
+  font-size: 12px;
+  font-family: var(--font-display);
+  font-weight: 500;
+  color: var(--text3);
+  border-radius: 6px;
+  transition: all 0.15s ease;
+  letter-spacing: 0.02em;
+}
+.spend-tab.active {
+  background: var(--bg2);
+  color: var(--text);
+  border: 0.5px solid var(--border2);
+}
 
 /* ── Budget hero ───────────────────────────────────── */
 .budget-hero { padding: 22px 20px 18px; }
@@ -47,7 +72,7 @@
 }
 
 .budget-total {
-  font-size: 32px;
+  font-size: 30px;
   font-weight: 600;
   font-family: var(--font-display);
   font-variant-numeric: tabular-nums;
@@ -63,7 +88,6 @@
   overflow: hidden;
   margin-bottom: 14px;
 }
-
 .budget-fill {
   height: 100%;
   border-radius: 99px;
@@ -80,64 +104,107 @@
   letter-spacing: 0.02em;
 }
 
-/* ── Category rows ─────────────────────────────────── */
-.cat-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 13px 16px;
+/* ── Insight chips ─────────────────────────────────── */
+.insight-chips {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
 }
-.cat-row.bordered { border-bottom: 0.5px solid var(--border); }
 
-.cat-icon-wrap {
-  width: 30px;
-  height: 30px;
-  border-radius: var(--radius-xs);
+.insight-chip {
+  background: var(--bg2);
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px 12px 10px;
+}
+
+.insight-chip-label {
+  font-size: 9px;
+  font-family: var(--font-mono);
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  margin-bottom: 5px;
+}
+
+.insight-chip-val {
+  font-size: 13px;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.insight-chip-sub {
+  font-size: 10px;
+  font-family: var(--font-mono);
+  color: var(--text3);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: 0.01em;
+}
+
+/* ── Donut chart ───────────────────────────────────── */
+.donut-card { overflow: visible; }
+
+.donut-wrap {
+  display: flex;
+  justify-content: center;
+  padding: 20px 20px 8px;
+}
+
+.donut-legend {
+  padding: 4px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.legend-row {
   display: flex;
   align-items: center;
-  justify-content: center;
+  gap: 10px;
+  padding: 9px 0;
+  border-top: 0.5px solid var(--border);
+}
+
+.legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
   flex-shrink: 0;
 }
 
-.cat-body { flex: 1; min-width: 0; }
-
-.cat-top {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  margin-bottom: 8px;
-}
-
-.cat-name {
+.legend-name {
+  flex: 1;
   font-size: 13px;
   color: var(--text);
   font-weight: 400;
 }
 
-.cat-amounts {
-  font-size: 11px;
+.legend-amount {
+  font-size: 12px;
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
+  color: var(--text2);
   letter-spacing: -0.01em;
+  flex-shrink: 0;
 }
 
-.cat-slash {
+.legend-pct {
+  font-size: 10px;
+  font-family: var(--font-mono);
   color: var(--text3);
-  margin: 0 2px;
-}
-
-.cat-track {
-  height: 2px;
-  background: var(--bg4);
-  border-radius: 99px;
-  overflow: hidden;
-}
-
-.cat-fill {
-  height: 100%;
-  border-radius: 99px;
-  transition: width 0.35s ease;
-  opacity: 0.75;
+  letter-spacing: 0.02em;
+  min-width: 28px;
+  text-align: right;
+  flex-shrink: 0;
 }
 
 /* ── Expense list rows ─────────────────────────────── */
@@ -150,12 +217,9 @@
 .exp-row.bordered { border-bottom: 0.5px solid var(--border); }
 
 .exp-icon-wrap {
-  width: 30px;
-  height: 30px;
+  width: 30px; height: 30px;
   border-radius: var(--radius-xs);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
 }
 
@@ -199,8 +263,59 @@
   color: var(--text3);
   padding: 2px;
   transition: color 0.15s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: flex; align-items: center; justify-content: center;
 }
 .del-btn:hover { color: var(--red); }
+
+/* ── Savings view ──────────────────────────────────── */
+.saving-input-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding: 20px 20px 18px;
+}
+
+.saving-income-wrap {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.saving-income-prefix {
+  font-size: 16px;
+  font-family: var(--font-display);
+  color: var(--text2);
+  font-weight: 500;
+}
+
+.saving-income-input {
+  font-size: 28px;
+  font-family: var(--font-display);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: -0.03em;
+  background: transparent;
+  border: none;
+  outline: none;
+  width: 130px;
+}
+.saving-income-input::placeholder { color: var(--text3); }
+
+.saving-spent {
+  font-size: 22px;
+  font-family: var(--font-display);
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  color: var(--text2);
+  letter-spacing: -0.02em;
+  margin-top: 6px;
+}
+
+.saving-total-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding: 20px 20px 18px;
+}

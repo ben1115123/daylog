@@ -1,0 +1,152 @@
+.insights-header-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+}
+
+.gear-btn {
+  width: 36px; height: 36px;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text3);
+  border-radius: 8px;
+  background: var(--bg3);
+  border: 0.5px solid var(--border);
+  transition: color 0.15s, background 0.15s;
+  flex-shrink: 0;
+}
+.gear-btn:hover { color: var(--text2); background: var(--bg4); }
+
+/* ── Stat pair ─────────────────────────────────────── */
+.stat-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.stat-card {
+  padding: 18px 16px 16px;
+}
+
+.stat-label {
+  font-size: 9px;
+  font-family: var(--font-mono);
+  color: var(--text3);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+
+.stat-value {
+  font-size: 26px;
+  font-family: var(--font-display);
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: -0.02em;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.stat-sub {
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--text3);
+  letter-spacing: 0.02em;
+}
+
+/* ── Top merchants ─────────────────────────────────── */
+.merchant-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 16px;
+}
+.merchant-row.bordered { border-bottom: 0.5px solid var(--border); }
+
+.merchant-rank {
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--text3);
+  min-width: 14px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.merchant-name {
+  flex: 1;
+  font-size: 14px;
+  color: var(--text);
+  font-weight: 400;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.merchant-pct {
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--text3);
+  letter-spacing: 0.02em;
+  flex-shrink: 0;
+}
+
+.merchant-amount {
+  font-size: 13px;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--text2);
+  letter-spacing: -0.01em;
+  flex-shrink: 0;
+  min-width: 64px;
+  text-align: right;
+}
+
+/* ── Month comparison ──────────────────────────────── */
+.month-compare-card {
+  display: flex;
+  align-items: center;
+  padding: 22px 20px;
+  gap: 12px;
+}
+
+.month-col { flex: 1; }
+
+.month-col-label {
+  font-size: 9px;
+  font-family: var(--font-mono);
+  color: var(--text3);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.month-col-val {
+  font-size: 22px;
+  font-family: var(--font-display);
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: -0.02em;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.month-col-sub {
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--text3);
+}
+
+.month-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 48px;
+}
+
+.month-delta {
+  font-size: 13px;
+  font-family: var(--font-mono);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  text-align: center;
+}

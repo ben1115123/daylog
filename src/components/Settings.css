@@ -1,5 +1,19 @@
 .settings-card { overflow: visible; }
 
+.back-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+  font-family: var(--font-display);
+  color: var(--text3);
+  padding: 4px 0;
+  margin-right: 12px;
+  transition: color 0.15s;
+  flex-shrink: 0;
+}
+.back-btn:hover { color: var(--text2); }
+
 .setting-row {
   display: flex;
   align-items: center;
@@ -20,12 +34,9 @@
 }
 
 .setting-cat-icon {
-  width: 26px;
-  height: 26px;
+  width: 26px; height: 26px;
   border-radius: var(--radius-xs);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
 }
 

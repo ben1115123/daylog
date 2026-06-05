@@ -2,6 +2,7 @@
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
+  margin-bottom: 12px;
 }
 
 /* ── Month nav ─────────────────────────────────────── */
@@ -15,16 +16,77 @@
   letter-spacing: 0.04em;
 }
 .month-nav-cal button {
-  width: 28px;
-  height: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  width: 28px; height: 28px;
+  display: flex; align-items: center; justify-content: center;
   color: var(--text3);
   transition: color 0.15s, background 0.15s;
   border-radius: 6px;
 }
 .month-nav-cal button:hover { color: var(--text2); background: var(--bg3); }
+
+/* ── View toggle ───────────────────────────────────── */
+.cal-view-tabs {
+  display: flex;
+  background: var(--bg3);
+  border-radius: 8px;
+  padding: 3px;
+  gap: 2px;
+}
+
+.cal-view-tab {
+  flex: 1;
+  padding: 6px 0;
+  font-size: 12px;
+  font-family: var(--font-display);
+  font-weight: 500;
+  color: var(--text3);
+  border-radius: 6px;
+  transition: all 0.15s ease;
+  letter-spacing: 0.02em;
+}
+.cal-view-tab.active {
+  background: var(--bg2);
+  color: var(--text);
+  border: 0.5px solid var(--border2);
+}
+
+/* ── Countdown strip ───────────────────────────────── */
+.countdown-strip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: var(--accent-dim);
+  border-bottom: 0.5px solid var(--accent-border);
+  overflow: hidden;
+}
+
+.countdown-label {
+  font-size: 9px;
+  font-family: var(--font-mono);
+  color: var(--accent);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+.countdown-title {
+  font-size: 12px;
+  font-family: var(--font-sans);
+  color: var(--text2);
+  font-weight: 400;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.countdown-days {
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--text3);
+  flex-shrink: 0;
+}
 
 /* ── Calendar grid ─────────────────────────────────── */
 .cal-grid-wrap { padding: 16px 14px 14px; }
@@ -85,8 +147,7 @@
 }
 
 .ev-dot {
-  width: 3px;
-  height: 3px;
+  width: 3px; height: 3px;
   border-radius: 50%;
   background: var(--accent);
   position: absolute;
@@ -94,12 +155,26 @@
 }
 .ev-dot-light { background: var(--accent-on); opacity: 0.6; }
 
+/* ── Agenda grouping ───────────────────────────────── */
+.agenda-group { margin-bottom: 20px; }
+
+.agenda-date-label {
+  font-size: 10px;
+  font-family: var(--font-mono);
+  font-weight: 500;
+  color: var(--text3);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  padding-left: 2px;
+}
+
 /* ── Event rows ────────────────────────────────────── */
 .ev-row {
   display: flex;
   align-items: flex-start;
-  gap: 12px;
-  padding: 15px 16px;
+  gap: 10px;
+  padding: 13px 16px;
 }
 .ev-row.bordered { border-bottom: 0.5px solid var(--border); }
 
@@ -111,24 +186,36 @@
   min-width: 44px;
   padding-top: 2px;
   letter-spacing: 0.02em;
+  flex-shrink: 0;
 }
 
-.ev-dot-line {
-  width: 5px;
-  height: 5px;
+.ev-cat-dot {
+  width: 6px; height: 6px;
   border-radius: 50%;
-  background: var(--accent);
-  margin-top: 5px;
   flex-shrink: 0;
-  opacity: 0.6;
+  margin-top: 6px;
+  opacity: 0.75;
 }
 
 .ev-body { flex: 1; min-width: 0; }
+
+.ev-title-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
 
 .ev-title {
   font-size: 14px;
   color: var(--text);
   font-weight: 400;
+}
+
+.ev-repeat {
+  color: var(--text3);
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
 }
 
 .ev-notes {
@@ -141,16 +228,14 @@
 .ev-actions {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
   align-items: flex-end;
+  flex-shrink: 0;
 }
 
 .ev-btn {
-  width: 24px;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  width: 24px; height: 24px;
+  display: flex; align-items: center; justify-content: center;
   color: var(--text3);
   transition: color 0.15s;
   border-radius: 4px;

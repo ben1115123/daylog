@@ -10,6 +10,14 @@ export const CAT_META = {
   shopping:     { label: 'Shopping',     color: '#f87171' },
 }
 
+export const EVENT_CATS = {
+  work:     { label: 'Work',     color: '#60a5fa' },
+  personal: { label: 'Personal', color: '#a78bfa' },
+  health:   { label: 'Health',   color: '#34d399' },
+  social:   { label: 'Social',   color: '#fb923c' },
+  finance:  { label: 'Finance',  color: '#facc15' },
+}
+
 export const PRESETS = [
   { id: 'rental',      label: 'Rental',      category: 'rental',       amount: 1000, isExpense: true },
   { id: 'tradingview', label: 'TradingView', category: 'subscription', amount: null, isExpense: true },
@@ -21,6 +29,11 @@ export const PRESETS = [
 export function formatRM(amount) {
   if (amount == null) return '—'
   return `RM ${Number(amount).toFixed(0)}`
+}
+
+export function formatRMDecimal(amount) {
+  if (amount == null) return '—'
+  return `RM ${Number(amount).toLocaleString('en-MY', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
 }
 
 export function formatDate(dateStr) {
@@ -45,4 +58,8 @@ export function formatTime(timeStr) {
 
 export function todayStr() {
   return new Date().toISOString().split('T')[0]
+}
+
+export function monthLabel(year, month) {
+  return new Date(year, month, 1).toLocaleDateString('en-MY', { month: 'short' })
 }

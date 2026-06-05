@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { db, DEFAULT_BUDGETS } from '../db.js'
 import { CATEGORIES, CAT_META } from '../utils.js'
-import { CAT_ICONS } from '../Icons.jsx'
+import { CAT_ICONS, BackIcon } from '../Icons.jsx'
 import './Settings.css'
 
-export default function Settings({ showToast }) {
+export default function Settings({ showToast, onBack }) {
   const [settings, setSettings] = useState(db.getSettings())
   const [budgets, setBudgets] = useState(db.getBudgets())
   const [apiKey, setApiKey] = useState(localStorage.getItem('dl_gemini_key') || '')
@@ -35,8 +35,18 @@ export default function Settings({ showToast }) {
   return (
     <div className="screen">
       <div className="screen-header">
-        <div className="screen-label">Preferences</div>
-        <div className="screen-heading">Settings</div>
+        <div className="screen-header-row" style={{ marginBottom: 0 }}>
+          {onBack && (
+            <button className="back-btn" onClick={onBack} aria-label="Back">
+              <BackIcon />
+              <span>Back</span>
+            </button>
+          )}
+          <div style={{ flex: 1 }}>
+            <div className="screen-label">Preferences</div>
+            <div className="screen-heading">Settings</div>
+          </div>
+        </div>
       </div>
 
       <div className="section" style={{ marginTop: 20 }}>
@@ -75,10 +85,7 @@ export default function Settings({ showToast }) {
             return (
               <div key={cat} className={`setting-row ${i < CATEGORIES.length - 1 ? 'bordered' : ''}`}>
                 <label className="setting-label">
-                  <span
-                    className="setting-cat-icon"
-                    style={{ color: meta.color, background: meta.color + '18' }}
-                  >
+                  <span className="setting-cat-icon" style={{ color: meta.color, background: meta.color + '18' }}>
                     {Icon && <Icon size={13} />}
                   </span>
                   {meta.label}

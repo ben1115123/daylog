@@ -24,11 +24,12 @@ Return this exact JSON structure:
     "time": "HH:MM" or null,
     "endTime": "HH:MM" or null,
     "notes": "brief notes" or null,
-    "recurring": "daily" | "weekly" | "monthly" | null
+    "recurring": "daily" | "weekly" | "monthly" | null,
+    "category": "work" | "personal" | "health" | "social" | "finance" | null
   } or null
 }
 
-Category rules:
+Expense category rules:
 - food: meals, drinks, restaurants, cafes, food delivery
 - transport: grab, taxi, petrol, parking, toll, LRT, MRT, bus
 - grocery: supermarket, pasar, Giant, Jaya Grocer, Cold Storage, 99 Speedmart
@@ -36,6 +37,18 @@ Category rules:
 - subscription: netflix, spotify, tradingview, apple, youtube, any app subscription
 - sports: gym, run, swimming, badminton, futsal, yoga, any sport
 - shopping: clothes, shoes, electronics, online shopping
+
+Event category rules:
+- work: meetings, deadlines, work tasks, office events
+- personal: haircut, errands, admin, personal appointments
+- health: doctor, dentist, gym, medical, checkup
+- social: birthday, dinner out, friends, gatherings, parties
+- finance: bank, investment, bill payment, tax, financial appointments
+
+Recurring rules:
+- "every day" / "daily" → "daily"
+- "every week" / "weekly" / "every Monday" → "weekly"
+- "every month" / "monthly" / "1st of every month" → "monthly"
 
 Time inference: "morning" = 09:00, "lunch" = 12:30, "afternoon" = 14:00, "evening" = 18:00, "night" = 20:00
 Date inference: infer from relative terms like "tomorrow", "next Friday", "this weekend" based on today's date.`
