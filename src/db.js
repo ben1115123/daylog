@@ -7,14 +7,17 @@ const KEYS = {
 }
 
 const DEFAULT_BUDGETS = {
-  food: 600, transport: 300, grocery: 400,
-  rental: 1000, subscription: 200, sports: 150, shopping: 300
+  food: 400, transport: 200, grocery: 400,
+  rental: 1000, subscription: 200, sports: 150, shopping: 200,
+  coffee: 100, dining: 200, petrol: 150, toll: 50,
+  online_shopping: 150, health: 100, entertainment: 100,
+  travel: 200, utilities: 100, education: 100,
 }
 
 const DEFAULT_SETTINGS = {
   currency: 'RM',
   totalBudget: 3500,
-  name: 'Ben'
+  name: '',
 }
 
 function load(key, fallback) {
@@ -39,6 +42,12 @@ export const db = {
     db.saveExpenses(all)
     return newExp
   },
+  updateExpense(id, updates) {
+    const all = db.getExpenses()
+    const idx = all.findIndex(e => e.id === id)
+    if (idx !== -1) all[idx] = { ...all[idx], ...updates }
+    db.saveExpenses(all)
+  },
   deleteExpense(id) {
     db.saveExpenses(db.getExpenses().filter(e => e.id !== id))
   },
@@ -54,32 +63,32 @@ export const db = {
     db.saveEvents(all)
     return newEvent
   },
+  updateEvent(id, updates) {
+    const all = db.getEvents()
+    const idx = all.findIndex(e => e.id === id)
+    if (idx !== -1) all[idx] = { ...all[idx], ...updates }
+    db.saveEvents(all)
+  },
   deleteEvent(id) {
     db.saveEvents(db.getEvents().filter(e => e.id !== id))
   },
 
-  /* Expand recurring events into concrete instances */
   getExpandedEvents(fromDate, toDate) {
     const base = db.getEvents()
-    const today = fromDate || new Date().toISOString().split('T')[0]
     const ceiling = toDate || (() => {
       const d = new Date(); d.setFullYear(d.getFullYear() + 1); return d.toISOString().split('T')[0]
     })()
     const result = []
 
     base.forEach(ev => {
-      if (!ev.recurring) {
-        result.push(ev)
-        return
-      }
+      if (!ev.recurring) { result.push(ev); return }
       const start = new Date(ev.date + 'T00:00:00')
       const end   = new Date(ceiling + 'T00:00:00')
-      let cur = new Date(start)
-      let guard = 0
+      let cur = new Date(start), guard = 0
       while (cur <= end && guard++ < 500) {
         const dateStr = cur.toISOString().split('T')[0]
         result.push({ ...ev, date: dateStr, isRecurringInstance: dateStr !== ev.date, _baseId: ev.id })
-        if (ev.recurring === 'daily')   cur.setDate(cur.getDate() + 1)
+        if (ev.recurring === 'daily')        cur.setDate(cur.getDate() + 1)
         else if (ev.recurring === 'weekly')  cur.setDate(cur.getDate() + 7)
         else if (ev.recurring === 'monthly') cur.setMonth(cur.getMonth() + 1)
         else break
@@ -91,7 +100,7 @@ export const db = {
   },
 
   /* ── Budgets / Settings ──────────────────────────── */
-  getBudgets: () => load(KEYS.budgets, DEFAULT_BUDGETS),
+  getBudgets: () => ({ ...DEFAULT_BUDGETS, ...load(KEYS.budgets, {}) }),
   saveBudgets: (v) => save(KEYS.budgets, v),
 
   getSettings: () => ({ ...DEFAULT_SETTINGS, ...load(KEYS.settings, {}) }),
@@ -103,14 +112,12 @@ export const db = {
     return db.getExpenses().filter(e => e.date?.startsWith(prefix))
   },
 
-  /* Last N calendar months, oldest first */
   getRecentMonths(count = 6) {
     const now = new Date()
     const result = []
     for (let i = count - 1; i >= 0; i--) {
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
-      const year = d.getFullYear()
-      const month = d.getMonth()
+      const year = d.getFullYear(), month = d.getMonth()
       const expenses = db.getMonthExpenses(year, month)
       const total = expenses.reduce((s, e) => s + (e.amount || 0), 0)
       result.push({ year, month, total, key: monthKey(year, month) })
@@ -118,18 +125,15 @@ export const db = {
     return result
   },
 
-  /* ── Income (for savings view) ───────────────────── */
+  /* ── Income ──────────────────────────────────────── */
   getAllIncome: () => load(KEYS.income, {}),
-  getIncome(year, month) {
-    return db.getAllIncome()[monthKey(year, month)] || 0
-  },
+  getIncome(year, month) { return db.getAllIncome()[monthKey(year, month)] || 0 },
   saveIncome(year, month, amount) {
     const all = db.getAllIncome()
     all[monthKey(year, month)] = amount
     save(KEYS.income, all)
   },
 
-  /* ── Legacy helper ───────────────────────────────── */
   getUpcomingEvents(limit = 10) {
     const today = new Date().toISOString().split('T')[0]
     return db.getExpandedEvents(today).filter(e => e.date >= today).slice(0, limit)

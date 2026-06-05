@@ -6,16 +6,19 @@ import { MicIcon, SendIcon, CAT_ICONS } from '../Icons.jsx'
 import './Home.css'
 
 export default function Home({ showToast, onLogged }) {
-  const [text, setText] = useState('')
+  const settings = db.getSettings()
+  const userName = settings.name || 'You'
+
+  const [text, setText]       = useState('')
   const [loading, setLoading] = useState(false)
-  const [recent, setRecent] = useState(() => {
+  const [recent, setRecent]   = useState(() => {
     const exp = db.getExpenses().slice(0, 4).map(e => ({ ...e, _type: 'expense' }))
     const evt = db.getUpcomingEvents(3).map(e => ({ ...e, _type: 'event' }))
     return [...exp, ...evt].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 6)
   })
-  const textareaRef = useRef(null)
+  const textareaRef  = useRef(null)
   const [recording, setRecording] = useState(false)
-  const recorderRef = useRef(null)
+  const recorderRef  = useRef(null)
 
   const refreshRecent = () => {
     const exp = db.getExpenses().slice(0, 4).map(e => ({ ...e, _type: 'expense' }))
@@ -38,11 +41,8 @@ export default function Home({ showToast, onLogged }) {
         logged.length === 2 ? 'Logged expense + event' :
         logged[0] === 'expense' ? 'Expense logged' : 'Event added'
       )
-      refreshRecent()
-      onLogged()
-    } catch {
-      showToast('Parse failed — check API key', 'error')
-    }
+      refreshRecent(); onLogged()
+    } catch { showToast('Parse failed — check API key', 'error') }
     setLoading(false)
   }
 
@@ -75,8 +75,7 @@ export default function Home({ showToast, onLogged }) {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
       const rec = new MediaRecorder(stream)
       recorderRef.current = rec
-      rec.start()
-      setRecording(true)
+      rec.start(); setRecording(true)
       rec.onstop = () => { stream.getTracks().forEach(t => t.stop()); showToast('Voice captured — edit and send') }
     } catch { showToast('Mic access denied', 'error') }
   }
@@ -89,20 +88,17 @@ export default function Home({ showToast, onLogged }) {
   return (
     <div className="screen home-screen">
 
-      {/* ── Top bar ─────────────────────────────────────── */}
       <div className="home-topbar">
         <span className="home-brand">DAYLOG</span>
         <span className="home-topdate">{now.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</span>
       </div>
 
-      {/* ── Hero greeting ───────────────────────────────── */}
       <div className="home-hero">
         <div className="home-subgreeting">{greeting},</div>
-        <div className="home-greeting">Ben.</div>
+        <div className="home-greeting">{userName}.</div>
         <div className="home-datestr">{dateLabel}</div>
       </div>
 
-      {/* ── Input ───────────────────────────────────────── */}
       <div className="home-input-wrap">
         <textarea
           ref={textareaRef}
@@ -138,9 +134,8 @@ export default function Home({ showToast, onLogged }) {
         </div>
       </div>
 
-      {/* ── Quick log ────────────────────────────────────── */}
       <div className="home-section">
-        <div className="section-label">Quick log</div>
+        <div className="section-label" style={{ paddingLeft: 20 }}>Quick log</div>
         <div className="presets-row">
           {PRESETS.map(p => {
             const color = CAT_META[p.category]?.color
@@ -154,8 +149,7 @@ export default function Home({ showToast, onLogged }) {
         </div>
       </div>
 
-      {/* ── Recent ───────────────────────────────────────── */}
-      <div className="home-section" style={{ marginTop: 28 }}>
+      <div className="home-section" style={{ marginTop: 24 }}>
         <div className="section-label">Recent</div>
         {recent.length === 0 ? (
           <div className="empty">nothing logged yet</div>
@@ -181,7 +175,7 @@ export default function Home({ showToast, onLogged }) {
               }
               return (
                 <div key={item.id} className={`entry-row ${isLast ? '' : 'bordered'}`}>
-                  <span className="entry-icon-wrap" style={{ color: 'var(--cat-transport)', background: 'rgba(96,165,250,0.1)' }}>
+                  <span className="entry-icon-wrap" style={{ color: 'var(--accent)', background: 'var(--accent-dim)' }}>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
                       <rect x="3" y="4" width="18" height="18" rx="2"/>
                       <line x1="16" y1="2" x2="16" y2="6"/>
