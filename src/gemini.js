@@ -1,5 +1,4 @@
-const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent`
+const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`
 
 const today = () => new Date().toISOString().split('T')[0]
 
@@ -64,22 +63,18 @@ Time inference: "morning" = 09:00, "lunch" = 12:30, "afternoon" = 14:00, "evenin
 Date inference: infer from relative terms like "tomorrow", "next Friday", "this weekend" based on today's date.`
 
 export async function parseInput(text) {
-  console.log('KEY CHECK:', import.meta.env.VITE_GEMINI_API_KEY?.slice(0, 8))
-  if (!GEMINI_API_KEY) throw new Error('No API key configured')
+  if (!import.meta.env.VITE_GEMINI_API_KEY) throw new Error('No API key configured')
 
   const res = await fetch(GEMINI_URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${GEMINI_API_KEY}` },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       contents: [{ parts: [{ text: SYSTEM_PROMPT + '\n\nUser input: ' + text }] }],
       generationConfig: { temperature: 0.1, maxOutputTokens: 512 }
     })
   })
 
-  console.log('Gemini HTTP status:', res.status)
   if (!res.ok) {
-    const errBody = await res.text().catch(() => '')
-    console.error('Gemini error body:', errBody)
     throw new Error(`Gemini error: ${res.status}`)
   }
   const data = await res.json()
