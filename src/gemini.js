@@ -1,5 +1,5 @@
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`
+const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent`
 
 const today = () => new Date().toISOString().split('T')[0]
 
@@ -65,12 +65,11 @@ Date inference: infer from relative terms like "tomorrow", "next Friday", "this 
 
 export async function parseInput(text) {
   console.log('KEY CHECK:', import.meta.env.VITE_GEMINI_API_KEY?.slice(0, 8))
-  console.log('URL:', GEMINI_URL.replace(/key=.*/, 'key=***'))
   if (!GEMINI_API_KEY) throw new Error('No API key configured')
 
   const res = await fetch(GEMINI_URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${GEMINI_API_KEY}` },
     body: JSON.stringify({
       contents: [{ parts: [{ text: SYSTEM_PROMPT + '\n\nUser input: ' + text }] }],
       generationConfig: { temperature: 0.1, maxOutputTokens: 512 }
