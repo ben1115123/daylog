@@ -7,12 +7,12 @@ import './Settings.css'
 export default function Settings({ showToast, onBack }) {
   const [settings, setSettings] = useState(db.getSettings())
   const [budgets, setBudgets] = useState(db.getBudgets())
-  const [apiKey, setApiKey] = useState(localStorage.getItem('dl_openrouter_key') || '')
+  const [apiKey, setApiKey] = useState(localStorage.getItem('dl_anthropic_key') || '')
 
   const saveSettings = () => {
     db.saveSettings(settings)
     db.saveBudgets(budgets)
-    if (apiKey) localStorage.setItem('dl_openrouter_key', apiKey)
+    if (apiKey) localStorage.setItem('dl_anthropic_key', apiKey)
     showToast('Settings saved')
   }
 
@@ -114,11 +114,11 @@ export default function Settings({ showToast, onBack }) {
               type="password"
               value={apiKey}
               onChange={e => setApiKey(e.target.value)}
-              placeholder="sk-or-..."
+              placeholder="sk-ant-..."
             />
           </div>
         </div>
-        <p className="setting-hint">Free key at openrouter.ai</p>
+        <p className="setting-hint">Get a key at console.anthropic.com</p>
       </div>
 
       <div className="section" style={{ marginTop: 20 }}>

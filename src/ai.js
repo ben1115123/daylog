@@ -1,4 +1,4 @@
-const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions'
+const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages'
 
 const today = () => new Date().toISOString().split('T')[0]
 
@@ -63,30 +63,30 @@ Time inference: "morning" = 09:00, "lunch" = 12:30, "afternoon" = 14:00, "evenin
 Date inference: infer from relative terms like "tomorrow", "next Friday", "this weekend" based on today's date.`
 
 export async function parseInput(text) {
-  const apiKey = import.meta.env.VITE_OPENROUTER_API_KEY || localStorage.getItem('dl_openrouter_key')
+  const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY || localStorage.getItem('dl_anthropic_key')
   if (!apiKey) throw new Error('No API key configured')
 
-  const res = await fetch(OPENROUTER_URL, {
+  const res = await fetch(ANTHROPIC_URL, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
-      'HTTP-Referer': 'https://daylog-phi.vercel.app',
-      'X-Title': 'DayLog'
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true'
     },
     body: JSON.stringify({
-      model: 'meta-llama/llama-3.3-70b-instruct:free',
-      messages: [{ role: 'user', content: SYSTEM_PROMPT + '\n\nUser input: ' + text }],
-      temperature: 0.1,
-      max_tokens: 512
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 512,
+      system: SYSTEM_PROMPT,
+      messages: [{ role: 'user', content: text }]
     })
   })
 
   if (!res.ok) {
-    throw new Error(`OpenRouter error: ${res.status}`)
+    throw new Error(`Anthropic error: ${res.status}`)
   }
   const data = await res.json()
-  const raw = data.choices?.[0]?.message?.content || ''
+  const raw = data.content[0].text || ''
   const clean = raw.replace(/```json|```/g, '').trim()
   return JSON.parse(clean)
 }
