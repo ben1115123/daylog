@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react'
-import { parseInput } from '../gemini.js'
+import { parseInput } from '../ai.js'
 import { db } from '../db.js'
 import { PRESETS, CAT_META, formatRM, formatDate, formatTime } from '../utils.js'
 import { MicIcon, SendIcon, CAT_ICONS } from '../Icons.jsx'

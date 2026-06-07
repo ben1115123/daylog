@@ -1,6 +1,6 @@
 # DayLog — CLAUDE.md
 
-Smart calendar and spending tracker PWA. React + Vite. AI parsing via Gemini 1.5 Flash.
+Smart calendar and spending tracker PWA. React + Vite. AI parsing via OpenRouter (mistral-7b-instruct:free).
 
 ## Stack
 
@@ -8,7 +8,7 @@ Smart calendar and spending tracker PWA. React + Vite. AI parsing via Gemini 1.5
 - PWA via vite-plugin-pwa
 - No UI library — all custom CSS
 - Storage: localStorage via `src/db.js`
-- AI: `src/gemini.js` → Gemini 1.5 Flash
+- AI: `src/ai.js` → OpenRouter chat completions API (`mistralai/mistral-7b-instruct:free`)
 - Icons: `src/Icons.jsx` — SVG components only, no emoji anywhere
 
 ## Commands
@@ -203,7 +203,7 @@ src/
   index.css            # design tokens, global reset, keyframes
   Icons.jsx            # ALL SVG icon components — category icons + action icons
   db.js                # localStorage CRUD (expenses, events, settings, budgets)
-  gemini.js            # Gemini 1.5 Flash API + response parser
+  ai.js                # OpenRouter (mistral-7b-instruct:free) API + response parser
   utils.js             # CAT_META (no emoji — label + color only), PRESETS, formatRM, formatDate, formatTime
   components/
     Home.jsx/css       # topbar + two-line hero greeting + borderless input + preset chips + recent
@@ -216,7 +216,7 @@ src/
 ## Environment
 
 ```
-VITE_GEMINI_API_KEY=...   # .env.local — gitignored
+VITE_OPENROUTER_API_KEY=...   # .env.local — gitignored
 ```
 
-Fallback: `localStorage.getItem('dl_gemini_key')`
+Fallback: `localStorage.getItem('dl_openrouter_key')`
