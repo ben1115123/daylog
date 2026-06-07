@@ -70,10 +70,12 @@ export async function parseInput(text) {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`
+      'Authorization': `Bearer ${apiKey}`,
+      'HTTP-Referer': 'https://daylog-phi.vercel.app',
+      'X-Title': 'DayLog'
     },
     body: JSON.stringify({
-      model: 'mistralai/mistral-7b-instruct:free',
+      model: 'meta-llama/llama-3.1-8b-instruct:free',
       messages: [{ role: 'user', content: SYSTEM_PROMPT + '\n\nUser input: ' + text }],
       temperature: 0.1,
       max_tokens: 512
