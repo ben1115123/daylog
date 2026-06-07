@@ -75,7 +75,7 @@ export async function parseInput(text) {
       'X-Title': 'DayLog'
     },
     body: JSON.stringify({
-      model: 'meta-llama/llama-3.1-8b-instruct:free',
+      model: 'meta-llama/llama-3.3-70b-instruct:free',
       messages: [{ role: 'user', content: SYSTEM_PROMPT + '\n\nUser input: ' + text }],
       temperature: 0.1,
       max_tokens: 512
