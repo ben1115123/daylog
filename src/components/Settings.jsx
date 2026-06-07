@@ -7,12 +7,12 @@ import './Settings.css'
 export default function Settings({ showToast, onBack }) {
   const [settings, setSettings] = useState(db.getSettings())
   const [budgets, setBudgets] = useState(db.getBudgets())
-  const [apiKey, setApiKey] = useState(localStorage.getItem('dl_gemini_key') || '')
+  const [apiKey, setApiKey] = useState(localStorage.getItem('dl_openrouter_key') || '')
 
   const saveSettings = () => {
     db.saveSettings(settings)
     db.saveBudgets(budgets)
-    if (apiKey) localStorage.setItem('dl_gemini_key', apiKey)
+    if (apiKey) localStorage.setItem('dl_openrouter_key', apiKey)
     showToast('Settings saved')
   }
 
@@ -106,7 +106,7 @@ export default function Settings({ showToast, onBack }) {
       </div>
 
       <div className="section" style={{ marginTop: 20 }}>
-        <div className="section-label">Gemini API key</div>
+        <div className="section-label">OpenRouter API key</div>
         <div className="card settings-card">
           <div className="setting-row">
             <input
@@ -114,11 +114,11 @@ export default function Settings({ showToast, onBack }) {
               type="password"
               value={apiKey}
               onChange={e => setApiKey(e.target.value)}
-              placeholder="AIza..."
+              placeholder="sk-or-..."
             />
           </div>
         </div>
-        <p className="setting-hint">Free key at aistudio.google.com</p>
+        <p className="setting-hint">Free key at openrouter.ai</p>
       </div>
 
       <div className="section" style={{ marginTop: 20 }}>

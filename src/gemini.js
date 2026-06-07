@@ -1,4 +1,4 @@
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`
+const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions'
 
 const today = () => new Date().toISOString().split('T')[0]
 
@@ -63,22 +63,28 @@ Time inference: "morning" = 09:00, "lunch" = 12:30, "afternoon" = 14:00, "evenin
 Date inference: infer from relative terms like "tomorrow", "next Friday", "this weekend" based on today's date.`
 
 export async function parseInput(text) {
-  if (!import.meta.env.VITE_GEMINI_API_KEY) throw new Error('No API key configured')
+  const apiKey = import.meta.env.VITE_OPENROUTER_API_KEY || localStorage.getItem('dl_openrouter_key')
+  if (!apiKey) throw new Error('No API key configured')
 
-  const res = await fetch(GEMINI_URL, {
+  const res = await fetch(OPENROUTER_URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`
+    },
     body: JSON.stringify({
-      contents: [{ parts: [{ text: SYSTEM_PROMPT + '\n\nUser input: ' + text }] }],
-      generationConfig: { temperature: 0.1, maxOutputTokens: 512 }
+      model: 'mistralai/mistral-7b-instruct:free',
+      messages: [{ role: 'user', content: SYSTEM_PROMPT + '\n\nUser input: ' + text }],
+      temperature: 0.1,
+      max_tokens: 512
     })
   })
 
   if (!res.ok) {
-    throw new Error(`Gemini error: ${res.status}`)
+    throw new Error(`OpenRouter error: ${res.status}`)
   }
   const data = await res.json()
-  const raw = data.candidates?.[0]?.content?.parts?.[0]?.text || ''
+  const raw = data.choices?.[0]?.message?.content || ''
   const clean = raw.replace(/```json|```/g, '').trim()
   return JSON.parse(clean)
 }
