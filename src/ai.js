@@ -83,8 +83,6 @@ export async function parseInput(text) {
   })
 
   if (!res.ok) {
-    const errBody = await res.text()
-    console.error('Anthropic error body:', errBody)
     throw new Error(`Anthropic error: ${res.status}`)
   }
   const data = await res.json()
