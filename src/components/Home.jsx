@@ -18,7 +18,7 @@ export default function Home({ showToast, onLogged }) {
   })
   const textareaRef  = useRef(null)
   const [recording, setRecording] = useState(false)
-  const recorderRef  = useRef(null)
+  const recognitionRef = useRef(null)
 
   const refreshRecent = () => {
     const exp = db.getExpenses().slice(0, 4).map(e => ({ ...e, _type: 'expense' }))
@@ -69,15 +69,26 @@ export default function Home({ showToast, onLogged }) {
     refreshRecent(); onLogged()
   }
 
-  const toggleMic = async () => {
-    if (recording) { recorderRef.current?.stop(); setRecording(false); return }
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-      const rec = new MediaRecorder(stream)
-      recorderRef.current = rec
-      rec.start(); setRecording(true)
-      rec.onstop = () => { stream.getTracks().forEach(t => t.stop()); showToast('Voice captured — edit and send') }
-    } catch { showToast('Mic access denied', 'error') }
+  const toggleMic = () => {
+    if (recording) { recognitionRef.current?.stop(); return }
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
+    if (!SpeechRecognition) { showToast('Voice input not supported', 'error'); return }
+
+    const recognition = new SpeechRecognition()
+    recognition.lang = 'en-MY'
+    recognition.interimResults = false
+    recognition.maxAlternatives = 1
+    recognitionRef.current = recognition
+
+    recognition.onresult = (e) => {
+      setText(e.results[0][0].transcript)
+      showToast('Voice captured — edit and send')
+    }
+    recognition.onerror = () => showToast('Mic access denied', 'error')
+    recognition.onend = () => setRecording(false)
+
+    recognition.start()
+    setRecording(true)
   }
 
   const now = new Date()
