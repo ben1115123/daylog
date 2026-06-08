@@ -1,7 +1,8 @@
 import { useState, useMemo } from 'react'
 import { db } from '../db.js'
 import { EVENT_CATS, formatTime, formatDate } from '../utils.js'
-import { RepeatIcon } from '../Icons.jsx'
+import { RepeatIcon, PlusIcon } from '../Icons.jsx'
+import Sheet from './Sheet.jsx'
 import './Calendar.css'
 
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December']
@@ -112,6 +113,105 @@ function EditEventForm({ ev, onSave, onCancel }) {
   )
 }
 
+/* ── Add event form (bottom sheet) ───────────────────── */
+function AddEventForm({ defaultDate, onSave, onCancel }) {
+  const [form, setForm] = useState({
+    title: '', date: defaultDate || '', time: '', category: '', notes: '', recurring: '',
+  })
+
+  const canSave = form.title.trim() && form.date
+
+  return (
+    <>
+      <div>
+        <div className="sheet-field-label">Title</div>
+        <input
+          className="sheet-input"
+          placeholder="Event title"
+          value={form.title}
+          onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
+        />
+      </div>
+      <div className="sheet-row">
+        <div>
+          <div className="sheet-field-label">Date</div>
+          <input
+            className="sheet-input"
+            type="date"
+            value={form.date}
+            onChange={e => setForm(f => ({ ...f, date: e.target.value }))}
+            style={{ colorScheme: 'dark' }}
+          />
+        </div>
+        <div>
+          <div className="sheet-field-label">Time (optional)</div>
+          <input
+            className="sheet-input"
+            type="time"
+            value={form.time}
+            onChange={e => setForm(f => ({ ...f, time: e.target.value }))}
+            style={{ colorScheme: 'dark' }}
+          />
+        </div>
+      </div>
+      <div>
+        <div className="sheet-field-label">Category</div>
+        <select
+          className="sheet-select"
+          value={form.category}
+          onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
+        >
+          <option value="">No category</option>
+          {Object.entries(EVENT_CATS).map(([k, v]) => (
+            <option key={k} value={k}>{v.label}</option>
+          ))}
+        </select>
+      </div>
+      <div>
+        <div className="sheet-field-label">Notes (optional)</div>
+        <input
+          className="sheet-input"
+          placeholder="Brief notes"
+          value={form.notes}
+          onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
+        />
+      </div>
+      <div>
+        <div className="sheet-field-label">Repeat</div>
+        <div className="sheet-toggle-row">
+          {[['', 'None'], ['daily', 'Daily'], ['weekly', 'Weekly'], ['monthly', 'Monthly']].map(([val, label]) => (
+            <button
+              key={val}
+              className={`sheet-toggle ${form.recurring === val ? 'active' : ''}`}
+              onClick={() => setForm(f => ({ ...f, recurring: val }))}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="sheet-actions">
+        <button className="sheet-cancel" onClick={onCancel}>Cancel</button>
+        <button
+          className="sheet-save"
+          disabled={!canSave}
+          style={{ opacity: canSave ? 1 : 0.5 }}
+          onClick={() => onSave({
+            title: form.title.trim(),
+            date: form.date,
+            time: form.time || null,
+            category: form.category || null,
+            notes: form.notes.trim() || null,
+            recurring: form.recurring || null,
+          })}
+        >
+          Save
+        </button>
+      </div>
+    </>
+  )
+}
+
 export default function Calendar({ showToast }) {
   const now = new Date()
   const [year, setYear]         = useState(now.getFullYear())
@@ -119,6 +219,7 @@ export default function Calendar({ showToast }) {
   const [selected, setSelected] = useState(now.toISOString().split('T')[0])
   const [calView, setCalView]   = useState('grid')
   const [editId, setEditId]     = useState(null)
+  const [addOpen, setAddOpen]   = useState(false)
 
   const todayStr = now.toISOString().split('T')[0]
 
@@ -150,6 +251,12 @@ export default function Calendar({ showToast }) {
     db.updateEvent(id, updates)
     setEditId(null)
     showToast('Event updated')
+  }
+
+  const handleAddEvent = (event) => {
+    db.addEvent(event)
+    setAddOpen(false)
+    showToast('Event added')
   }
 
   const exportICS = (event) => {
@@ -239,10 +346,15 @@ export default function Calendar({ showToast }) {
             <div className="screen-label">Schedule</div>
             <div className="screen-heading">Calendar</div>
           </div>
-          <div className="month-nav-cal">
-            <button onClick={prevMonth} aria-label="Prev"><ChevL /></button>
-            <span>{MONTHS[month].slice(0,3)} {year}</span>
-            <button onClick={nextMonth} aria-label="Next"><ChevR /></button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <button className="add-btn" onClick={() => setAddOpen(true)} aria-label="Add event">
+              <PlusIcon size={18} />
+            </button>
+            <div className="month-nav-cal">
+              <button onClick={prevMonth} aria-label="Prev"><ChevL /></button>
+              <span>{MONTHS[month].slice(0,3)} {year}</span>
+              <button onClick={nextMonth} aria-label="Next"><ChevR /></button>
+            </div>
           </div>
         </div>
         <div className="cal-view-tabs">
@@ -315,6 +427,16 @@ export default function Calendar({ showToast }) {
             ))
           )}
         </div>
+      )}
+
+      {addOpen && (
+        <Sheet title="New event" onClose={() => setAddOpen(false)}>
+          <AddEventForm
+            defaultDate={selected || todayStr}
+            onSave={handleAddEvent}
+            onCancel={() => setAddOpen(false)}
+          />
+        </Sheet>
       )}
     </div>
   )

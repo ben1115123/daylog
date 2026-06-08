@@ -213,6 +213,13 @@ export const XIcon = ({ size = 16 }) => (
   </svg>
 )
 
+export const PlusIcon = ({ size = 18 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" {...s} strokeWidth="1.8">
+    <line x1="12" y1="5" x2="12" y2="19"/>
+    <line x1="5" y1="12" x2="19" y2="12"/>
+  </svg>
+)
+
 export const RepeatIcon = ({ size = 12 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" {...s} strokeWidth="2">
     <polyline points="17 1 21 5 17 9"/>

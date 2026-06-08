@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from 'react'
 import { db } from '../db.js'
 import { CAT_META, CATEGORIES, formatRM, formatDate, monthLabel } from '../utils.js'
-import { CAT_ICONS, SearchIcon, XIcon } from '../Icons.jsx'
+import { CAT_ICONS, SearchIcon, XIcon, PlusIcon } from '../Icons.jsx'
+import Sheet from './Sheet.jsx'
 import './Spending.css'
 
 /* ── SVG donut chart ─────────────────────────────────── */
@@ -133,6 +134,80 @@ function EditExpenseForm({ expense, onSave, onCancel }) {
   )
 }
 
+/* ── Add expense form (bottom sheet) ─────────────────── */
+function AddExpenseForm({ defaultDate, onSave, onCancel }) {
+  const [form, setForm] = useState({
+    description: '', amount: '', category: 'food', date: defaultDate || '',
+  })
+
+  const canSave = form.description.trim() && form.amount && form.date
+
+  return (
+    <>
+      <div>
+        <div className="sheet-field-label">Description</div>
+        <input
+          className="sheet-input"
+          placeholder="What did you spend on?"
+          value={form.description}
+          onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
+        />
+      </div>
+      <div className="sheet-row">
+        <div>
+          <div className="sheet-field-label">Amount (RM)</div>
+          <input
+            className="sheet-input"
+            type="number"
+            placeholder="0"
+            value={form.amount}
+            onChange={e => setForm(f => ({ ...f, amount: e.target.value }))}
+            inputMode="decimal"
+          />
+        </div>
+        <div>
+          <div className="sheet-field-label">Date</div>
+          <input
+            className="sheet-input"
+            type="date"
+            value={form.date}
+            onChange={e => setForm(f => ({ ...f, date: e.target.value }))}
+            style={{ colorScheme: 'dark' }}
+          />
+        </div>
+      </div>
+      <div>
+        <div className="sheet-field-label">Category</div>
+        <select
+          className="sheet-select"
+          value={form.category}
+          onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
+        >
+          {CATEGORIES.map(c => (
+            <option key={c} value={c}>{CAT_META[c]?.label}</option>
+          ))}
+        </select>
+      </div>
+      <div className="sheet-actions">
+        <button className="sheet-cancel" onClick={onCancel}>Cancel</button>
+        <button
+          className="sheet-save"
+          disabled={!canSave}
+          style={{ opacity: canSave ? 1 : 0.5 }}
+          onClick={() => onSave({
+            description: form.description.trim(),
+            amount: parseFloat(form.amount) || 0,
+            category: form.category,
+            date: form.date,
+          })}
+        >
+          Save
+        </button>
+      </div>
+    </>
+  )
+}
+
 /* ── Main component ──────────────────────────────────── */
 export default function Spending({ showToast }) {
   const now = new Date()
@@ -143,6 +218,7 @@ export default function Spending({ showToast }) {
   const [editId, setEditId]     = useState(null)
   const [searchOpen, setSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const [addOpen, setAddOpen] = useState(false)
   const searchRef = useRef(null)
 
   useEffect(() => {
@@ -172,6 +248,12 @@ export default function Spending({ showToast }) {
     db.updateExpense(id, updates)
     setEditId(null)
     showToast('Updated')
+  }
+
+  const handleAddExpense = (expense) => {
+    db.addExpense(expense)
+    setAddOpen(false)
+    showToast('Expense added')
   }
 
   /* ── Insight chips ───────────────────────────────── */
@@ -234,6 +316,9 @@ export default function Spending({ showToast }) {
             <div className="screen-heading">Spending</div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <button className="add-btn" onClick={() => setAddOpen(true)} aria-label="Add expense">
+              <PlusIcon size={18} />
+            </button>
             <button
               className="search-toggle"
               onClick={() => { setSearchOpen(o => !o); setSearchQuery('') }}
@@ -513,6 +598,16 @@ export default function Spending({ showToast }) {
             </div>
           </div>
         </>
+      )}
+
+      {addOpen && (
+        <Sheet title="New expense" onClose={() => setAddOpen(false)}>
+          <AddExpenseForm
+            defaultDate={new Date().toISOString().split('T')[0]}
+            onSave={handleAddExpense}
+            onCancel={() => setAddOpen(false)}
+          />
+        </Sheet>
       )}
     </div>
   )
