@@ -219,8 +219,9 @@ export default function Spending({ showToast }) {
   const [searchOpen, setSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [addOpen, setAddOpen]   = useState(false)
-  const [expenses, setExpenses] = useState([])
+  const [expenses, setExpenses]       = useState([])
   const [allExpenses, setAllExpenses] = useState([])
+  const [recurring, setRecurring]     = useState([])
   const [loadingData, setLoadingData] = useState(true)
   const searchRef = useRef(null)
 
@@ -232,12 +233,14 @@ export default function Spending({ showToast }) {
   const settings = db.getSettings()
 
   const doRefresh = async (y, m) => {
-    const [monthExp, allExp] = await Promise.all([
+    const [monthExp, allExp, rec] = await Promise.all([
       db.getMonthExpenses(y, m),
       db.getExpenses(),
+      db.getRecurring(),
     ])
     setExpenses(monthExp)
     setAllExpenses(allExp)
+    setRecurring(rec)
     setIncome(db.getIncome(y, m))
     setLoadingData(false)
   }
@@ -297,6 +300,15 @@ export default function Spending({ showToast }) {
   const thisWeekTotal = allExpenses.filter(e => e.date >= thisWeekStr).reduce((s, e) => s + (e.amount || 0), 0)
   const lastWeekTotal = allExpenses.filter(e => e.date >= lwStartStr && e.date <= lwEndStr).reduce((s, e) => s + (e.amount || 0), 0)
   const weekDiff = thisWeekTotal - lastWeekTotal
+
+  /* ── Committed (recurring) ──────────────────────── */
+  const activeRecurring = recurring.filter(r => r.active)
+  const committedTotal = activeRecurring.reduce((s, r) => s + (r.amount || 0), 0)
+  const committedByCat = useMemo(() => {
+    const result = {}
+    activeRecurring.forEach(r => { result[r.category] = (result[r.category] || 0) + (r.amount || 0) })
+    return result
+  }, [recurring])
 
   /* ── Donut data ──────────────────────────────────── */
   const donutCats = CATEGORIES.map(cat => ({
@@ -442,6 +454,12 @@ export default function Spending({ showToast }) {
                 <span>{pct}% of {formatRM(settings.totalBudget)} budget</span>
                 <span>{expenses.length} {expenses.length === 1 ? 'entry' : 'entries'}</span>
               </div>
+              {committedTotal > 0 && (
+                <div className="committed-row">
+                  <span className="committed-label">Committed</span>
+                  <span className="committed-val">{formatRM(committedTotal)}/mo</span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -479,10 +497,14 @@ export default function Spending({ showToast }) {
                 <div className="donut-legend">
                   {donutCats.map(c => {
                     const pctCat = Math.round((c.amount / total) * 100)
+                    const committed = committedByCat[c.cat]
                     return (
                       <div key={c.cat} className="legend-row">
                         <span className="legend-dot" style={{ background: c.color }}/>
                         <span className="legend-name">{c.label}</span>
+                        {committed > 0 && (
+                          <span className="legend-committed">{formatRM(committed)}</span>
+                        )}
                         <span className="legend-amount">{formatRM(c.amount)}</span>
                         <span className="legend-pct">{pctCat}%</span>
                       </div>

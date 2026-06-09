@@ -9,27 +9,25 @@ import Toast from './components/Toast.jsx'
 import { NavLogIcon, NavChartIcon, NavCalendarIcon, NavInsightsIcon } from './Icons.jsx'
 import { db } from './db.js'
 import supabase from './supabase.js'
-import { PRESETS } from './utils.js'
+import { formatRM } from './utils.js'
 import './App.css'
 
 async function checkRecurring(showToast) {
   const today = new Date()
   const todayStr   = today.toISOString().split('T')[0]
   const dayOfMonth = today.getDate()
-  const dayOfWeek  = today.getDay()
-  const allExpenses = await db.getExpenses()
-  const existing    = allExpenses.filter(e => e.date === todayStr)
+  const monthPrefix = todayStr.slice(0, 7)
 
-  const due = PRESETS.filter(p => p.recurring && p.amount && p.isExpense).filter(preset => {
-    if (existing.some(e => e.description === preset.label && e.category === preset.category)) return false
-    if (preset.recurring === 'monthly') return dayOfMonth === (preset.recurringDay || 1)
-    if (preset.recurring === 'weekly')  return dayOfWeek  === (preset.recurringDay ?? 1)
-    return false
-  })
+  const [recurring, allExpenses] = await Promise.all([db.getRecurring(), db.getExpenses()])
+  const thisMonth = allExpenses.filter(e => e.date?.startsWith(monthPrefix))
 
-  for (const preset of due) {
-    await db.addExpense({ description: preset.label, amount: preset.amount, category: preset.category, date: todayStr })
-    showToast(`Auto-logged: ${preset.label}`)
+  for (const item of recurring.filter(r => r.active && r.day_of_month === dayOfMonth)) {
+    const alreadyLogged = thisMonth.some(
+      e => e.description === item.description && e.category === item.category
+    )
+    if (alreadyLogged) continue
+    await db.addExpense({ description: item.description, amount: item.amount, category: item.category, date: todayStr })
+    showToast(`Auto-logged: ${item.description} ${formatRM(item.amount)}`)
   }
 }
 
@@ -101,6 +99,7 @@ export default function App() {
 
   useEffect(() => {
     migrateFromLocalStorage(showToast)
+    db.seedRecurring()
   }, [showToast])
 
   useEffect(() => {

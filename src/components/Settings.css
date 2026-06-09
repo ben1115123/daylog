@@ -114,3 +114,97 @@
 
 .data-btn.danger       { color: var(--red); opacity: 0.6; }
 .data-btn.danger:hover { opacity: 1; }
+
+/* ── Recurring expenses ────────────────────────────── */
+.recurring-committed-total {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text3);
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.recurring-committed-total span {
+  color: var(--text2);
+  font-weight: 500;
+}
+
+.recurring-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 13px 16px;
+  min-height: 52px;
+  transition: opacity 0.2s ease;
+}
+.recurring-row.bordered { border-bottom: 0.5px solid var(--border); }
+.recurring-row.inactive { opacity: 0.38; }
+
+.recurring-icon-wrap {
+  width: 30px; height: 30px;
+  border-radius: var(--radius-xs);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+
+.recurring-body { flex: 1; min-width: 0; }
+
+.recurring-title {
+  font-size: 13px;
+  color: var(--text);
+  font-weight: 400;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.recurring-sub {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text3);
+  margin-top: 2px;
+  letter-spacing: 0.03em;
+}
+
+.recurring-amount {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--text2);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+  flex-shrink: 0;
+}
+
+.recurring-toggle-btn {
+  min-width: 36px; min-height: 44px;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text3);
+  border-radius: 6px;
+  transition: color 0.15s;
+  flex-shrink: 0;
+}
+.recurring-toggle-btn:hover        { color: var(--red); }
+.recurring-toggle-btn.inactive:hover { color: var(--positive); }
+
+.add-recurring-btn {
+  width: 100%;
+  background: none;
+  border: 0.5px dashed var(--border2);
+  border-radius: var(--radius-sm);
+  color: var(--text3);
+  font-family: var(--font-body, var(--font-sans));
+  font-size: 13px;
+  padding: 13px 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  margin-top: 8px;
+  min-height: 44px;
+  transition: color 0.15s, border-color 0.15s;
+}
+.add-recurring-btn:hover {
+  color: var(--text2);
+  border-color: rgba(255,255,255,0.22);
+}

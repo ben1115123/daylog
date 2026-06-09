@@ -1,8 +1,9 @@
 import supabase from './supabase.js'
 
 const CACHE = {
-  expenses: 'dl_cache_expenses',
-  events:   'dl_cache_events',
+  expenses:  'dl_cache_expenses',
+  events:    'dl_cache_events',
+  recurring: 'dl_cache_recurring',
 }
 
 const LS = {
@@ -248,6 +249,76 @@ export const db = {
     const today = new Date().toISOString().split('T')[0]
     const base  = await db.getEvents()
     return expandEvents(base, today).filter(e => e.date >= today).slice(0, limit)
+  },
+
+  /* ── Recurring expenses ────────────────────────────── */
+  async getRecurring() {
+    try {
+      const { data, error } = await supabase
+        .from('recurring_expenses')
+        .select('*')
+        .order('day_of_month', { ascending: true })
+      if (error) throw error
+      lsSave(CACHE.recurring, data)
+      setOffline(false)
+      return data
+    } catch {
+      setOffline(true)
+      return lsLoad(CACHE.recurring, [])
+    }
+  },
+
+  async addRecurring(item) {
+    try {
+      const { data, error } = await supabase
+        .from('recurring_expenses')
+        .insert({ ...item, active: true })
+        .select()
+        .single()
+      if (error) throw error
+      const cache = lsLoad(CACHE.recurring, [])
+      lsSave(CACHE.recurring, [...cache, data])
+      return data
+    } catch {
+      setOffline(true)
+      const fallback = { ...item, active: true, id: Date.now() + Math.random(), created_at: new Date().toISOString() }
+      const cache = lsLoad(CACHE.recurring, [])
+      lsSave(CACHE.recurring, [...cache, fallback])
+      return fallback
+    }
+  },
+
+  async updateRecurring(id, updates) {
+    try {
+      const { error } = await supabase.from('recurring_expenses').update(updates).eq('id', id)
+      if (error) throw error
+    } catch {
+      setOffline(true)
+    }
+    const cache = lsLoad(CACHE.recurring, [])
+    const idx = cache.findIndex(r => r.id === id)
+    if (idx !== -1) { cache[idx] = { ...cache[idx], ...updates }; lsSave(CACHE.recurring, cache) }
+  },
+
+  async deleteRecurring(id) {
+    return db.updateRecurring(id, { active: false })
+  },
+
+  async seedRecurring() {
+    if (localStorage.getItem('dl_recurring_seeded')) return
+    try {
+      const { data } = await supabase.from('recurring_expenses').select('id').limit(1)
+      if (data?.length) { localStorage.setItem('dl_recurring_seeded', 'true'); return }
+      const defaults = [
+        { description: 'Rental',           amount: 1000,  category: 'rental',       day_of_month: 1, active: true },
+        { description: 'Gym',              amount: 155,   category: 'sports',       day_of_month: 1, active: true },
+        { description: 'TradingView',      amount: 38,    category: 'subscription', day_of_month: 1, active: true },
+        { description: 'Subscriptions',    amount: 93.50, category: 'subscription', day_of_month: 1, active: true },
+        { description: 'Seasonal Parking', amount: 120,   category: 'transport',    day_of_month: 1, active: true },
+      ]
+      const { error } = await supabase.from('recurring_expenses').insert(defaults)
+      if (!error) localStorage.setItem('dl_recurring_seeded', 'true')
+    } catch {}
   },
 
   /* ── Budgets / Settings (localStorage) ─────────────── */
