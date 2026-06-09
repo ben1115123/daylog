@@ -217,9 +217,10 @@ src/
 
 ## Architecture
 
-- **expenses / events** → Supabase (`expenses`, `events` tables). All db methods are async.
-- **settings / budgets / income** → localStorage only. Synchronous, no change.
-- **Offline fallback** → after each fetch, cache to `dl_cache_expenses` / `dl_cache_events`. If Supabase fails, use cache silently. Offline state broadcast via `daylog:offline` window event; App.jsx shows `.offline-badge`.
+- **expenses / events / income** → Supabase (`expenses`, `events`, `income`, `recurring_income` tables). All db methods are async.
+- **settings / budgets** → localStorage only. Synchronous, no change.
+- **Income categories**: `salary` (#58a6ff) and `trading` (#4ade80) — separate from expense CATEGORIES, defined in `INCOME_CATEGORIES` in utils.js.
+- **Offline fallback** → after each fetch, cache to `dl_cache_expenses` / `dl_cache_events` / `dl_cache_income` / `dl_cache_recurring_income`. If Supabase fails, use cache silently. Offline state broadcast via `daylog:offline` window event; App.jsx shows `.offline-badge`.
 - **One-time migration** → on app load, if `dl_expenses` / `dl_events` keys exist in localStorage, bulk insert to Supabase, then clear old keys.
 - **Schema** → `supabase-schema.sql` (run once in Supabase Dashboard → SQL Editor).
 - **Recurring event expansion** → `expandEvents(baseEvents)` is a pure sync function; Calendar.jsx keeps base events in state and computes expanded view via `useMemo`.

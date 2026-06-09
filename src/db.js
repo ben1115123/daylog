@@ -1,15 +1,16 @@
 import supabase from './supabase.js'
 
 const CACHE = {
-  expenses:  'dl_cache_expenses',
-  events:    'dl_cache_events',
-  recurring: 'dl_cache_recurring',
+  expenses:         'dl_cache_expenses',
+  events:           'dl_cache_events',
+  recurring:        'dl_cache_recurring',
+  income:           'dl_cache_income',
+  recurring_income: 'dl_cache_recurring_income',
 }
 
 const LS = {
   budgets:  'dl_budgets',
   settings: 'dl_settings',
-  income:   'dl_income',
 }
 
 const DEFAULT_BUDGETS = {
@@ -330,13 +331,143 @@ export const db = {
   getSettings:  () => ({ ...DEFAULT_SETTINGS, ...lsLoad(LS.settings, {}) }),
   saveSettings: (v) => lsSave(LS.settings, v),
 
-  /* ── Income (localStorage) ──────────────────────────── */
-  getAllIncome:  () => lsLoad(LS.income, {}),
-  getIncome(year, month)          { return db.getAllIncome()[monthKey(year, month)] || 0 },
-  saveIncome(year, month, amount) {
-    const all = db.getAllIncome()
-    all[monthKey(year, month)] = amount
-    lsSave(LS.income, all)
+  /* ── Income ──────────────────────────────────────────── */
+  async getIncome() {
+    try {
+      const { data, error } = await supabase
+        .from('income')
+        .select('*')
+        .order('date', { ascending: false })
+      if (error) throw error
+      lsSave(CACHE.income, data)
+      setOffline(false)
+      return data
+    } catch {
+      setOffline(true)
+      return lsLoad(CACHE.income, [])
+    }
+  },
+
+  async addIncome(item) {
+    const row = {
+      description: item.description,
+      amount:      item.amount,
+      category:    item.category,
+      date:        item.date,
+    }
+    try {
+      const { data, error } = await supabase
+        .from('income')
+        .insert(row)
+        .select()
+        .single()
+      if (error) throw error
+      const cache = lsLoad(CACHE.income, [])
+      lsSave(CACHE.income, [data, ...cache])
+      return data
+    } catch {
+      setOffline(true)
+      const fallback = { ...row, id: Date.now() + Math.random(), created_at: new Date().toISOString() }
+      const cache = lsLoad(CACHE.income, [])
+      lsSave(CACHE.income, [fallback, ...cache])
+      return fallback
+    }
+  },
+
+  async deleteIncome(id) {
+    try {
+      const { error } = await supabase.from('income').delete().eq('id', id)
+      if (error) throw error
+    } catch {
+      setOffline(true)
+    }
+    lsSave(CACHE.income, lsLoad(CACHE.income, []).filter(e => e.id !== id))
+  },
+
+  async getMonthIncome(year, month) {
+    const prefix = monthKey(year, month)
+    try {
+      const { data, error } = await supabase
+        .from('income')
+        .select('*')
+        .gte('date', `${prefix}-01`)
+        .lte('date', `${prefix}-31`)
+        .order('date', { ascending: false })
+      if (error) throw error
+      return data
+    } catch {
+      setOffline(true)
+      return lsLoad(CACHE.income, []).filter(e => e.date?.startsWith(prefix))
+    }
+  },
+
+  /* ── Recurring income ────────────────────────────────── */
+  async getRecurringIncome() {
+    try {
+      const { data, error } = await supabase
+        .from('recurring_income')
+        .select('*')
+        .order('day_of_month', { ascending: true })
+      if (error) throw error
+      lsSave(CACHE.recurring_income, data)
+      setOffline(false)
+      return data
+    } catch {
+      setOffline(true)
+      return lsLoad(CACHE.recurring_income, [])
+    }
+  },
+
+  async addRecurringIncome(item) {
+    try {
+      const { data, error } = await supabase
+        .from('recurring_income')
+        .insert({ ...item, active: true })
+        .select()
+        .single()
+      if (error) throw error
+      const cache = lsLoad(CACHE.recurring_income, [])
+      lsSave(CACHE.recurring_income, [...cache, data])
+      return data
+    } catch {
+      setOffline(true)
+      const fallback = { ...item, active: true, id: Date.now() + Math.random(), created_at: new Date().toISOString() }
+      const cache = lsLoad(CACHE.recurring_income, [])
+      lsSave(CACHE.recurring_income, [...cache, fallback])
+      return fallback
+    }
+  },
+
+  async updateRecurringIncome(id, updates) {
+    try {
+      const { error } = await supabase.from('recurring_income').update(updates).eq('id', id)
+      if (error) throw error
+    } catch {
+      setOffline(true)
+    }
+    const cache = lsLoad(CACHE.recurring_income, [])
+    const idx = cache.findIndex(r => r.id === id)
+    if (idx !== -1) { cache[idx] = { ...cache[idx], ...updates }; lsSave(CACHE.recurring_income, cache) }
+  },
+
+  async deleteRecurringIncome(id) {
+    return db.updateRecurringIncome(id, { active: false })
+  },
+
+  async seedRecurringIncome() {
+    if (localStorage.getItem('dl_recurring_income_seeded')) return
+    try {
+      const { count, error: countErr } = await supabase
+        .from('recurring_income')
+        .select('*', { count: 'exact', head: true })
+      if (countErr) return
+      if (count > 0) { localStorage.setItem('dl_recurring_income_seeded', 'true'); return }
+      const defaults = [
+        { description: 'Salary', amount: 3100, category: 'salary', day_of_month: 1, active: true },
+      ]
+      const { error } = await supabase.from('recurring_income').insert(defaults)
+      if (!error) localStorage.setItem('dl_recurring_income_seeded', 'true')
+    } catch {}
   },
 }
 

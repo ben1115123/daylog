@@ -18,13 +18,15 @@ export default function Home({ showToast, onLogged }) {
   const recognitionRef = useRef(null)
 
   const refreshRecent = useCallback(async () => {
-    const [exp, evt] = await Promise.all([
+    const [exp, evt, inc] = await Promise.all([
       db.getExpenses(),
       db.getUpcomingEvents(3),
+      db.getIncome(),
     ])
     const items = [
       ...exp.slice(0, 4).map(e => ({ ...e, _type: 'expense' })),
       ...evt.map(e => ({ ...e, _type: 'event' })),
+      ...inc.slice(0, 2).map(e => ({ ...e, _type: 'income' })),
     ]
       .sort((a, b) => new Date(b.created_at || b.createdAt) - new Date(a.created_at || a.createdAt))
       .slice(0, 6)
@@ -44,10 +46,12 @@ export default function Home({ showToast, onLogged }) {
       let logged = []
       if (parsed.expense) { await db.addExpense(parsed.expense); logged.push('expense') }
       if (parsed.event)   { await db.addEvent(parsed.event);     logged.push('event') }
+      if (parsed.income)  { await db.addIncome(parsed.income);   logged.push('income') }
       if (logged.length === 0) { showToast('Could not parse that', 'error'); setLoading(false); return }
       showToast(
         logged.length === 2 ? 'Logged expense + event' :
-        logged[0] === 'expense' ? 'Expense logged' : 'Event added'
+        logged[0] === 'expense' ? 'Expense logged' :
+        logged[0] === 'income'  ? 'Income logged' : 'Event added'
       )
       await refreshRecent(); onLogged()
     } catch { showToast('Parse failed — check API key', 'error') }
@@ -185,6 +189,23 @@ export default function Home({ showToast, onLogged }) {
           <div className="card">
             {recent.map((item, i) => {
               const isLast = i === recent.length - 1
+              if (item._type === 'income') {
+                const meta = CAT_META[item.category]
+                return (
+                  <div key={item.id} className={`entry-row ${isLast ? '' : 'bordered'}`}>
+                    <span className="entry-icon-wrap" style={{ color: meta?.color, background: (meta?.color || '#fff') + '18' }}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                      </svg>
+                    </span>
+                    <div className="entry-body">
+                      <div className="entry-title">{item.description}</div>
+                      <div className="entry-sub">{meta?.label} · {formatDate(item.date)}</div>
+                    </div>
+                    <div className="entry-amount" style={{ color: meta?.color }}>+{formatRM(item.amount)}</div>
+                  </div>
+                )
+              }
               if (item._type === 'expense') {
                 const meta = CAT_META[item.category]
                 const Icon = CAT_ICONS[item.category]

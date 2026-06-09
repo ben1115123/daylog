@@ -65,7 +65,7 @@ function SavingsBarChart({ months }) {
         return (
           <g key={i}>
             <rect x={x} y={y} width={barW} height={Math.max(barH, 1)} rx="3"
-              fill={isPos ? 'var(--positive)' : 'var(--red)'} opacity="0.75"/>
+              fill={isPos ? 'var(--accent)' : 'var(--red)'} opacity="0.75"/>
             <text x={x + barW / 2} y={H + 16} textAnchor="middle"
               style={{ fill: 'var(--text3)', fontFamily: 'JetBrains Mono', fontSize: 9 }}>
               {monthLabel(m.year, m.month)}
@@ -139,7 +139,6 @@ function AddExpenseForm({ defaultDate, onSave, onCancel }) {
   const [form, setForm] = useState({
     description: '', amount: '', category: 'food', date: defaultDate || '',
   })
-
   const canSave = form.description.trim() && form.amount && form.date
 
   return (
@@ -208,21 +207,95 @@ function AddExpenseForm({ defaultDate, onSave, onCancel }) {
   )
 }
 
+/* ── Add income form (bottom sheet) ──────────────────── */
+function AddIncomeForm({ defaultDate, onSave, onCancel }) {
+  const [form, setForm] = useState({
+    description: '', amount: '', category: 'salary', date: defaultDate || '',
+  })
+  const canSave = form.description.trim() && form.amount && form.date
+
+  return (
+    <>
+      <div>
+        <div className="sheet-field-label">Description</div>
+        <input
+          className="sheet-input"
+          placeholder="e.g. Salary, Trading profit"
+          value={form.description}
+          onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
+        />
+      </div>
+      <div className="sheet-row">
+        <div>
+          <div className="sheet-field-label">Amount (RM)</div>
+          <input
+            className="sheet-input"
+            type="number"
+            placeholder="0"
+            value={form.amount}
+            onChange={e => setForm(f => ({ ...f, amount: e.target.value }))}
+            inputMode="decimal"
+          />
+        </div>
+        <div>
+          <div className="sheet-field-label">Date</div>
+          <input
+            className="sheet-input"
+            type="date"
+            value={form.date}
+            onChange={e => setForm(f => ({ ...f, date: e.target.value }))}
+            style={{ colorScheme: 'dark' }}
+          />
+        </div>
+      </div>
+      <div>
+        <div className="sheet-field-label">Category</div>
+        <select
+          className="sheet-select"
+          value={form.category}
+          onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
+        >
+          <option value="salary">Salary</option>
+          <option value="trading">Trading</option>
+        </select>
+      </div>
+      <div className="sheet-actions">
+        <button className="sheet-cancel" onClick={onCancel}>Cancel</button>
+        <button
+          className="sheet-save"
+          disabled={!canSave}
+          style={{ opacity: canSave ? 1 : 0.5 }}
+          onClick={() => onSave({
+            description: form.description.trim(),
+            amount: parseFloat(form.amount) || 0,
+            category: form.category,
+            date: form.date,
+          })}
+        >
+          Save
+        </button>
+      </div>
+    </>
+  )
+}
+
 /* ── Main component ──────────────────────────────────── */
 export default function Spending({ showToast }) {
   const now = new Date()
-  const [year, setYear]         = useState(now.getFullYear())
-  const [month, setMonth]       = useState(now.getMonth())
-  const [view, setView]         = useState('spending')
-  const [income, setIncome]     = useState(0)
-  const [editId, setEditId]     = useState(null)
-  const [searchOpen, setSearchOpen] = useState(false)
+  const [year, setYear]           = useState(now.getFullYear())
+  const [month, setMonth]         = useState(now.getMonth())
+  const [view, setView]           = useState('spending')
+  const [editId, setEditId]       = useState(null)
+  const [searchOpen, setSearchOpen]   = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
-  const [addOpen, setAddOpen]   = useState(false)
-  const [expenses, setExpenses]       = useState([])
-  const [allExpenses, setAllExpenses] = useState([])
-  const [recurring, setRecurring]     = useState([])
-  const [loadingData, setLoadingData] = useState(true)
+  const [addOpen, setAddOpen]         = useState(false)
+  const [addIncomeOpen, setAddIncomeOpen] = useState(false)
+  const [expenses, setExpenses]         = useState([])
+  const [allExpenses, setAllExpenses]   = useState([])
+  const [recurring, setRecurring]       = useState([])
+  const [monthIncome, setMonthIncome]   = useState([])
+  const [allIncome, setAllIncome]       = useState([])
+  const [loadingData, setLoadingData]   = useState(true)
   const searchRef = useRef(null)
 
   useEffect(() => {
@@ -233,15 +306,18 @@ export default function Spending({ showToast }) {
   const settings = db.getSettings()
 
   const doRefresh = async (y, m) => {
-    const [monthExp, allExp, rec] = await Promise.all([
+    const [monthExp, allExp, rec, mInc, aInc] = await Promise.all([
       db.getMonthExpenses(y, m),
       db.getExpenses(),
       db.getRecurring(),
+      db.getMonthIncome(y, m),
+      db.getIncome(),
     ])
     setExpenses(monthExp)
     setAllExpenses(allExp)
     setRecurring(rec)
-    setIncome(db.getIncome(y, m))
+    setMonthIncome(mInc)
+    setAllIncome(aInc)
     setLoadingData(false)
   }
 
@@ -281,6 +357,13 @@ export default function Spending({ showToast }) {
     setAddOpen(false)
     await doRefresh(year, month)
     showToast('Expense added')
+  }
+
+  const handleAddIncome = async (income) => {
+    await db.addIncome(income)
+    setAddIncomeOpen(false)
+    await doRefresh(year, month)
+    showToast('Income logged')
   }
 
   /* ── Insight chips ───────────────────────────────── */
@@ -325,19 +408,28 @@ export default function Spending({ showToast }) {
     : expenses
 
   /* ── Savings data ────────────────────────────────── */
-  const saved = income - total
-  const savingsRate = income > 0 ? Math.round((saved / income) * 100) : 0
-  const recentMonths = useMemo(() => computeRecentMonths(allExpenses, 6), [allExpenses])
-  const allIncome = db.getAllIncome()
-  const savingsHistory = recentMonths.map(m => ({
-    ...m, income: allIncome[m.key] || 0, saved: (allIncome[m.key] || 0) - m.total,
-  }))
-  const runningTotal = savingsHistory.reduce((s, m) => s + Math.max(0, m.saved), 0)
+  const incomeTotal  = monthIncome.reduce((s, i) => s + (i.amount || 0), 0)
+  const saved        = incomeTotal - total
+  const savingsRate  = incomeTotal > 0 ? Math.round((saved / incomeTotal) * 100) : 0
 
-  const handleSaveIncome = (val) => {
-    const n = parseFloat(val)
-    if (!isNaN(n)) { db.saveIncome(year, month, n); setIncome(n) }
-  }
+  const incomeByMonth = useMemo(() => {
+    const result = {}
+    allIncome.forEach(inc => {
+      const prefix = inc.date?.slice(0, 7)
+      if (prefix) result[prefix] = (result[prefix] || 0) + (inc.amount || 0)
+    })
+    return result
+  }, [allIncome])
+
+  const recentMonths = useMemo(() => computeRecentMonths(allExpenses, 6), [allExpenses])
+
+  const savingsHistory = useMemo(() =>
+    recentMonths.map(m => ({
+      ...m, income: incomeByMonth[m.key] || 0, saved: (incomeByMonth[m.key] || 0) - m.total,
+    })),
+    [recentMonths, incomeByMonth]
+  )
+  const runningTotal = savingsHistory.reduce((s, m) => s + Math.max(0, m.saved), 0)
 
   const ChevL = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
   const ChevR = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
@@ -442,7 +534,7 @@ export default function Spending({ showToast }) {
                 </div>
                 <div style={{ textAlign: 'right' }}>
                   <div className="budget-label">Remaining</div>
-                  <div className="budget-total" style={{ color: remaining < 0 ? 'var(--red)' : 'var(--positive)' }}>
+                  <div className="budget-total" style={{ color: remaining < 0 ? 'var(--red)' : 'var(--accent)' }}>
                     {formatRM(Math.abs(remaining))}
                   </div>
                 </div>
@@ -478,7 +570,7 @@ export default function Spending({ showToast }) {
                 </div>
                 <div className="insight-chip">
                   <div className="insight-chip-label">vs last wk</div>
-                  <div className="insight-chip-val" style={{ color: weekDiff > 0 ? 'var(--red)' : weekDiff < 0 ? 'var(--positive)' : 'var(--text2)' }}>
+                  <div className="insight-chip-val" style={{ color: weekDiff > 0 ? 'var(--red)' : weekDiff < 0 ? 'var(--accent)' : 'var(--text2)' }}>
                     {weekDiff === 0 ? '—' : (weekDiff > 0 ? '↑ ' : '↓ ') + formatRM(Math.abs(weekDiff))}
                   </div>
                   <div className="insight-chip-sub">this week</div>
@@ -575,21 +667,14 @@ export default function Spending({ showToast }) {
       {/* ── SAVINGS VIEW ──────────────────────────────── */}
       {!searchOpen && view === 'savings' && (
         <>
+          {/* Income + Spent header */}
           <div className="section" style={{ marginTop: 20 }}>
             <div className="card">
               <div className="saving-input-row">
                 <div>
-                  <div className="budget-label">Monthly income</div>
-                  <div className="saving-income-wrap">
-                    <span className="saving-income-prefix">RM</span>
-                    <input
-                      className="saving-income-input"
-                      type="number"
-                      value={income || ''}
-                      placeholder="0"
-                      onChange={e => handleSaveIncome(e.target.value)}
-                      inputMode="numeric"
-                    />
+                  <div className="budget-label">Income</div>
+                  <div style={{ fontFamily: 'Space Grotesk', fontSize: 28, fontWeight: 600, color: '#58a6ff', letterSpacing: '-0.03em', marginTop: 4, fontVariantNumeric: 'tabular-nums' }}>
+                    {formatRM(incomeTotal)}
                   </div>
                 </div>
                 <div style={{ textAlign: 'right' }}>
@@ -600,33 +685,73 @@ export default function Spending({ showToast }) {
             </div>
           </div>
 
+          {/* Net saved + savings rate */}
           <div className="section" style={{ marginTop: 16 }}>
             <div className="card budget-hero">
               <div className="budget-top">
                 <div>
-                  <div className="budget-label">Saved this month</div>
-                  <div className="budget-total" style={{ color: saved >= 0 ? 'var(--positive)' : 'var(--red)' }}>
+                  <div className="budget-label">Net saved</div>
+                  <div className="budget-total" style={{ color: saved >= 0 ? 'var(--accent)' : 'var(--red)' }}>
                     {saved >= 0 ? formatRM(saved) : `−${formatRM(Math.abs(saved))}`}
                   </div>
                 </div>
                 <div style={{ textAlign: 'right' }}>
                   <div className="budget-label">Savings rate</div>
-                  <div className="budget-total" style={{ color: savingsRate >= 20 ? 'var(--positive)' : savingsRate > 0 ? 'var(--text2)' : 'var(--red)' }}>
-                    {income > 0 ? `${savingsRate}%` : '—'}
+                  <div className="budget-total" style={{ color: savingsRate >= 20 ? 'var(--accent)' : savingsRate > 0 ? 'var(--text2)' : 'var(--red)' }}>
+                    {incomeTotal > 0 ? `${savingsRate}%` : '—'}
                   </div>
                 </div>
               </div>
-              {income > 0 && (
+              {incomeTotal > 0 && (
                 <div className="budget-track">
                   <div className="budget-fill" style={{
                     width: Math.min(100, Math.max(0, savingsRate)) + '%',
-                    background: savingsRate >= 20 ? 'var(--positive)' : savingsRate > 0 ? 'var(--accent)' : 'var(--red)'
+                    background: savingsRate >= 20 ? 'var(--accent)' : savingsRate > 0 ? 'var(--accent)' : 'var(--red)'
                   }}/>
                 </div>
               )}
             </div>
           </div>
 
+          {/* Income breakdown */}
+          <div className="section" style={{ marginTop: 20 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, paddingRight: 0 }}>
+              <div className="section-label">Income this month</div>
+              <button
+                className="add-btn"
+                onClick={() => setAddIncomeOpen(true)}
+                aria-label="Log income"
+                style={{ marginRight: 20 }}
+              >
+                <PlusIcon size={16} />
+              </button>
+            </div>
+            {monthIncome.length === 0 ? (
+              <div className="empty">no income logged</div>
+            ) : (
+              <div className="card">
+                {monthIncome.map((inc, i) => {
+                  const meta = CAT_META[inc.category]
+                  return (
+                    <div key={inc.id} className={`exp-row ${i < monthIncome.length - 1 ? 'bordered' : ''}`}>
+                      <span className="exp-icon-wrap" style={{ color: meta?.color, background: (meta?.color || '#fff') + '18' }}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                        </svg>
+                      </span>
+                      <div className="exp-body">
+                        <div className="exp-title">{inc.description}</div>
+                        <div className="exp-sub">{meta?.label} · {formatDate(inc.date)}</div>
+                      </div>
+                      <div className="exp-amount" style={{ color: meta?.color }}>+{formatRM(inc.amount)}</div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* 6-month savings history */}
           <div className="section" style={{ marginTop: 20 }}>
             <div className="section-label">6-month savings history</div>
             <div className="card" style={{ padding: '20px 16px 16px' }}>
@@ -634,6 +759,7 @@ export default function Spending({ showToast }) {
             </div>
           </div>
 
+          {/* Running total */}
           <div className="section" style={{ marginTop: 16, paddingBottom: 32 }}>
             <div className="card">
               <div className="saving-total-row">
@@ -659,6 +785,16 @@ export default function Spending({ showToast }) {
             defaultDate={new Date().toISOString().split('T')[0]}
             onSave={handleAddExpense}
             onCancel={() => setAddOpen(false)}
+          />
+        </Sheet>
+      )}
+
+      {addIncomeOpen && (
+        <Sheet title="Log income" onClose={() => setAddIncomeOpen(false)}>
+          <AddIncomeForm
+            defaultDate={new Date().toISOString().split('T')[0]}
+            onSave={handleAddIncome}
+            onCancel={() => setAddIncomeOpen(false)}
           />
         </Sheet>
       )}

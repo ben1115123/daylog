@@ -10,7 +10,7 @@ Day of week: ${new Date().toLocaleDateString('en-MY', { weekday: 'long' })}
 
 Return this exact JSON structure:
 {
-  "type": "expense" | "event" | "both" | "unknown",
+  "type": "expense" | "event" | "income" | "both" | "unknown",
   "expense": {
     "description": "concise label max 4 words",
     "amount": number or null,
@@ -25,6 +25,12 @@ Return this exact JSON structure:
     "notes": "brief notes" or null,
     "recurring": "daily" | "weekly" | "monthly" | null,
     "category": "work" | "personal" | "health" | "social" | "finance" | null
+  } or null,
+  "income": {
+    "description": "concise label max 4 words",
+    "amount": number or null,
+    "category": "salary" | "trading",
+    "date": "YYYY-MM-DD"
   } or null
 }
 
@@ -61,7 +67,11 @@ Recurring rules:
 - "every month" / "monthly" / "1st of every month" → "monthly"
 
 Time inference: "morning" = 09:00, "lunch" = 12:30, "afternoon" = 14:00, "evening" = 18:00, "night" = 20:00
-Date inference: infer from relative terms like "tomorrow", "next Friday", "this weekend" based on today's date.`
+Date inference: infer from relative terms like "tomorrow", "next Friday", "this weekend" based on today's date.
+
+Income rules (set type: "income", populate income object, expense/event = null):
+- salary: received salary, got paid, salary in, gaji, gaji masuk, bonus, allowance, commission, paycheck, monthly pay
+- trading: trading profit, closed trade, withdrew profit, sold shares, capital gain, realized profit, trade closed, stock profit, options profit`
 
 export async function parseInput(text) {
   const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY || localStorage.getItem('dl_anthropic_key')

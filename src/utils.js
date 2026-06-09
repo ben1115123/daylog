@@ -22,7 +22,11 @@ export const CAT_META = {
   utilities:       { label: 'Utilities',         color: '#78909c' },
   education:       { label: 'Education',         color: '#5c6bc0' },
   investment:      { label: 'Investment',        color: '#4ade80' },
+  salary:          { label: 'Salary',            color: '#58a6ff' },
+  trading:         { label: 'Trading',           color: '#4ade80' },
 }
+
+export const INCOME_CATEGORIES = ['salary', 'trading']
 
 export const PRESETS = [
   { id: 'rental',          label: 'Rental',     category: 'rental',          amount: 1000, isExpense: true, recurring: 'monthly', recurringDay: 1 },

@@ -19,7 +19,6 @@ async function checkRecurring(showToast) {
   const monthPrefix = todayStr.slice(0, 7)
 
   const recurring = await db.getRecurring()
-
   for (const item of recurring.filter(r => r.active && r.day_of_month <= dayOfMonth)) {
     const { count } = await supabase
       .from('expenses')
@@ -29,6 +28,19 @@ async function checkRecurring(showToast) {
       .lte('date', `${monthPrefix}-31`)
     if (count > 0) continue
     await db.addExpense({ description: item.description, amount: item.amount, category: item.category, date: todayStr })
+    showToast(`Auto-logged: ${item.description} ${formatRM(item.amount)}`)
+  }
+
+  const recurringIncome = await db.getRecurringIncome()
+  for (const item of recurringIncome.filter(r => r.active && r.day_of_month <= dayOfMonth)) {
+    const { count } = await supabase
+      .from('income')
+      .select('*', { count: 'exact', head: true })
+      .eq('description', item.description)
+      .gte('date', `${monthPrefix}-01`)
+      .lte('date', `${monthPrefix}-31`)
+    if (count > 0) continue
+    await db.addIncome({ description: item.description, amount: item.amount, category: item.category, date: todayStr })
     showToast(`Auto-logged: ${item.description} ${formatRM(item.amount)}`)
   }
 }
@@ -103,6 +115,7 @@ export default function App() {
   useEffect(() => {
     migrateFromLocalStorage(showToast)
     db.seedRecurring()
+    db.seedRecurringIncome()
   }, [showToast])
 
   useEffect(() => {
@@ -115,7 +128,12 @@ export default function App() {
   const handleOnboardingComplete = (name, income, budget) => {
     const now = new Date()
     db.saveSettings({ ...db.getSettings(), name, totalBudget: budget })
-    if (income > 0) db.saveIncome(now.getFullYear(), now.getMonth(), income)
+    if (income > 0) db.addIncome({
+      description: 'Salary',
+      amount: income,
+      category: 'salary',
+      date: now.toISOString().split('T')[0],
+    })
     localStorage.setItem('dl_onboarded', 'true')
     setShowOnboarding(false)
     setRefresh(r => r + 1)
