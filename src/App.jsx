@@ -16,38 +16,45 @@ async function checkRecurring(showToast) {
   const today = new Date()
   const todayStr   = today.toISOString().split('T')[0]
   const dayOfMonth = today.getDate()
-  const monthPrefix = todayStr.slice(0, 7)
+  const year       = today.getFullYear()
+  const month      = String(today.getMonth() + 1).padStart(2, '0')
+  const monthPrefix = `${year}-${month}`
 
-  // sessionStorage survives StrictMode remounts; set synchronously before any await
-  // so concurrent invocations bail immediately (JS is single-threaded between awaits)
-  const sessionFlag = `dl_rc_${monthPrefix}`
-  if (sessionStorage.getItem(sessionFlag)) return
-  sessionStorage.setItem(sessionFlag, '1')
+  const expKey = `dl_expenses_logged_${year}_${month}`
+  const incKey = `dl_income_logged_${year}_${month}`
 
-  const recurring = await db.getRecurring()
-  for (const item of recurring.filter(r => r.active && r.day_of_month <= dayOfMonth)) {
-    const { count } = await supabase
-      .from('expenses')
-      .select('*', { count: 'exact', head: true })
-      .eq('description', item.description)
-      .gte('date', `${monthPrefix}-01`)
-      .lte('date', `${monthPrefix}-31`)
-    if (count > 0) continue
-    await db.addExpense({ description: item.description, amount: item.amount, category: item.category, date: todayStr })
-    showToast(`Auto-logged: ${item.description} ${formatRM(item.amount)}`)
+  if (!sessionStorage.getItem(expKey)) {
+    // Set flag synchronously before first await — blocks any concurrent call from this block
+    sessionStorage.setItem(expKey, 'true')
+    const recurring = await db.getRecurring()
+    for (const item of recurring.filter(r => r.active && r.day_of_month <= dayOfMonth)) {
+      const { count } = await supabase
+        .from('expenses')
+        .select('*', { count: 'exact', head: true })
+        .eq('description', item.description)
+        .gte('date', `${monthPrefix}-01`)
+        .lte('date', `${monthPrefix}-31`)
+      if (count > 0) continue
+      await db.addExpense({ description: item.description, amount: item.amount, category: item.category, date: todayStr })
+      showToast(`Auto-logged: ${item.description} ${formatRM(item.amount)}`)
+    }
   }
 
-  const recurringIncome = await db.getRecurringIncome()
-  for (const item of recurringIncome.filter(r => r.active && r.day_of_month <= dayOfMonth)) {
-    const { count } = await supabase
-      .from('income')
-      .select('*', { count: 'exact', head: true })
-      .eq('description', item.description)
-      .gte('date', `${monthPrefix}-01`)
-      .lte('date', `${monthPrefix}-31`)
-    if (count > 0) continue
-    await db.addIncome({ description: item.description, amount: item.amount, category: item.category, date: todayStr })
-    showToast(`Auto-logged: ${item.description} ${formatRM(item.amount)}`)
+  if (!sessionStorage.getItem(incKey)) {
+    // Set flag synchronously before first await — blocks any concurrent call from this block
+    sessionStorage.setItem(incKey, 'true')
+    const recurringIncome = await db.getRecurringIncome()
+    for (const item of recurringIncome.filter(r => r.active && r.day_of_month <= dayOfMonth)) {
+      const { count } = await supabase
+        .from('income')
+        .select('*', { count: 'exact', head: true })
+        .eq('description', item.description)
+        .gte('date', `${monthPrefix}-01`)
+        .lte('date', `${monthPrefix}-31`)
+      if (count > 0) continue
+      await db.addIncome({ description: item.description, amount: item.amount, category: item.category, date: todayStr })
+      showToast(`Auto-logged: ${item.description} ${formatRM(item.amount)}`)
+    }
   }
 }
 
