@@ -226,7 +226,7 @@ export const db = {
   /* ── Month / range queries ─────────────────────────── */
   async getMonthExpenses(year, month) {
     const prefix  = monthKey(year, month)
-    const lastDay = new Date(year, month, 0).getDate()
+    const lastDay = new Date(year, month + 1, 0).getDate()
     try {
       const { data, error } = await supabase
         .from('expenses')
@@ -387,7 +387,7 @@ export const db = {
 
   async getMonthIncome(year, month) {
     const prefix  = monthKey(year, month)
-    const lastDay = new Date(year, month, 0).getDate()
+    const lastDay = new Date(year, month + 1, 0).getDate()
     try {
       const { data, error } = await supabase
         .from('income')
