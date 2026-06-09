@@ -206,7 +206,7 @@ src/
                        # Exports: db, expandEvents (sync), computeRecentMonths (sync), offlineMode
   supabase.js          # Supabase client (createClient from env vars)
   ai.js                # Anthropic Messages API (claude-haiku-4-5-20251001) + response parser
-  utils.js             # CAT_META (no emoji — label + color only), PRESETS, formatRM, formatDate, formatTime
+  utils.js             # CAT_META (no emoji — label + color only), CATEGORIES (18 incl. investment), QUICK_CHIPS, formatRM, formatDate, formatTime
   components/
     Home.jsx/css       # topbar + two-line hero greeting + borderless input + preset chips + recent
     Spending.jsx/css   # budget hero + category breakdown + expense list (all SVG icons)
