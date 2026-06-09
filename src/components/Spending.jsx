@@ -114,6 +114,12 @@ function EditExpenseForm({ expense, onSave, onCancel }) {
           ))}
         </select>
       </div>
+      <input
+        className="edit-input"
+        placeholder="Notes (optional)"
+        value={form.notes}
+        onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
+      />
       <div className="edit-row">
         <input
           className="edit-input edit-date"
@@ -121,21 +127,15 @@ function EditExpenseForm({ expense, onSave, onCancel }) {
           value={form.date}
           onChange={e => setForm(f => ({ ...f, date: e.target.value }))}
         />
-      </div>
-      <input
-        className="edit-input"
-        placeholder="Notes (optional)"
-        value={form.notes}
-        onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
-      />
-      <div className="edit-actions">
-        <button className="edit-cancel" onClick={onCancel}>Cancel</button>
-        <button
-          className="edit-save"
-          onClick={() => onSave({ ...form, amount: parseFloat(form.amount) || 0, notes: form.notes.trim() || null })}
-        >
-          Save
-        </button>
+        <div className="edit-actions">
+          <button className="edit-cancel" onClick={onCancel}>Cancel</button>
+          <button
+            className="edit-save"
+            onClick={() => onSave({ ...form, amount: parseFloat(form.amount) || 0, notes: form.notes.trim() || null })}
+          >
+            Save
+          </button>
+        </div>
       </div>
     </div>
   )
