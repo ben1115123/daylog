@@ -14,7 +14,7 @@ Return this exact JSON structure:
   "expense": {
     "description": "concise label max 4 words",
     "amount": number or null,
-    "category": "food" | "transport" | "grocery" | "rental" | "subscription" | "sports" | "shopping" | "coffee" | "dining" | "petrol" | "toll" | "online_shopping" | "health" | "entertainment" | "travel" | "utilities" | "education",
+    "category": "food" | "transport" | "grocery" | "rental" | "subscription" | "sports" | "shopping" | "coffee" | "dining" | "petrol" | "toll" | "online_shopping" | "health" | "entertainment" | "travel" | "utilities" | "education" | "investment",
     "date": "YYYY-MM-DD"
   } or null,
   "event": {
@@ -46,6 +46,7 @@ Expense category rules:
 - travel: flight, hotel, airbnb, airasia, malindo, batik air, grab airport, vacation, holiday, resort, check-in
 - utilities: TNB, electricity bill, water bill, indah water, unifi, maxis, celcom, digi, yes 5g, phone bill, internet bill
 - education: course, tuition, book, udemy, coursera, class, workshop, exam fee, university, school fee
+- investment: stocks, trading, fund, unit trust, ASB, EPF top-up, brokerage, shares, equity, mutual fund, ASNB, Bursa
 
 Event category rules:
 - work: meetings, deadlines, work tasks, office events, client calls

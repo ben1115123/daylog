@@ -1,6 +1,6 @@
 export const CATEGORIES = [
   'food', 'transport', 'grocery', 'rental', 'subscription', 'sports', 'shopping',
-  'coffee', 'dining', 'petrol', 'toll', 'online_shopping', 'health', 'entertainment', 'travel', 'utilities', 'education',
+  'coffee', 'dining', 'petrol', 'toll', 'online_shopping', 'health', 'entertainment', 'travel', 'utilities', 'education', 'investment',
 ]
 
 export const CAT_META = {
@@ -21,6 +21,7 @@ export const CAT_META = {
   travel:          { label: 'Travel',            color: '#29b6f6' },
   utilities:       { label: 'Utilities',         color: '#78909c' },
   education:       { label: 'Education',         color: '#5c6bc0' },
+  investment:      { label: 'Investment',        color: '#4ade80' },
 }
 
 export const PRESETS = [

@@ -21,7 +21,7 @@ async function checkRecurring(showToast) {
   const [recurring, allExpenses] = await Promise.all([db.getRecurring(), db.getExpenses()])
   const thisMonth = allExpenses.filter(e => e.date?.startsWith(monthPrefix))
 
-  for (const item of recurring.filter(r => r.active && r.day_of_month === dayOfMonth)) {
+  for (const item of recurring.filter(r => r.active && r.day_of_month <= dayOfMonth)) {
     const alreadyLogged = thisMonth.some(
       e => e.description === item.description && e.category === item.category
     )

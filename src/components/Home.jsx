@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { parseInput } from '../ai.js'
 import { db } from '../db.js'
-import { PRESETS, CAT_META, formatRM, formatDate, formatTime } from '../utils.js'
+import { CAT_META, formatRM, formatDate, formatTime } from '../utils.js'
 import { MicIcon, SendIcon, CAT_ICONS } from '../Icons.jsx'
 import './Home.css'
 
@@ -58,22 +58,29 @@ export default function Home({ showToast, onLogged }) {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend() }
   }
 
-  const handlePreset = async (preset) => {
-    if (preset.isEvent && !preset.isExpense) {
-      const today = new Date().toISOString().split('T')[0]
-      await db.addEvent({ title: preset.label + ' session', date: today, time: null, notes: null })
-      showToast(`${preset.label} logged`)
-      refreshRecent(); onLogged(); return
-    }
-    let amount = preset.amount
-    if (!amount) {
-      const val = prompt(`Amount for ${preset.label}? (RM)`)
-      if (!val) return
-      amount = parseFloat(val)
-      if (isNaN(amount)) return
-    }
-    await db.addExpense({ description: preset.label, amount, category: preset.category, date: new Date().toISOString().split('T')[0] })
-    showToast(`${preset.label} — ${formatRM(amount)}`)
+  const QUICK_CHIPS = [
+    { label: 'Gift',          category: 'shopping'      },
+    { label: 'Sports',        category: 'sports'        },
+    { label: 'Investment',    category: 'investment'    },
+    { label: 'Shopping',      category: 'shopping'      },
+    { label: 'Car',           category: 'transport'     },
+    { label: 'Travel',        category: 'travel'        },
+    { label: 'Health',        category: 'health'        },
+    { label: 'Entertainment', category: 'entertainment' },
+  ]
+
+  const handleQuickChip = async (chip) => {
+    const val = prompt(`Amount for ${chip.label}? (RM)`)
+    if (!val) return
+    const amount = parseFloat(val)
+    if (isNaN(amount) || amount <= 0) return
+    await db.addExpense({
+      description: chip.label,
+      amount,
+      category: chip.category,
+      date: new Date().toISOString().split('T')[0],
+    })
+    showToast(`${chip.label} — ${formatRM(amount)}`)
     refreshRecent(); onLogged()
   }
 
@@ -156,12 +163,12 @@ export default function Home({ showToast, onLogged }) {
       <div className="home-section">
         <div className="section-label" style={{ paddingLeft: 20 }}>Quick log</div>
         <div className="presets-row">
-          {PRESETS.map(p => {
-            const color = CAT_META[p.category]?.color
+          {QUICK_CHIPS.map(chip => {
+            const color = CAT_META[chip.category]?.color
             return (
-              <button key={p.id} className="preset-chip" onClick={() => handlePreset(p)}>
+              <button key={chip.label} className="preset-chip" onClick={() => handleQuickChip(chip)}>
                 <span className="preset-dot" style={{ background: color }} />
-                {p.label}
+                {chip.label}
               </button>
             )
           })}

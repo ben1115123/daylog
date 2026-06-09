@@ -17,7 +17,7 @@ const DEFAULT_BUDGETS = {
   rental: 1000, subscription: 200, sports: 150, shopping: 200,
   coffee: 100, dining: 200, petrol: 150, toll: 50,
   online_shopping: 150, health: 100, entertainment: 100,
-  travel: 200, utilities: 100, education: 100,
+  travel: 200, utilities: 100, education: 100, investment: 200,
 }
 
 const DEFAULT_SETTINGS = {
