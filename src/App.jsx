@@ -18,14 +18,16 @@ async function checkRecurring(showToast) {
   const dayOfMonth = today.getDate()
   const monthPrefix = todayStr.slice(0, 7)
 
-  const [recurring, allExpenses] = await Promise.all([db.getRecurring(), db.getExpenses()])
-  const thisMonth = allExpenses.filter(e => e.date?.startsWith(monthPrefix))
+  const recurring = await db.getRecurring()
 
   for (const item of recurring.filter(r => r.active && r.day_of_month <= dayOfMonth)) {
-    const alreadyLogged = thisMonth.some(
-      e => e.description === item.description && e.category === item.category
-    )
-    if (alreadyLogged) continue
+    const { count } = await supabase
+      .from('expenses')
+      .select('*', { count: 'exact', head: true })
+      .eq('description', item.description)
+      .gte('date', `${monthPrefix}-01`)
+      .lte('date', `${monthPrefix}-31`)
+    if (count > 0) continue
     await db.addExpense({ description: item.description, amount: item.amount, category: item.category, date: todayStr })
     showToast(`Auto-logged: ${item.description} ${formatRM(item.amount)}`)
   }
