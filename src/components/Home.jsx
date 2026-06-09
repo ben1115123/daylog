@@ -200,6 +200,7 @@ export default function Home({ showToast, onLogged }) {
                     </span>
                     <div className="entry-body">
                       <div className="entry-title">{item.description}</div>
+                      {item.notes && <div className="entry-notes">{item.notes}</div>}
                       <div className="entry-sub">{meta?.label} · {formatDate(item.date)}</div>
                     </div>
                     <div className="entry-amount" style={{ color: meta?.color }}>+{formatRM(item.amount)}</div>
@@ -216,6 +217,7 @@ export default function Home({ showToast, onLogged }) {
                     </span>
                     <div className="entry-body">
                       <div className="entry-title">{item.description}</div>
+                      {item.notes && <div className="entry-notes">{item.notes}</div>}
                       <div className="entry-sub">{meta?.label} · {formatDate(item.date)}</div>
                     </div>
                     <div className="entry-amount">{formatRM(item.amount)}</div>

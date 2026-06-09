@@ -20,8 +20,10 @@ create table if not exists expenses (
   amount      numeric,
   category    text,
   date        text,
+  notes       text,
   created_at  timestamptz default now()
 );
+alter table expenses add column if not exists notes text;
 
 create table if not exists events (
   id          uuid primary key default gen_random_uuid(),
@@ -40,8 +42,10 @@ create table if not exists income (
   amount      numeric not null,
   category    text not null,
   date        date not null,
+  notes       text,
   created_at  timestamptz default now()
 );
+alter table income add column if not exists notes text;
 
 create table if not exists recurring_income (
   id           uuid primary key default gen_random_uuid(),

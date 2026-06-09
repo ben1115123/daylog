@@ -110,6 +110,7 @@ export const db = {
       amount:      exp.amount,
       category:    exp.category,
       date:        exp.date,
+      notes:       exp.notes || null,
     }
     try {
       const { data, error } = await supabase
@@ -355,6 +356,7 @@ export const db = {
       amount:      item.amount,
       category:    item.category,
       date:        item.date,
+      notes:       item.notes || null,
     }
     try {
       const { data, error } = await supabase

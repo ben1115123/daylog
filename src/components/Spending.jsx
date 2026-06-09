@@ -84,6 +84,7 @@ function EditExpenseForm({ expense, onSave, onCancel }) {
     amount: expense.amount ?? '',
     category: expense.category || 'food',
     date: expense.date || '',
+    notes: expense.notes || '',
   })
 
   return (
@@ -120,15 +121,21 @@ function EditExpenseForm({ expense, onSave, onCancel }) {
           value={form.date}
           onChange={e => setForm(f => ({ ...f, date: e.target.value }))}
         />
-        <div className="edit-actions">
-          <button className="edit-cancel" onClick={onCancel}>Cancel</button>
-          <button
-            className="edit-save"
-            onClick={() => onSave({ ...form, amount: parseFloat(form.amount) || 0 })}
-          >
-            Save
-          </button>
-        </div>
+      </div>
+      <input
+        className="edit-input"
+        placeholder="Notes (optional)"
+        value={form.notes}
+        onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
+      />
+      <div className="edit-actions">
+        <button className="edit-cancel" onClick={onCancel}>Cancel</button>
+        <button
+          className="edit-save"
+          onClick={() => onSave({ ...form, amount: parseFloat(form.amount) || 0, notes: form.notes.trim() || null })}
+        >
+          Save
+        </button>
       </div>
     </div>
   )
@@ -137,7 +144,7 @@ function EditExpenseForm({ expense, onSave, onCancel }) {
 /* ── Add expense form (bottom sheet) ─────────────────── */
 function AddExpenseForm({ defaultDate, onSave, onCancel }) {
   const [form, setForm] = useState({
-    description: '', amount: '', category: 'food', date: defaultDate || '',
+    description: '', amount: '', category: 'food', date: defaultDate || '', notes: '',
   })
   const canSave = form.description.trim() && form.amount && form.date
 
@@ -187,6 +194,15 @@ function AddExpenseForm({ defaultDate, onSave, onCancel }) {
           ))}
         </select>
       </div>
+      <div>
+        <div className="sheet-field-label">Notes (optional)</div>
+        <input
+          className="sheet-input"
+          placeholder="Any extra context?"
+          value={form.notes}
+          onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
+        />
+      </div>
       <div className="sheet-actions">
         <button className="sheet-cancel" onClick={onCancel}>Cancel</button>
         <button
@@ -198,6 +214,7 @@ function AddExpenseForm({ defaultDate, onSave, onCancel }) {
             amount: parseFloat(form.amount) || 0,
             category: form.category,
             date: form.date,
+            notes: form.notes.trim() || null,
           })}
         >
           Save
@@ -210,7 +227,7 @@ function AddExpenseForm({ defaultDate, onSave, onCancel }) {
 /* ── Add income form (bottom sheet) ──────────────────── */
 function AddIncomeForm({ defaultDate, onSave, onCancel }) {
   const [form, setForm] = useState({
-    description: '', amount: '', category: 'salary', date: defaultDate || '',
+    description: '', amount: '', category: 'salary', date: defaultDate || '', notes: '',
   })
   const canSave = form.description.trim() && form.amount && form.date
 
@@ -259,6 +276,15 @@ function AddIncomeForm({ defaultDate, onSave, onCancel }) {
           <option value="trading">Trading</option>
         </select>
       </div>
+      <div>
+        <div className="sheet-field-label">Notes (optional)</div>
+        <input
+          className="sheet-input"
+          placeholder="Any extra context?"
+          value={form.notes}
+          onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
+        />
+      </div>
       <div className="sheet-actions">
         <button className="sheet-cancel" onClick={onCancel}>Cancel</button>
         <button
@@ -270,6 +296,7 @@ function AddIncomeForm({ defaultDate, onSave, onCancel }) {
             amount: parseFloat(form.amount) || 0,
             category: form.category,
             date: form.date,
+            notes: form.notes.trim() || null,
           })}
         >
           Save
@@ -511,6 +538,7 @@ export default function Spending({ showToast }) {
                     </span>
                     <div className="exp-body">
                       <div className="exp-title">{e.description}</div>
+                      {e.notes && <div className="exp-notes">{e.notes}</div>}
                       <div className="exp-sub">{meta?.label} · {formatDate(e.date)}</div>
                     </div>
                     <div className="exp-amount">{formatRM(e.amount)}</div>
@@ -637,6 +665,7 @@ export default function Spending({ showToast }) {
                       </span>
                       <div className="exp-body">
                         <div className="exp-title">{e.description}</div>
+                        {e.notes && <div className="exp-notes">{e.notes}</div>}
                         <div className="exp-sub">{meta?.label} · {formatDate(e.date)}</div>
                       </div>
                       <div className="exp-right">
@@ -741,6 +770,7 @@ export default function Spending({ showToast }) {
                       </span>
                       <div className="exp-body">
                         <div className="exp-title">{inc.description}</div>
+                        {inc.notes && <div className="exp-notes">{inc.notes}</div>}
                         <div className="exp-sub">{meta?.label} · {formatDate(inc.date)}</div>
                       </div>
                       <div className="exp-amount" style={{ color: meta?.color }}>+{formatRM(inc.amount)}</div>

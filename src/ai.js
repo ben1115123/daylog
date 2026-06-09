@@ -15,7 +15,8 @@ Return this exact JSON structure:
     "description": "concise label max 4 words",
     "amount": number or null,
     "category": "food" | "transport" | "grocery" | "rental" | "subscription" | "sports" | "shopping" | "coffee" | "dining" | "petrol" | "toll" | "online_shopping" | "health" | "entertainment" | "travel" | "utilities" | "education" | "investment",
-    "date": "YYYY-MM-DD"
+    "date": "YYYY-MM-DD",
+    "notes": "brief extra context" or null
   } or null,
   "event": {
     "title": "concise event title",
@@ -30,9 +31,16 @@ Return this exact JSON structure:
     "description": "concise label max 4 words",
     "amount": number or null,
     "category": "salary" | "trading",
-    "date": "YYYY-MM-DD"
+    "date": "YYYY-MM-DD",
+    "notes": "brief extra context" or null
   } or null
 }
+
+Notes rules:
+- Only populate notes if user clearly adds extra context after a dash (—), hyphen (-), or comma
+- Extract the context part, not the main description: "lunch with client RM45 — business meeting" → notes: "business meeting"
+- Keep notes concise (max 6 words)
+- Do NOT populate notes from the main description itself
 
 Expense category rules:
 - food: meals, nasi, rice, bread, snacks, hawker stall, food court (simple takeaway food)

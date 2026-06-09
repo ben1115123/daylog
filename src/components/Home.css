@@ -202,6 +202,15 @@
   text-overflow: ellipsis;
 }
 
+.entry-notes {
+  font-size: 11px;
+  color: var(--text2);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .entry-sub {
   font-size: 11px;
   color: var(--text3);
