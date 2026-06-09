@@ -66,3 +66,20 @@ input, textarea, select { font-family: var(--font-sans); color: inherit; }
   0%, 80%, 100% { opacity: 0.2; transform: scale(0.7); }
   40%           { opacity: 1;   transform: scale(1); }
 }
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+.loading-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 120px;
+}
+.spinner {
+  width: 18px;
+  height: 18px;
+  border: 1.5px solid var(--bg4);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.65s linear infinite;
+}

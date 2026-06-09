@@ -9,6 +9,24 @@
   background: var(--bg);
 }
 
+.offline-badge {
+  position: fixed;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg3);
+  border: 0.5px solid var(--border2);
+  color: var(--text3);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  padding: 3px 10px;
+  border-radius: 20px;
+  z-index: 9999;
+  text-transform: uppercase;
+  pointer-events: none;
+}
+
 .app-body {
   flex: 1;
   overflow-y: auto;

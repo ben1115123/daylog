@@ -8,30 +8,72 @@ import Onboarding from './components/Onboarding.jsx'
 import Toast from './components/Toast.jsx'
 import { NavLogIcon, NavChartIcon, NavCalendarIcon, NavInsightsIcon } from './Icons.jsx'
 import { db } from './db.js'
+import supabase from './supabase.js'
 import { PRESETS } from './utils.js'
 import './App.css'
 
-function checkRecurring(showToast) {
+async function checkRecurring(showToast) {
   const today = new Date()
-  const todayStr = today.toISOString().split('T')[0]
+  const todayStr   = today.toISOString().split('T')[0]
   const dayOfMonth = today.getDate()
   const dayOfWeek  = today.getDay()
-  const existing   = db.getExpenses().filter(e => e.date === todayStr)
+  const allExpenses = await db.getExpenses()
+  const existing    = allExpenses.filter(e => e.date === todayStr)
 
-  PRESETS.filter(p => p.recurring && p.amount && p.isExpense).forEach(preset => {
-    const alreadyLogged = existing.some(
-      e => e.description === preset.label && e.category === preset.category
-    )
-    if (alreadyLogged) return
-
-    let due = false
-    if (preset.recurring === 'monthly') due = dayOfMonth === (preset.recurringDay || 1)
-    if (preset.recurring === 'weekly')  due = dayOfWeek  === (preset.recurringDay ?? 1)
-    if (!due) return
-
-    db.addExpense({ description: preset.label, amount: preset.amount, category: preset.category, date: todayStr })
-    showToast(`Auto-logged: ${preset.label}`)
+  const due = PRESETS.filter(p => p.recurring && p.amount && p.isExpense).filter(preset => {
+    if (existing.some(e => e.description === preset.label && e.category === preset.category)) return false
+    if (preset.recurring === 'monthly') return dayOfMonth === (preset.recurringDay || 1)
+    if (preset.recurring === 'weekly')  return dayOfWeek  === (preset.recurringDay ?? 1)
+    return false
   })
+
+  for (const preset of due) {
+    await db.addExpense({ description: preset.label, amount: preset.amount, category: preset.category, date: todayStr })
+    showToast(`Auto-logged: ${preset.label}`)
+  }
+}
+
+async function migrateFromLocalStorage(showToast) {
+  if (localStorage.getItem('dl_migrated')) return
+  const oldExpenses = JSON.parse(localStorage.getItem('dl_expenses') || 'null')
+  const oldEvents   = JSON.parse(localStorage.getItem('dl_events')   || 'null')
+  if (!oldExpenses?.length && !oldEvents?.length) {
+    localStorage.setItem('dl_migrated', 'true')
+    return
+  }
+  showToast('Importing your data to cloud...')
+  try {
+    if (oldExpenses?.length) {
+      const rows = oldExpenses.map(e => ({
+        description: e.description,
+        amount:      e.amount,
+        category:    e.category,
+        date:        e.date,
+        created_at:  e.createdAt || e.created_at || new Date().toISOString(),
+      }))
+      const { error } = await supabase.from('expenses').insert(rows)
+      if (error) throw error
+    }
+    if (oldEvents?.length) {
+      const rows = oldEvents.map(e => ({
+        title:      e.title,
+        date:       e.date,
+        time:       e.time      || null,
+        category:   e.category  || null,
+        notes:      e.notes     || null,
+        recurring:  e.recurring || null,
+        created_at: e.createdAt || e.created_at || new Date().toISOString(),
+      }))
+      const { error } = await supabase.from('events').insert(rows)
+      if (error) throw error
+    }
+    localStorage.removeItem('dl_expenses')
+    localStorage.removeItem('dl_events')
+    localStorage.setItem('dl_migrated', 'true')
+    showToast('Data imported successfully')
+  } catch {
+    showToast('Import failed — data kept locally', 'error')
+  }
 }
 
 export default function App() {
@@ -39,6 +81,7 @@ export default function App() {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [toast, setToast]           = useState(null)
   const [refresh, setRefresh]       = useState(0)
+  const [isOffline, setIsOffline]   = useState(false)
   const [showOnboarding, setShowOnboarding] = useState(
     !localStorage.getItem('dl_onboarded')
   )
@@ -51,8 +94,18 @@ export default function App() {
   const onLogged = useCallback(() => setRefresh(r => r + 1), [])
 
   useEffect(() => {
+    const handler = (e) => setIsOffline(e.detail)
+    window.addEventListener('daylog:offline', handler)
+    return () => window.removeEventListener('daylog:offline', handler)
+  }, [])
+
+  useEffect(() => {
+    migrateFromLocalStorage(showToast)
+  }, [showToast])
+
+  useEffect(() => {
     if (!showOnboarding) checkRecurring(showToast)
-  }, [showOnboarding])
+  }, [showOnboarding, showToast])
 
   const handleOnboardingComplete = (name, income, budget) => {
     const now = new Date()
@@ -78,6 +131,7 @@ export default function App() {
 
   return (
     <div className="app">
+      {isOffline && <div className="offline-badge">offline</div>}
       <div className="app-body">
         {tab === 'home'     && <Home     key={refresh} showToast={showToast} onLogged={onLogged} />}
         {tab === 'spending' && <Spending key={refresh} showToast={showToast} />}

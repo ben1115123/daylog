@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { parseInput } from '../ai.js'
 import { db } from '../db.js'
 import { PRESETS, CAT_META, formatRM, formatDate, formatTime } from '../utils.js'
@@ -9,22 +9,30 @@ export default function Home({ showToast, onLogged }) {
   const settings = db.getSettings()
   const userName = settings.name || 'You'
 
-  const [text, setText]       = useState('')
-  const [loading, setLoading] = useState(false)
-  const [recent, setRecent]   = useState(() => {
-    const exp = db.getExpenses().slice(0, 4).map(e => ({ ...e, _type: 'expense' }))
-    const evt = db.getUpcomingEvents(3).map(e => ({ ...e, _type: 'event' }))
-    return [...exp, ...evt].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 6)
-  })
+  const [text, setText]         = useState('')
+  const [loading, setLoading]   = useState(false)
+  const [recent, setRecent]     = useState([])
+  const [loadingData, setLoadingData] = useState(true)
   const textareaRef  = useRef(null)
   const [recording, setRecording] = useState(false)
   const recognitionRef = useRef(null)
 
-  const refreshRecent = () => {
-    const exp = db.getExpenses().slice(0, 4).map(e => ({ ...e, _type: 'expense' }))
-    const evt = db.getUpcomingEvents(3).map(e => ({ ...e, _type: 'event' }))
-    setRecent([...exp, ...evt].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 6))
-  }
+  const refreshRecent = useCallback(async () => {
+    const [exp, evt] = await Promise.all([
+      db.getExpenses(),
+      db.getUpcomingEvents(3),
+    ])
+    const items = [
+      ...exp.slice(0, 4).map(e => ({ ...e, _type: 'expense' })),
+      ...evt.map(e => ({ ...e, _type: 'event' })),
+    ]
+      .sort((a, b) => new Date(b.created_at || b.createdAt) - new Date(a.created_at || a.createdAt))
+      .slice(0, 6)
+    setRecent(items)
+    setLoadingData(false)
+  }, [])
+
+  useEffect(() => { refreshRecent() }, [refreshRecent])
 
   const handleSend = async () => {
     const input = text.trim()
@@ -34,14 +42,14 @@ export default function Home({ showToast, onLogged }) {
     try {
       const parsed = await parseInput(input)
       let logged = []
-      if (parsed.expense) { db.addExpense(parsed.expense); logged.push('expense') }
-      if (parsed.event)   { db.addEvent(parsed.event);   logged.push('event') }
+      if (parsed.expense) { await db.addExpense(parsed.expense); logged.push('expense') }
+      if (parsed.event)   { await db.addEvent(parsed.event);     logged.push('event') }
       if (logged.length === 0) { showToast('Could not parse that', 'error'); setLoading(false); return }
       showToast(
         logged.length === 2 ? 'Logged expense + event' :
         logged[0] === 'expense' ? 'Expense logged' : 'Event added'
       )
-      refreshRecent(); onLogged()
+      await refreshRecent(); onLogged()
     } catch { showToast('Parse failed — check API key', 'error') }
     setLoading(false)
   }
@@ -50,10 +58,10 @@ export default function Home({ showToast, onLogged }) {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend() }
   }
 
-  const handlePreset = (preset) => {
+  const handlePreset = async (preset) => {
     if (preset.isEvent && !preset.isExpense) {
       const today = new Date().toISOString().split('T')[0]
-      db.addEvent({ title: preset.label + ' session', date: today, time: null, notes: null })
+      await db.addEvent({ title: preset.label + ' session', date: today, time: null, notes: null })
       showToast(`${preset.label} logged`)
       refreshRecent(); onLogged(); return
     }
@@ -64,7 +72,7 @@ export default function Home({ showToast, onLogged }) {
       amount = parseFloat(val)
       if (isNaN(amount)) return
     }
-    db.addExpense({ description: preset.label, amount, category: preset.category, date: new Date().toISOString().split('T')[0] })
+    await db.addExpense({ description: preset.label, amount, category: preset.category, date: new Date().toISOString().split('T')[0] })
     showToast(`${preset.label} — ${formatRM(amount)}`)
     refreshRecent(); onLogged()
   }
@@ -162,7 +170,9 @@ export default function Home({ showToast, onLogged }) {
 
       <div className="home-section" style={{ marginTop: 24 }}>
         <div className="section-label">Recent</div>
-        {recent.length === 0 ? (
+        {loadingData ? (
+          <div className="loading-wrap"><div className="spinner"/></div>
+        ) : recent.length === 0 ? (
           <div className="empty">nothing logged yet</div>
         ) : (
           <div className="card">

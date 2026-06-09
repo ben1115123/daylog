@@ -1,5 +1,5 @@
-import { useState, useMemo } from 'react'
-import { db } from '../db.js'
+import { useState, useMemo, useEffect, useCallback } from 'react'
+import { db, expandEvents } from '../db.js'
 import { EVENT_CATS, formatTime, formatDate } from '../utils.js'
 import { RepeatIcon, PlusIcon } from '../Icons.jsx'
 import Sheet from './Sheet.jsx'
@@ -220,10 +220,20 @@ export default function Calendar({ showToast }) {
   const [calView, setCalView]   = useState('grid')
   const [editId, setEditId]     = useState(null)
   const [addOpen, setAddOpen]   = useState(false)
+  const [events, setEvents]     = useState([])
+  const [loadingData, setLoadingData] = useState(true)
 
   const todayStr = now.toISOString().split('T')[0]
 
-  const allExpanded = useMemo(() => db.getExpandedEvents(), [editId])
+  const loadEvents = useCallback(async () => {
+    const evs = await db.getEvents()
+    setEvents(evs)
+    setLoadingData(false)
+  }, [])
+
+  useEffect(() => { loadEvents() }, [loadEvents])
+
+  const allExpanded = useMemo(() => expandEvents(events), [events])
   const eventDates  = useMemo(() => new Set(allExpanded.map(e => e.date)), [allExpanded])
 
   const prevMonth = () => { if (month === 0) { setMonth(11); setYear(y => y - 1) } else setMonth(m => m - 1) }
@@ -243,19 +253,25 @@ export default function Calendar({ showToast }) {
     return Object.entries(grouped).sort((a, b) => a[0].localeCompare(b[0]))
   }, [allExpanded, todayStr])
 
-  const handleDelete = (id) => {
-    if (confirm('Delete this event?')) { db.deleteEvent(id); showToast('Deleted') }
+  const handleDelete = async (id) => {
+    if (confirm('Delete this event?')) {
+      await db.deleteEvent(id)
+      await loadEvents()
+      showToast('Deleted')
+    }
   }
 
-  const handleSaveEdit = (id, updates) => {
-    db.updateEvent(id, updates)
+  const handleSaveEdit = async (id, updates) => {
+    await db.updateEvent(id, updates)
     setEditId(null)
+    await loadEvents()
     showToast('Event updated')
   }
 
-  const handleAddEvent = (event) => {
-    db.addEvent(event)
+  const handleAddEvent = async (event) => {
+    await db.addEvent(event)
     setAddOpen(false)
+    await loadEvents()
     showToast('Event added')
   }
 
@@ -285,7 +301,7 @@ export default function Calendar({ showToast }) {
     const editTarget = ev._baseId || ev.id
 
     if (editId === editTarget) {
-      const baseEvent = db.getEvents().find(e => e.id === editTarget)
+      const baseEvent = events.find(e => e.id === editTarget)
       return (
         <div key={baseId} className={`ev-edit-wrap ${isLast ? '' : 'bordered'}`}>
           <EditEventForm
@@ -337,6 +353,14 @@ export default function Calendar({ showToast }) {
       </div>
     )
   }
+
+  if (loadingData) return (
+    <div className="screen">
+      <div className="loading-wrap" style={{ height: '100dvh' }}>
+        <div className="spinner"/>
+      </div>
+    </div>
+  )
 
   return (
     <div className="screen">

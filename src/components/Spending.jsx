@@ -1,5 +1,5 @@
-import { useState, useRef, useEffect } from 'react'
-import { db } from '../db.js'
+import { useState, useRef, useEffect, useMemo } from 'react'
+import { db, computeRecentMonths } from '../db.js'
 import { CAT_META, CATEGORIES, formatRM, formatDate, monthLabel } from '../utils.js'
 import { CAT_ICONS, SearchIcon, XIcon, PlusIcon } from '../Icons.jsx'
 import Sheet from './Sheet.jsx'
@@ -214,11 +214,14 @@ export default function Spending({ showToast }) {
   const [year, setYear]         = useState(now.getFullYear())
   const [month, setMonth]       = useState(now.getMonth())
   const [view, setView]         = useState('spending')
-  const [income, setIncome]     = useState(() => db.getIncome(now.getFullYear(), now.getMonth()))
+  const [income, setIncome]     = useState(0)
   const [editId, setEditId]     = useState(null)
   const [searchOpen, setSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
-  const [addOpen, setAddOpen] = useState(false)
+  const [addOpen, setAddOpen]   = useState(false)
+  const [expenses, setExpenses] = useState([])
+  const [allExpenses, setAllExpenses] = useState([])
+  const [loadingData, setLoadingData] = useState(true)
   const searchRef = useRef(null)
 
   useEffect(() => {
@@ -227,7 +230,22 @@ export default function Spending({ showToast }) {
 
   const budgets  = db.getBudgets()
   const settings = db.getSettings()
-  const expenses = db.getMonthExpenses(year, month)
+
+  const doRefresh = async (y, m) => {
+    const [monthExp, allExp] = await Promise.all([
+      db.getMonthExpenses(y, m),
+      db.getExpenses(),
+    ])
+    setExpenses(monthExp)
+    setAllExpenses(allExp)
+    setIncome(db.getIncome(y, m))
+    setLoadingData(false)
+  }
+
+  useEffect(() => {
+    setLoadingData(true)
+    doRefresh(year, month)
+  }, [year, month])
 
   const total     = expenses.reduce((s, e) => s + (e.amount || 0), 0)
   const remaining = settings.totalBudget - total
@@ -240,19 +258,25 @@ export default function Spending({ showToast }) {
   const prevMonth = () => { if (month === 0) { setMonth(11); setYear(y => y - 1) } else setMonth(m => m - 1) }
   const nextMonth = () => { if (month === 11) { setMonth(0); setYear(y => y + 1) } else setMonth(m => m + 1) }
 
-  const handleDelete = (id) => {
-    if (confirm('Delete this expense?')) { db.deleteExpense(id); showToast('Deleted') }
+  const handleDelete = async (id) => {
+    if (confirm('Delete this expense?')) {
+      await db.deleteExpense(id)
+      await doRefresh(year, month)
+      showToast('Deleted')
+    }
   }
 
-  const handleSaveEdit = (id, updates) => {
-    db.updateExpense(id, updates)
+  const handleSaveEdit = async (id, updates) => {
+    await db.updateExpense(id, updates)
     setEditId(null)
+    await doRefresh(year, month)
     showToast('Updated')
   }
 
-  const handleAddExpense = (expense) => {
-    db.addExpense(expense)
+  const handleAddExpense = async (expense) => {
+    await db.addExpense(expense)
     setAddOpen(false)
+    await doRefresh(year, month)
     showToast('Expense added')
   }
 
@@ -263,7 +287,6 @@ export default function Spending({ showToast }) {
   const topCatEntry = Object.entries(byCat).sort((a, b) => b[1] - a[1])[0]
   const topCat = topCatEntry ? CAT_META[topCatEntry[0]]?.label : null
 
-  const allExp = db.getExpenses()
   const todayDate = new Date()
   const thisWeekStart = new Date(todayDate); thisWeekStart.setDate(todayDate.getDate() - todayDate.getDay())
   const lastWeekStart = new Date(thisWeekStart); lastWeekStart.setDate(thisWeekStart.getDate() - 7)
@@ -271,8 +294,8 @@ export default function Spending({ showToast }) {
   const thisWeekStr   = thisWeekStart.toISOString().split('T')[0]
   const lwStartStr    = lastWeekStart.toISOString().split('T')[0]
   const lwEndStr      = lastWeekEnd.toISOString().split('T')[0]
-  const thisWeekTotal = allExp.filter(e => e.date >= thisWeekStr).reduce((s, e) => s + (e.amount || 0), 0)
-  const lastWeekTotal = allExp.filter(e => e.date >= lwStartStr && e.date <= lwEndStr).reduce((s, e) => s + (e.amount || 0), 0)
+  const thisWeekTotal = allExpenses.filter(e => e.date >= thisWeekStr).reduce((s, e) => s + (e.amount || 0), 0)
+  const lastWeekTotal = allExpenses.filter(e => e.date >= lwStartStr && e.date <= lwEndStr).reduce((s, e) => s + (e.amount || 0), 0)
   const weekDiff = thisWeekTotal - lastWeekTotal
 
   /* ── Donut data ──────────────────────────────────── */
@@ -292,7 +315,7 @@ export default function Spending({ showToast }) {
   /* ── Savings data ────────────────────────────────── */
   const saved = income - total
   const savingsRate = income > 0 ? Math.round((saved / income) * 100) : 0
-  const recentMonths = db.getRecentMonths(6)
+  const recentMonths = useMemo(() => computeRecentMonths(allExpenses, 6), [allExpenses])
   const allIncome = db.getAllIncome()
   const savingsHistory = recentMonths.map(m => ({
     ...m, income: allIncome[m.key] || 0, saved: (allIncome[m.key] || 0) - m.total,
@@ -306,6 +329,14 @@ export default function Spending({ showToast }) {
 
   const ChevL = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
   const ChevR = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+
+  if (loadingData) return (
+    <div className="screen">
+      <div className="loading-wrap" style={{ height: '100dvh' }}>
+        <div className="spinner"/>
+      </div>
+    </div>
+  )
 
   return (
     <div className="screen">

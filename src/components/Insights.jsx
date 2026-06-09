@@ -1,5 +1,5 @@
-import { useMemo } from 'react'
-import { db } from '../db.js'
+import { useState, useEffect, useMemo } from 'react'
+import { db, computeRecentMonths } from '../db.js'
 import { CAT_META, formatRM, monthLabel } from '../utils.js'
 import { GearIcon } from '../Icons.jsx'
 import './Insights.css'
@@ -52,16 +52,25 @@ function TrendChart({ months }) {
 }
 
 export default function Insights({ showToast, onSettings }) {
+  const [allExpenses, setAllExpenses] = useState([])
+  const [loadingData, setLoadingData] = useState(true)
+
+  useEffect(() => {
+    db.getExpenses().then(data => { setAllExpenses(data); setLoadingData(false) })
+  }, [])
+
   const now = new Date()
   const thisYear  = now.getFullYear()
   const thisMonth = now.getMonth()
   const prevYear  = thisMonth === 0 ? thisYear - 1 : thisYear
   const prevMonth = thisMonth === 0 ? 11 : thisMonth - 1
 
-  const expenses     = db.getMonthExpenses(thisYear, thisMonth)
-  const prevExpenses = db.getMonthExpenses(prevYear, prevMonth)
-  const allExpenses  = db.getExpenses()
-  const recentMonths = db.getRecentMonths(6)
+  const thisPrefix = `${thisYear}-${String(thisMonth + 1).padStart(2, '0')}`
+  const prevPrefix = `${prevYear}-${String(prevMonth + 1).padStart(2, '0')}`
+
+  const expenses     = useMemo(() => allExpenses.filter(e => e.date?.startsWith(thisPrefix)), [allExpenses])
+  const prevExpenses = useMemo(() => allExpenses.filter(e => e.date?.startsWith(prevPrefix)), [allExpenses])
+  const recentMonths = useMemo(() => computeRecentMonths(allExpenses, 6), [allExpenses])
 
   const thisTotal = expenses.reduce((s, e) => s + (e.amount || 0), 0)
   const prevTotal = prevExpenses.reduce((s, e) => s + (e.amount || 0), 0)
@@ -105,6 +114,14 @@ export default function Insights({ showToast, onSettings }) {
   }, [expenses])
 
   const totalForMerchants = expenses.reduce((s, e) => s + (e.amount || 0), 0)
+
+  if (loadingData) return (
+    <div className="screen">
+      <div className="loading-wrap" style={{ height: '100dvh' }}>
+        <div className="spinner"/>
+      </div>
+    </div>
+  )
 
   return (
     <div className="screen">

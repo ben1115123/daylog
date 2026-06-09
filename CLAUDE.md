@@ -7,7 +7,7 @@ Smart calendar and spending tracker PWA. React + Vite. AI parsing via Anthropic 
 - React 18, Vite 5, date-fns 3
 - PWA via vite-plugin-pwa
 - No UI library — all custom CSS
-- Storage: localStorage via `src/db.js`
+- Storage: Supabase (expenses + events) via `src/db.js`; localStorage for settings/budgets/income only
 - AI: `src/ai.js` → Anthropic Messages API (`claude-haiku-4-5-20251001`)
 - Icons: `src/Icons.jsx` — SVG components only, no emoji anywhere
 
@@ -198,11 +198,13 @@ No ambient animations. No floating. No glow. No gradient shimmer. Nothing decora
 
 ```
 src/
-  App.jsx              # root shell, tab router, toast
-  App.css              # app shell, bottom nav, screen-header, card, section
-  index.css            # design tokens, global reset, keyframes
+  App.jsx              # root shell, tab router, toast, offline badge, migration
+  App.css              # app shell, bottom nav, screen-header, card, section, offline-badge
+  index.css            # design tokens, global reset, keyframes, .spinner/.loading-wrap
   Icons.jsx            # ALL SVG icon components — category icons + action icons
-  db.js                # localStorage CRUD (expenses, events, settings, budgets)
+  db.js                # Supabase CRUD (expenses, events) + localStorage (settings, budgets, income)
+                       # Exports: db, expandEvents (sync), computeRecentMonths (sync), offlineMode
+  supabase.js          # Supabase client (createClient from env vars)
   ai.js                # Anthropic Messages API (claude-haiku-4-5-20251001) + response parser
   utils.js             # CAT_META (no emoji — label + color only), PRESETS, formatRM, formatDate, formatTime
   components/
@@ -213,10 +215,21 @@ src/
     Toast.jsx/css      # ephemeral feedback (mono text, dark surface)
 ```
 
+## Architecture
+
+- **expenses / events** → Supabase (`expenses`, `events` tables). All db methods are async.
+- **settings / budgets / income** → localStorage only. Synchronous, no change.
+- **Offline fallback** → after each fetch, cache to `dl_cache_expenses` / `dl_cache_events`. If Supabase fails, use cache silently. Offline state broadcast via `daylog:offline` window event; App.jsx shows `.offline-badge`.
+- **One-time migration** → on app load, if `dl_expenses` / `dl_events` keys exist in localStorage, bulk insert to Supabase, then clear old keys.
+- **Schema** → `supabase-schema.sql` (run once in Supabase Dashboard → SQL Editor).
+- **Recurring event expansion** → `expandEvents(baseEvents)` is a pure sync function; Calendar.jsx keeps base events in state and computes expanded view via `useMemo`.
+
 ## Environment
 
 ```
-VITE_ANTHROPIC_API_KEY=...   # .env.local — gitignored
+VITE_ANTHROPIC_API_KEY=...    # .env.local — gitignored
+VITE_SUPABASE_URL=...         # .env.local — gitignored
+VITE_SUPABASE_ANON_KEY=...    # .env.local — gitignored
 ```
 
-Fallback: `localStorage.getItem('dl_anthropic_key')`
+Add all three to Vercel environment variables dashboard.
