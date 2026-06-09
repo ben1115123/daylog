@@ -225,13 +225,14 @@ export const db = {
 
   /* ── Month / range queries ─────────────────────────── */
   async getMonthExpenses(year, month) {
-    const prefix = monthKey(year, month)
+    const prefix  = monthKey(year, month)
+    const lastDay = new Date(year, month, 0).getDate()
     try {
       const { data, error } = await supabase
         .from('expenses')
         .select('*')
         .gte('date', `${prefix}-01`)
-        .lte('date', `${prefix}-31`)
+        .lte('date', `${prefix}-${lastDay}`)
         .order('date', { ascending: false })
       if (error) throw error
       return data
@@ -385,13 +386,14 @@ export const db = {
   },
 
   async getMonthIncome(year, month) {
-    const prefix = monthKey(year, month)
+    const prefix  = monthKey(year, month)
+    const lastDay = new Date(year, month, 0).getDate()
     try {
       const { data, error } = await supabase
         .from('income')
         .select('*')
         .gte('date', `${prefix}-01`)
-        .lte('date', `${prefix}-31`)
+        .lte('date', `${prefix}-${lastDay}`)
         .order('date', { ascending: false })
       if (error) throw error
       return data
