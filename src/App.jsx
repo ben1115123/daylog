@@ -24,39 +24,30 @@ async function checkRecurring(showToast) {
   const startDate  = `${monthPrefix}-01`
   const endDate    = `${monthPrefix}-${lastDay}`
 
-  const expKey = `dl_expenses_logged_${year}_${month}`
-  const incKey = `dl_income_logged_${year}_${month}`
-
-  if (!sessionStorage.getItem(expKey)) {
-    sessionStorage.setItem(expKey, 'true')
-    const recurring = await db.getRecurring()
-    for (const item of recurring.filter(r => r.active && r.day_of_month <= dayOfMonth)) {
-      const { count } = await supabase
-        .from('expenses')
-        .select('*', { count: 'exact', head: true })
-        .eq('description', item.description)
-        .gte('date', startDate)
-        .lte('date', endDate)
-      if (count > 0) continue
-      await db.addExpense({ description: item.description, amount: item.amount, category: item.category, date: todayStr })
-      showToast(`Auto-logged: ${item.description} ${formatRM(item.amount)}`)
-    }
+  const recurring = await db.getRecurring()
+  for (const item of recurring.filter(r => r.active && r.day_of_month <= dayOfMonth)) {
+    const { count } = await supabase
+      .from('expenses')
+      .select('*', { count: 'exact', head: true })
+      .eq('description', item.description)
+      .gte('date', startDate)
+      .lte('date', endDate)
+    if (count > 0) continue
+    await db.addExpense({ description: item.description, amount: item.amount, category: item.category, date: todayStr })
+    showToast(`Auto-logged: ${item.description} ${formatRM(item.amount)}`)
   }
 
-  if (!sessionStorage.getItem(incKey)) {
-    sessionStorage.setItem(incKey, 'true')
-    const recurringIncome = await db.getRecurringIncome()
-    for (const item of recurringIncome.filter(r => r.active && r.day_of_month <= dayOfMonth)) {
-      const { count } = await supabase
-        .from('income')
-        .select('*', { count: 'exact', head: true })
-        .eq('description', item.description)
-        .gte('date', startDate)
-        .lte('date', endDate)
-      if (count > 0) continue
-      await db.addIncome({ description: item.description, amount: item.amount, category: item.category, date: todayStr })
-      showToast(`Auto-logged: ${item.description} ${formatRM(item.amount)}`)
-    }
+  const recurringIncome = await db.getRecurringIncome()
+  for (const item of recurringIncome.filter(r => r.active && r.day_of_month <= dayOfMonth)) {
+    const { count } = await supabase
+      .from('income')
+      .select('*', { count: 'exact', head: true })
+      .eq('description', item.description)
+      .gte('date', startDate)
+      .lte('date', endDate)
+    if (count > 0) continue
+    await db.addIncome({ description: item.description, amount: item.amount, category: item.category, date: todayStr })
+    showToast(`Auto-logged: ${item.description} ${formatRM(item.amount)}`)
   }
 }
 
