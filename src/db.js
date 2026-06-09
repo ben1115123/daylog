@@ -307,11 +307,14 @@ export const db = {
   async seedRecurring() {
     if (localStorage.getItem('dl_recurring_seeded')) return
     try {
-      const { data } = await supabase.from('recurring_expenses').select('id').limit(1)
-      if (data?.length) { localStorage.setItem('dl_recurring_seeded', 'true'); return }
+      const { count, error: countErr } = await supabase
+        .from('recurring_expenses')
+        .select('*', { count: 'exact', head: true })
+      if (countErr) return  // permissions not ready yet — skip, retry next load
+      if (count > 0) { localStorage.setItem('dl_recurring_seeded', 'true'); return }
       const defaults = [
         { description: 'Rental',           amount: 1000,  category: 'rental',       day_of_month: 1, active: true },
-        { description: 'Gym',              amount: 155,   category: 'sports',       day_of_month: 1, active: true },
+        { description: 'Gym Membership',   amount: 155,   category: 'subscription', day_of_month: 1, active: true },
         { description: 'TradingView',      amount: 38,    category: 'subscription', day_of_month: 1, active: true },
         { description: 'Subscriptions',    amount: 93.50, category: 'subscription', day_of_month: 1, active: true },
         { description: 'Seasonal Parking', amount: 120,   category: 'transport',    day_of_month: 1, active: true },
