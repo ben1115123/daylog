@@ -12,24 +12,32 @@ import supabase from './supabase.js'
 import { formatRM } from './utils.js'
 import './App.css'
 
+let recurringCheckInProgress = false
+
 async function checkRecurring(showToast) {
-  const today = new Date()
-  const todayStr   = today.toISOString().split('T')[0]
-  const dayOfMonth = today.getDate()
-  const monthPrefix = todayStr.slice(0, 7)
+  if (recurringCheckInProgress) return
+  recurringCheckInProgress = true
+  try {
+    const today = new Date()
+    const todayStr   = today.toISOString().split('T')[0]
+    const dayOfMonth = today.getDate()
+    const monthPrefix = todayStr.slice(0, 7)
 
-  const recurring = await db.getRecurring()
+    const recurring = await db.getRecurring()
 
-  for (const item of recurring.filter(r => r.active && r.day_of_month <= dayOfMonth)) {
-    const { count } = await supabase
-      .from('expenses')
-      .select('*', { count: 'exact', head: true })
-      .eq('description', item.description)
-      .gte('date', `${monthPrefix}-01`)
-      .lte('date', `${monthPrefix}-31`)
-    if (count > 0) continue
-    await db.addExpense({ description: item.description, amount: item.amount, category: item.category, date: todayStr })
-    showToast(`Auto-logged: ${item.description} ${formatRM(item.amount)}`)
+    for (const item of recurring.filter(r => r.active && r.day_of_month <= dayOfMonth)) {
+      const { count } = await supabase
+        .from('expenses')
+        .select('*', { count: 'exact', head: true })
+        .eq('description', item.description)
+        .gte('date', `${monthPrefix}-01`)
+        .lte('date', `${monthPrefix}-31`)
+      if (count > 0) continue
+      await db.addExpense({ description: item.description, amount: item.amount, category: item.category, date: todayStr })
+      showToast(`Auto-logged: ${item.description} ${formatRM(item.amount)}`)
+    }
+  } finally {
+    recurringCheckInProgress = false
   }
 }
 
