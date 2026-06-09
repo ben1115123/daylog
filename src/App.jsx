@@ -18,6 +18,12 @@ async function checkRecurring(showToast) {
   const dayOfMonth = today.getDate()
   const monthPrefix = todayStr.slice(0, 7)
 
+  // sessionStorage survives StrictMode remounts; set synchronously before any await
+  // so concurrent invocations bail immediately (JS is single-threaded between awaits)
+  const sessionFlag = `dl_rc_${monthPrefix}`
+  if (sessionStorage.getItem(sessionFlag)) return
+  sessionStorage.setItem(sessionFlag, '1')
+
   const recurring = await db.getRecurring()
   for (const item of recurring.filter(r => r.active && r.day_of_month <= dayOfMonth)) {
     const { count } = await supabase
