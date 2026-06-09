@@ -1,4 +1,8 @@
 -- Run this in Supabase Dashboard → SQL Editor
+-- (Re-running is safe — all statements use IF NOT EXISTS / OR REPLACE)
+
+-- ── Grant anon access (required for PostgREST / anon key) ──
+grant usage on schema public to anon, authenticated;
 
 create table if not exists recurring_expenses (
   id           uuid primary key default gen_random_uuid(),
@@ -29,3 +33,8 @@ create table if not exists events (
   recurring   text,
   created_at  timestamptz default now()
 );
+
+-- ── Table-level grants ──────────────────────────────────
+grant all on expenses           to anon, authenticated;
+grant all on events             to anon, authenticated;
+grant all on recurring_expenses to anon, authenticated;
