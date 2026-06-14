@@ -81,6 +81,27 @@
 .ev-dot { width: 3px; height: 3px; border-radius: 50%; background: var(--accent); position: absolute; bottom: 4px; }
 .ev-dot-light { background: var(--accent-on); opacity: 0.6; }
 
+.holiday-dot { width: 3px; height: 3px; border-radius: 50%; background: var(--amber); position: absolute; top: 4px; right: 4px; }
+
+.holiday-label {
+  font-size: 11px; font-family: var(--font-mono); color: var(--amber);
+  margin-bottom: 8px; padding-left: 2px;
+}
+
+.cal-span-bars {
+  position: absolute; left: 0; right: 0; bottom: 1px;
+  display: flex; flex-direction: column; gap: 1px;
+}
+.cal-span-bar { display: block; height: 2px; opacity: 0.7; }
+.cal-span-bar.span-start { margin-left: 3px; border-radius: 2px 0 0 2px; }
+.cal-span-bar.span-end   { margin-right: 3px; border-radius: 0 2px 2px 0; }
+.cal-span-bar.span-mid   { }
+
+.ev-range {
+  font-size: 10px; font-family: var(--font-mono); color: var(--text3);
+  letter-spacing: 0.04em;
+}
+
 .agenda-group { margin-bottom: 20px; }
 .agenda-date-label {
   font-size: 10px; font-family: var(--font-mono); font-weight: 500;

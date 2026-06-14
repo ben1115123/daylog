@@ -2,11 +2,20 @@ import { useState, useMemo, useEffect, useCallback } from 'react'
 import { db, expandEvents } from '../db.js'
 import { EVENT_CATS, formatTime, formatDate } from '../utils.js'
 import { RepeatIcon, PlusIcon } from '../Icons.jsx'
+import { loadHolidaysForCalendar } from '../holidays.js'
 import Sheet from './Sheet.jsx'
 import './Calendar.css'
 
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December']
 const DOWS   = ['Su','Mo','Tu','We','Th','Fr','Sa']
+
+const REMINDER_OPTIONS = [
+  ['', 'None'],
+  ['15', '15 mins before'],
+  ['30', '30 mins before'],
+  ['60', '1 hour before'],
+  ['1440', '1 day before'],
+]
 
 const ChevL = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -43,10 +52,13 @@ function EditEventForm({ ev, onSave, onCancel }) {
     title:     ev.title     || '',
     date:      ev.date      || '',
     time:      ev.time      || '',
+    endDate:   ev.end_date  || '',
     category:  ev.category  || '',
     recurring: ev.recurring || '',
+    reminder:  ev.reminder_minutes != null ? String(ev.reminder_minutes) : '',
     notes:     ev.notes     || '',
   })
+  const [multiDay, setMultiDay] = useState(!!ev.end_date)
 
   return (
     <div className="ev-edit-form">
@@ -72,6 +84,24 @@ function EditEventForm({ ev, onSave, onCancel }) {
           style={{ colorScheme: 'dark', maxWidth: 100 }}
         />
       </div>
+      <div className="sheet-toggle-row">
+        <button
+          className={`sheet-toggle ${multiDay ? 'active' : ''}`}
+          onClick={() => setMultiDay(m => !m)}
+        >
+          Multi-day event
+        </button>
+      </div>
+      {multiDay && (
+        <input
+          className="ev-edit-input"
+          type="date"
+          value={form.endDate}
+          onChange={e => setForm(f => ({ ...f, endDate: e.target.value }))}
+          style={{ colorScheme: 'dark' }}
+          placeholder="End date"
+        />
+      )}
       <div className="ev-edit-row">
         <select
           className="ev-edit-select"
@@ -94,16 +124,28 @@ function EditEventForm({ ev, onSave, onCancel }) {
           <option value="monthly">Monthly</option>
         </select>
       </div>
+      <select
+        className="ev-edit-select"
+        value={form.reminder}
+        onChange={e => setForm(f => ({ ...f, reminder: e.target.value }))}
+        style={{ width: '100%' }}
+      >
+        {REMINDER_OPTIONS.map(([val, label]) => (
+          <option key={val} value={val}>{val === '' ? 'No reminder' : label}</option>
+        ))}
+      </select>
       <div className="ev-edit-actions">
         <button className="edit-cancel" onClick={onCancel}>Cancel</button>
         <button
           className="edit-save"
           onClick={() => onSave({
             ...form,
-            time:      form.time      || null,
-            category:  form.category  || null,
-            recurring: form.recurring || null,
-            notes:     form.notes     || null,
+            time:             form.time      || null,
+            category:         form.category  || null,
+            recurring:        form.recurring || null,
+            notes:            form.notes     || null,
+            end_date:         multiDay && form.endDate ? form.endDate : null,
+            reminder_minutes: form.reminder ? Number(form.reminder) : null,
           })}
         >
           Save
@@ -116,8 +158,9 @@ function EditEventForm({ ev, onSave, onCancel }) {
 /* ── Add event form (bottom sheet) ───────────────────── */
 function AddEventForm({ defaultDate, onSave, onCancel }) {
   const [form, setForm] = useState({
-    title: '', date: defaultDate || '', time: '', category: '', notes: '', recurring: '',
+    title: '', date: defaultDate || '', time: '', endDate: '', category: '', notes: '', recurring: '', reminder: '',
   })
+  const [multiDay, setMultiDay] = useState(false)
 
   const canSave = form.title.trim() && form.date
 
@@ -154,6 +197,42 @@ function AddEventForm({ defaultDate, onSave, onCancel }) {
           />
         </div>
       </div>
+      <div>
+        <div className="sheet-field-label">Remind me</div>
+        <select
+          className="sheet-select"
+          value={form.reminder}
+          onChange={e => setForm(f => ({ ...f, reminder: e.target.value }))}
+        >
+          {REMINDER_OPTIONS.map(([val, label]) => (
+            <option key={val} value={val}>{val === '' ? 'None' : label}</option>
+          ))}
+        </select>
+      </div>
+      <div>
+        <div className="sheet-field-label">Multi-day event</div>
+        <div className="sheet-toggle-row">
+          <button
+            className={`sheet-toggle ${multiDay ? 'active' : ''}`}
+            onClick={() => setMultiDay(m => !m)}
+          >
+            {multiDay ? 'Yes' : 'No'}
+          </button>
+        </div>
+      </div>
+      {multiDay && (
+        <div>
+          <div className="sheet-field-label">End date</div>
+          <input
+            className="sheet-input"
+            type="date"
+            value={form.endDate}
+            min={form.date}
+            onChange={e => setForm(f => ({ ...f, endDate: e.target.value }))}
+            style={{ colorScheme: 'dark' }}
+          />
+        </div>
+      )}
       <div>
         <div className="sheet-field-label">Category</div>
         <select
@@ -203,6 +282,8 @@ function AddEventForm({ defaultDate, onSave, onCancel }) {
             category: form.category || null,
             notes: form.notes.trim() || null,
             recurring: form.recurring || null,
+            end_date: multiDay && form.endDate ? form.endDate : null,
+            reminder_minutes: form.reminder ? Number(form.reminder) : null,
           })}
         >
           Save
@@ -222,6 +303,7 @@ export default function Calendar({ showToast }) {
   const [addOpen, setAddOpen]   = useState(false)
   const [events, setEvents]     = useState([])
   const [loadingData, setLoadingData] = useState(true)
+  const [holidays, setHolidays] = useState({})
 
   const todayStr = now.toISOString().split('T')[0]
 
@@ -233,8 +315,13 @@ export default function Calendar({ showToast }) {
 
   useEffect(() => { loadEvents() }, [loadEvents])
 
+  useEffect(() => {
+    loadHolidaysForCalendar(year, month).then(setHolidays)
+  }, [year, month])
+
   const allExpanded = useMemo(() => expandEvents(events), [events])
   const eventDates  = useMemo(() => new Set(allExpanded.map(e => e.date)), [allExpanded])
+  const spanEvents  = useMemo(() => events.filter(e => e.end_date && e.end_date > e.date), [events])
 
   const prevMonth = () => { if (month === 0) { setMonth(11); setYear(y => y - 1) } else setMonth(m => m - 1) }
   const nextMonth = () => { if (month === 11) { setMonth(0); setYear(y => y + 1) } else setMonth(m => m + 1) }
@@ -321,6 +408,9 @@ export default function Calendar({ showToast }) {
           <div className="ev-title-row">
             <span className="ev-title">{ev.title}</span>
             {ev.recurring && <span className="ev-repeat"><RepeatIcon size={11} /></span>}
+            {ev.end_date && ev.end_date > ev.date && (
+              <span className="ev-range">→ {formatDate(ev.end_date)}</span>
+            )}
           </div>
           {ev.notes && <div className="ev-notes">{ev.notes}</div>}
         </div>
@@ -409,13 +499,30 @@ export default function Calendar({ showToast }) {
                   const isToday = dateStr === todayStr
                   const hasEv = eventDates.has(dateStr)
                   const isSel = dateStr === selected
+                  const isHoliday = !!holidays[dateStr]
+                  const spans = spanEvents.filter(e => dateStr >= e.date && dateStr <= e.end_date)
                   return (
                     <div key={i}
                       className={`cal-cell ${isToday ? 'today' : ''} ${isSel && !isToday ? 'selected' : ''}`}
                       onClick={() => setSelected(isSel ? null : dateStr)}
                     >
                       {cell.day}
+                      {isHoliday && <span className="holiday-dot"/>}
                       {hasEv && <span className={`ev-dot ${isToday ? 'ev-dot-light' : ''}`}/>}
+                      {spans.length > 0 && (
+                        <div className="cal-span-bars">
+                          {spans.slice(0, 2).map(ev => {
+                            const pos = dateStr === ev.date ? 'start' : dateStr === ev.end_date ? 'end' : 'mid'
+                            return (
+                              <span
+                                key={ev.id}
+                                className={`cal-span-bar span-${pos}`}
+                                style={{ background: EVENT_CATS[ev.category]?.color || 'var(--accent)' }}
+                              />
+                            )
+                          })}
+                        </div>
+                      )}
                     </div>
                   )
                 })}
@@ -425,6 +532,9 @@ export default function Calendar({ showToast }) {
 
           <div className="section" style={{ marginTop: 20, paddingBottom: 32 }}>
             <div className="section-label">{selected ? formatDate(selected) : 'Upcoming'}</div>
+            {selected && holidays[selected] && (
+              <div className="holiday-label">{holidays[selected]}</div>
+            )}
             {selectedEvents.length === 0 ? (
               <div className="empty">{selected ? 'nothing on this day' : 'no upcoming events'}</div>
             ) : (

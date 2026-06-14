@@ -37,6 +37,16 @@ function monthKey(year, month) {
   return `${year}-${String(month + 1).padStart(2, '0')}`
 }
 
+async function syncToAppleCalendar(action, event) {
+  try {
+    const { data, error } = await supabase.functions.invoke('sync-calendar', { body: { action, event } })
+    if (error || !data?.success) return
+    if (action === 'add' && data.uid && event.id) {
+      await supabase.from('events').update({ apple_uid: data.uid }).eq('id', event.id)
+    }
+  } catch {}
+}
+
 export let offlineMode = false
 
 function setOffline(val) {
@@ -172,12 +182,14 @@ export const db = {
 
   async addEvent(event) {
     const row = {
-      title:     event.title,
-      date:      event.date,
-      time:      event.time      || null,
-      category:  event.category  || null,
-      notes:     event.notes     || null,
-      recurring: event.recurring || null,
+      title:            event.title,
+      date:             event.date,
+      time:             event.time      || null,
+      category:         event.category  || null,
+      notes:            event.notes     || null,
+      recurring:        event.recurring || null,
+      end_date:         event.end_date  || event.endDate || null,
+      reminder_minutes: event.reminder_minutes ?? event.reminderMinutes ?? null,
     }
     try {
       const { data, error } = await supabase
@@ -190,6 +202,7 @@ export const db = {
       cache.push(data)
       cache.sort((a, b) => (a.date + (a.time || '')) < (b.date + (b.time || '')) ? -1 : 1)
       lsSave(CACHE.events, cache)
+      syncToAppleCalendar('add', data)
       return data
     } catch {
       setOffline(true)
@@ -216,6 +229,8 @@ export const db = {
 
   async deleteEvent(id) {
     try {
+      const { data: existing } = await supabase.from('events').select('apple_uid').eq('id', id).single()
+      if (existing?.apple_uid) syncToAppleCalendar('delete', { id, apple_uid: existing.apple_uid })
       const { error } = await supabase.from('events').delete().eq('id', id)
       if (error) throw error
     } catch {

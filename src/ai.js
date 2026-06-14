@@ -23,6 +23,7 @@ Return this exact JSON structure:
     "date": "YYYY-MM-DD",
     "time": "HH:MM" or null,
     "endTime": "HH:MM" or null,
+    "endDate": "YYYY-MM-DD" or null,
     "notes": "brief notes" or null,
     "recurring": "daily" | "weekly" | "monthly" | null,
     "category": "work" | "personal" | "health" | "social" | "finance" | null
@@ -76,6 +77,11 @@ Recurring rules:
 
 Time inference: "morning" = 09:00, "lunch" = 12:30, "afternoon" = 14:00, "evening" = 18:00, "night" = 20:00
 Date inference: infer from relative terms like "tomorrow", "next Friday", "this weekend" based on today's date.
+
+Multi-day event rules:
+- If the user describes a span ("team trip fri to sun", "KL conference 3-5 July", "vacation from 10th to 15th"), set "date" to the start date and "endDate" to the end date (both YYYY-MM-DD).
+- If only a single date is mentioned, leave "endDate" as null.
+- "fri to sun" etc — resolve both days relative to today's date, end date must be on or after start date (roll to next week if needed).
 
 Income rules (set type: "income", populate income object, expense/event = null):
 - salary: received salary, got paid, salary in, gaji, gaji masuk, bonus, allowance, commission, paycheck, monthly pay

@@ -207,10 +207,11 @@ src/
   supabase.js          # Supabase client (createClient from env vars)
   ai.js                # Anthropic Messages API (claude-haiku-4-5-20251001) + response parser
   utils.js             # CAT_META (no emoji — label + color only), CATEGORIES (18 incl. investment), QUICK_CHIPS, formatRM, formatDate, formatTime
+  holidays.js          # Malaysia public holiday lookup — getHolidays(year), loadHolidaysForCalendar(year, month)
   components/
     Home.jsx/css       # topbar + two-line hero greeting + borderless input + preset chips + recent
     Spending.jsx/css   # budget hero + category breakdown + expense list (all SVG icons)
-    Calendar.jsx/css   # month grid + event list (SVG nav arrows)
+    Calendar.jsx/css   # month grid + event list (SVG nav arrows), multi-day span bars, holiday dots
     Settings.jsx/css   # budgets, name, API key, data actions (SVG category icons)
     Toast.jsx/css      # ephemeral feedback (mono text, dark surface)
 ```
@@ -224,6 +225,27 @@ src/
 - **One-time migration** → on app load, if `dl_expenses` / `dl_events` keys exist in localStorage, bulk insert to Supabase, then clear old keys.
 - **Schema** → `supabase-schema.sql` (run once in Supabase Dashboard → SQL Editor). Includes `ALTER TABLE` migrations — safe to re-run.
 - **Recurring event expansion** → `expandEvents(baseEvents)` is a pure sync function; Calendar.jsx keeps base events in state and computes expanded view via `useMemo`.
+
+### Multi-day events
+- `events.end_date` (date, nullable) — when set and later than `date`, the event spans a range.
+- Add/Edit event forms in Calendar.jsx have a "Multi-day event" toggle that reveals an end-date picker.
+- The month grid renders a coloured span bar (`.cal-span-bars` / `.cal-span-bar`) across each day the event covers, with rounded ends only on the start/end day.
+- `ai.js` parses ranges like "team trip fri to sun" into `event.date` (start) + `event.endDate`, mapped to `end_date` by `db.addEvent`.
+
+### Malaysia public holidays
+- `src/holidays.js` → `loadHolidaysForCalendar(year, month)`, called from Calendar.jsx on year/month change.
+- Tries Nager.Date (`date.nager.at/api/v3/PublicHolidays/{year}/MY`) first, caches result in `localStorage` as `dl_holidays_{year}`.
+- **Nager.Date does not currently support Malaysia** (MY absent from `AvailableCountries`, 204 on every request) — falls back to a bundled `FALLBACK_HOLIDAYS` map (national + Selangor/MY-10 + KL/MY-14). Update this map yearly; Islamic dates shift.
+- Grid shows a muted amber dot (`.holiday-dot`) on holiday dates; tapping the date shows the holiday name (`.holiday-label`) above the day's event list.
+- December auto-fetches next year's holidays too.
+
+### Apple Calendar sync (CalDAV)
+- `supabase/functions/sync-calendar/index.ts` — Deno Edge Function. Connects to `caldav.icloud.com` using `APPLE_ID` / `APPLE_APP_PASSWORD` Edge Function secrets (never exposed to the client).
+  - `action: 'add'` — discovers the user's calendar collection (PROPFIND principal → calendar-home-set → first VEVENT-capable calendar), builds an iCal VEVENT (with `VALARM` if `reminder_minutes` set), PUTs it, returns `{ success, uid }` where `uid` is the full CalDAV resource URL.
+  - `action: 'delete'` — DELETEs the stored resource URL (`event.apple_uid`).
+- `db.js` → `syncToAppleCalendar(action, event)` is called (fire-and-forget, errors swallowed) after `addEvent`/before `deleteEvent`. On successful add, `events.apple_uid` is updated with the returned resource URL so delete can target it later.
+- `events.reminder_minutes` (integer, nullable) — set via the "Remind me" dropdown (None / 15m / 30m / 1h / 1 day) in the event sheet, passed through to the VALARM trigger.
+- Deploy: `supabase functions deploy sync-calendar`. Secrets: `supabase secrets set APPLE_ID=... APPLE_APP_PASSWORD=...` (use an app-specific password from appleid.apple.com).
 
 ## Environment
 

@@ -35,6 +35,9 @@ create table if not exists events (
   recurring   text,
   created_at  timestamptz default now()
 );
+alter table events add column if not exists end_date date;
+alter table events add column if not exists reminder_minutes integer;
+alter table events add column if not exists apple_uid text;
 
 create table if not exists income (
   id          uuid primary key default gen_random_uuid(),
