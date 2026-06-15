@@ -386,6 +386,14 @@ export default function Spending({ showToast }) {
     showToast('Expense added')
   }
 
+  const handleDeleteIncome = async (id) => {
+    if (confirm('Delete this income entry?')) {
+      await db.deleteIncome(id)
+      await doRefresh(year, month)
+      showToast('Deleted')
+    }
+  }
+
   const handleAddIncome = async (income) => {
     await db.addIncome(income)
     setAddIncomeOpen(false)
@@ -773,7 +781,16 @@ export default function Spending({ showToast }) {
                         {inc.notes && <div className="exp-notes">{inc.notes}</div>}
                         <div className="exp-sub">{meta?.label} · {formatDate(inc.date)}</div>
                       </div>
-                      <div className="exp-amount" style={{ color: meta?.color }}>+{formatRM(inc.amount)}</div>
+                      <div className="exp-right">
+                        <div className="exp-amount" style={{ color: meta?.color }}>+{formatRM(inc.amount)}</div>
+                        <div className="exp-btn-row">
+                          <button className="icon-btn del" onClick={() => handleDeleteIncome(inc.id)} aria-label="Delete">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   )
                 })}

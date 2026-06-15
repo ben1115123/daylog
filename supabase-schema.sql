@@ -60,9 +60,17 @@ create table if not exists recurring_income (
   created_at   timestamptz default now()
 );
 
+-- app_state: small key/value store for app-wide flags (onboarding, seed flags)
+-- shared across all dev ports/origins, unlike localStorage
+create table if not exists app_state (
+  key   text primary key,
+  value text
+);
+
 -- ── Table-level grants ──────────────────────────────────
 grant all on expenses           to anon, authenticated;
 grant all on events             to anon, authenticated;
 grant all on recurring_expenses to anon, authenticated;
 grant all on income             to anon, authenticated;
 grant all on recurring_income   to anon, authenticated;
+grant all on app_state           to anon, authenticated;

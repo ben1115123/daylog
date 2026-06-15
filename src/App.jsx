@@ -100,9 +100,7 @@ export default function App() {
   const [toast, setToast]           = useState(null)
   const [refresh, setRefresh]       = useState(0)
   const [isOffline, setIsOffline]   = useState(false)
-  const [showOnboarding, setShowOnboarding] = useState(
-    !localStorage.getItem('dl_onboarded')
-  )
+  const [showOnboarding, setShowOnboarding] = useState(null)
   const recurringChecked = useRef(false)
 
   const showToast = useCallback((msg, type = 'success') => {
@@ -122,10 +120,11 @@ export default function App() {
     migrateFromLocalStorage(showToast)
     db.seedRecurring()
     db.seedRecurringIncome()
+    db.isOnboarded().then(done => setShowOnboarding(!done))
   }, [showToast])
 
   useEffect(() => {
-    if (showOnboarding) return
+    if (showOnboarding !== false) return
     if (recurringChecked.current) return
     recurringChecked.current = true
     checkRecurring(showToast)
@@ -140,7 +139,7 @@ export default function App() {
       category: 'salary',
       date: now.toISOString().split('T')[0],
     })
-    localStorage.setItem('dl_onboarded', 'true')
+    db.setOnboarded()
     setShowOnboarding(false)
     setRefresh(r => r + 1)
   }
@@ -153,6 +152,14 @@ export default function App() {
     { id: 'calendar', label: 'Calendar', Icon: NavCalendarIcon },
     { id: 'insights', label: 'Insights', Icon: NavInsightsIcon },
   ]
+
+  if (showOnboarding === null) {
+    return (
+      <div className="loading-wrap" style={{ height: '100dvh' }}>
+        <div className="spinner"/>
+      </div>
+    )
+  }
 
   if (showOnboarding) {
     return <Onboarding onComplete={handleOnboardingComplete} />

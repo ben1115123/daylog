@@ -316,7 +316,10 @@ export default function Calendar({ showToast }) {
   useEffect(() => { loadEvents() }, [loadEvents])
 
   useEffect(() => {
-    loadHolidaysForCalendar(year, month).then(setHolidays)
+    loadHolidaysForCalendar(year, month).then(h => {
+      console.log('[daylog] holidays loaded for', year, month + 1, h)
+      setHolidays(h)
+    })
   }, [year, month])
 
   const allExpanded = useMemo(() => expandEvents(events), [events])

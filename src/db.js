@@ -37,6 +37,22 @@ function monthKey(year, month) {
   return `${year}-${String(month + 1).padStart(2, '0')}`
 }
 
+/* ── App-wide flags (Supabase-backed, port-independent) ─ */
+async function getFlag(key) {
+  try {
+    const { data, error } = await supabase.from('app_state').select('value').eq('key', key).maybeSingle()
+    if (error) throw error
+    if (data) { lsSave('dl_flag_' + key, data.value); return data.value }
+    return lsLoad('dl_flag_' + key, null)
+  } catch {
+    return lsLoad('dl_flag_' + key, null)
+  }
+}
+async function setFlag(key, value) {
+  lsSave('dl_flag_' + key, value)
+  try { await supabase.from('app_state').upsert({ key, value }) } catch {}
+}
+
 async function syncToAppleCalendar(action, event) {
   try {
     const { data, error } = await supabase.functions.invoke('sync-calendar', { body: { action, event } })
@@ -323,13 +339,13 @@ export const db = {
   },
 
   async seedRecurring() {
-    if (localStorage.getItem('dl_recurring_seeded')) return
+    if (await getFlag('recurring_seeded')) return
     try {
       const { count, error: countErr } = await supabase
         .from('recurring_expenses')
         .select('*', { count: 'exact', head: true })
       if (countErr) return  // permissions not ready yet — skip, retry next load
-      if (count > 0) { localStorage.setItem('dl_recurring_seeded', 'true'); return }
+      if (count > 0) { await setFlag('recurring_seeded', 'true'); return }
       const defaults = [
         { description: 'Rental',           amount: 1000,  category: 'rental',       day_of_month: 1, active: true },
         { description: 'Gym Membership',   amount: 155,   category: 'subscription', day_of_month: 1, active: true },
@@ -338,7 +354,7 @@ export const db = {
         { description: 'Seasonal Parking', amount: 120,   category: 'transport',    day_of_month: 1, active: true },
       ]
       const { error } = await supabase.from('recurring_expenses').insert(defaults)
-      if (!error) localStorage.setItem('dl_recurring_seeded', 'true')
+      if (!error) await setFlag('recurring_seeded', 'true')
     } catch {}
   },
 
@@ -474,19 +490,27 @@ export const db = {
   },
 
   async seedRecurringIncome() {
-    if (localStorage.getItem('dl_recurring_income_seeded')) return
+    if (await getFlag('recurring_income_seeded')) return
     try {
       const { count, error: countErr } = await supabase
         .from('recurring_income')
         .select('*', { count: 'exact', head: true })
       if (countErr) return
-      if (count > 0) { localStorage.setItem('dl_recurring_income_seeded', 'true'); return }
+      if (count > 0) { await setFlag('recurring_income_seeded', 'true'); return }
       const defaults = [
         { description: 'Salary', amount: 3100, category: 'salary', day_of_month: 1, active: true },
       ]
       const { error } = await supabase.from('recurring_income').insert(defaults)
-      if (!error) localStorage.setItem('dl_recurring_income_seeded', 'true')
+      if (!error) await setFlag('recurring_income_seeded', 'true')
     } catch {}
+  },
+
+  /* ── Onboarding flag ──────────────────────────────── */
+  async isOnboarded() {
+    return (await getFlag('onboarded')) === 'true'
+  },
+  async setOnboarded() {
+    await setFlag('onboarded', 'true')
   },
 }
 
