@@ -2,7 +2,7 @@
   position: fixed;
   inset: 0;
   background: rgba(0,0,0,0.5);
-  z-index: 200;
+  z-index: 500;
   display: flex;
   align-items: flex-end;
   animation: fadeIn 0.15s ease;
@@ -66,6 +66,8 @@
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
+  /* pushes sticky bottom:0 constraint up by nav-bar + safe-area height */
+  padding-bottom: calc(env(safe-area-inset-bottom) + 80px);
 }
 
 .sheet-body {
@@ -82,7 +84,7 @@
   background: var(--bg2);
   display: flex;
   gap: 10px;
-  padding: 14px 20px calc(16px + env(safe-area-inset-bottom));
+  padding: 14px 20px 16px; /* safe-area handled by scroll container padding */
   margin-top: 4px;
   border-top: 0.5px solid var(--border);
 }
