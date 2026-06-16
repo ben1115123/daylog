@@ -3,6 +3,7 @@ import { db, expandEvents } from '../db.js'
 import { EVENT_CATS, formatTime, formatDate } from '../utils.js'
 import { RepeatIcon, PlusIcon } from '../Icons.jsx'
 import { loadHolidaysForCalendar } from '../holidays.js'
+import DLMark from './DLMark.jsx'
 import Sheet from './Sheet.jsx'
 import './Calendar.css'
 
@@ -461,6 +462,7 @@ export default function Calendar({ showToast }) {
       <div className="screen-header">
         <div className="screen-header-row">
           <div>
+            <div className="screen-dl-mark"><DLMark /></div>
             <div className="screen-label">Schedule</div>
             <div className="screen-heading">Calendar</div>
           </div>

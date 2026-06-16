@@ -2,7 +2,10 @@ import { useState, useRef, useEffect, useMemo } from 'react'
 import { db, computeRecentMonths } from '../db.js'
 import { CAT_META, CATEGORIES, formatRM, formatDate, monthLabel } from '../utils.js'
 import { CAT_ICONS, SearchIcon, XIcon, PlusIcon } from '../Icons.jsx'
+import DLMark from './DLMark.jsx'
 import Sheet from './Sheet.jsx'
+import { useCountUp } from '../hooks/useCountUp.js'
+import { useStaggeredEntries } from '../hooks/useStaggeredEntries.js'
 import './Spending.css'
 
 /* ── SVG donut chart ─────────────────────────────────── */
@@ -466,6 +469,11 @@ export default function Spending({ showToast }) {
   )
   const runningTotal = savingsHistory.reduce((s, m) => s + Math.max(0, m.saved), 0)
 
+  const animTotal     = useCountUp(loadingData ? 0 : total, 1200)
+  const animRemaining = useCountUp(loadingData ? 0 : Math.abs(remaining), 1200)
+  const animPct       = useCountUp(loadingData ? 0 : pct, 1200)
+  const isVisible     = useStaggeredEntries(loadingData ? [] : expenses)
+
   const ChevL = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
   const ChevR = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
 
@@ -482,6 +490,7 @@ export default function Spending({ showToast }) {
       <div className="screen-header">
         <div className="screen-header-row">
           <div>
+            <div className="screen-dl-mark"><DLMark /></div>
             <div className="screen-label">Overview</div>
             <div className="screen-heading">Spending</div>
           </div>
@@ -566,17 +575,17 @@ export default function Spending({ showToast }) {
               <div className="budget-top">
                 <div>
                   <div className="budget-label">Spent</div>
-                  <div className="budget-total">{formatRM(total)}</div>
+                  <div className="budget-total">{formatRM(animTotal)}</div>
                 </div>
                 <div style={{ textAlign: 'right' }}>
                   <div className="budget-label">Remaining</div>
                   <div className="budget-total" style={{ color: remaining < 0 ? 'var(--red)' : 'var(--accent)' }}>
-                    {formatRM(Math.abs(remaining))}
+                    {formatRM(animRemaining)}
                   </div>
                 </div>
               </div>
               <div className="budget-track">
-                <div className="budget-fill" style={{ width: pct + '%', background: pct >= 90 ? 'var(--red)' : 'var(--accent)' }}/>
+                <div className="budget-fill" style={{ width: animPct + '%', background: pct >= 90 ? 'var(--red)' : 'var(--accent)', transition: 'width 0.05s linear' }}/>
               </div>
               <div className="budget-foot">
                 <span>{pct}% of {formatRM(settings.totalBudget)} budget</span>
@@ -653,6 +662,7 @@ export default function Spending({ showToast }) {
                   const meta = CAT_META[e.category]
                   const Icon = CAT_ICONS[e.category]
                   const isLast = i === expenses.length - 1
+                  const vis = isVisible(i)
 
                   if (editId === e.id) {
                     return (
@@ -667,7 +677,7 @@ export default function Spending({ showToast }) {
                   }
 
                   return (
-                    <div key={e.id} className={`exp-row ${isLast ? '' : 'bordered'}`}>
+                    <div key={e.id} className={`exp-row stagger-item${vis ? ' stagger-vis' : ''} ${isLast ? '' : 'bordered'}`}>
                       <span className="exp-icon-wrap" style={{ color: meta?.color, background: (meta?.color || '#fff') + '18' }}>
                         {Icon && <Icon size={14} />}
                       </span>

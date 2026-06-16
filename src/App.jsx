@@ -5,6 +5,7 @@ import Calendar from './components/Calendar.jsx'
 import Settings from './components/Settings.jsx'
 import Insights from './components/Insights.jsx'
 import Onboarding from './components/Onboarding.jsx'
+import Splash from './components/Splash.jsx'
 import Toast from './components/Toast.jsx'
 import { NavLogIcon, NavChartIcon, NavCalendarIcon, NavInsightsIcon } from './Icons.jsx'
 import { db } from './db.js'
@@ -95,6 +96,7 @@ async function migrateFromLocalStorage(showToast) {
 }
 
 export default function App() {
+  const [splashDone, setSplashDone] = useState(false)
   const [tab, setTab]               = useState('home')
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [toast, setToast]           = useState(null)
@@ -152,6 +154,8 @@ export default function App() {
     { id: 'calendar', label: 'Calendar', Icon: NavCalendarIcon },
     { id: 'insights', label: 'Insights', Icon: NavInsightsIcon },
   ]
+
+  if (!splashDone) return <Splash onDone={() => setSplashDone(true)} />
 
   if (showOnboarding === null) {
     return (

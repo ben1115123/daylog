@@ -83,3 +83,23 @@ input, textarea, select { font-family: var(--font-sans); color: inherit; }
   border-radius: 50%;
   animation: spin 0.65s linear infinite;
 }
+
+/* ── DL logo mark ─────────────────────────────────────── */
+.dl-mark { font-family: Georgia, 'Times New Roman', serif; display: inline; }
+.dl-mark em { font-style: italic; font-weight: 700; color: #e6edf3; }
+.dl-mark b  { font-style: normal; font-weight: 300; color: #58a6ff; }
+
+/* ── Stagger animation ────────────────────────────────── */
+.stagger-item {
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+.stagger-item.stagger-vis {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stagger-item { opacity: 1; transform: none; transition: none; }
+}

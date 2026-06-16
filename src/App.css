@@ -95,6 +95,12 @@
   border-bottom: 0.5px solid var(--border);
 }
 
+.screen-dl-mark {
+  font-size: 18px;
+  line-height: 1;
+  margin-bottom: 8px;
+}
+
 .screen-label {
   font-size: 10px;
   font-family: var(--font-mono);

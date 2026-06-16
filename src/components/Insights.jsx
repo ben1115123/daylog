@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { db, computeRecentMonths } from '../db.js'
 import { CAT_META, formatRM, monthLabel } from '../utils.js'
 import { GearIcon } from '../Icons.jsx'
+import DLMark from './DLMark.jsx'
 import './Insights.css'
 
 /* ── Income vs Expenses dual bar chart ───────────────── */
@@ -190,6 +191,7 @@ export default function Insights({ showToast, onSettings }) {
       <div className="screen-header">
         <div className="insights-header-row">
           <div>
+            <div className="screen-dl-mark"><DLMark /></div>
             <div className="screen-label">Analytics</div>
             <div className="screen-heading">Insights</div>
           </div>

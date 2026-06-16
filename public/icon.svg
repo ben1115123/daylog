@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="115" fill="#0d1117"/>
+  <text font-family="Georgia, 'Times New Roman', serif" font-size="240" text-anchor="middle" x="256" y="338">
+    <tspan font-style="italic" font-weight="700" fill="#e6edf3">D</tspan><tspan font-weight="300" fill="#58a6ff">L</tspan>
+  </text>
+  <line x1="186" y1="366" x2="326" y2="366" stroke="#58a6ff" stroke-opacity="0.4" stroke-width="1.5"/>
+</svg>

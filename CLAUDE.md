@@ -156,12 +156,39 @@ State layers: hover → `--bg3`. Selected → `--accent-dim` + `--accent-border`
 | What | Spec |
 |------|------|
 | Screen enter | `fadeIn 0.15s ease` (slight Y translate) |
-| Progress bar fill | `transition: width 0.35–0.4s ease` |
+| Progress bar fill | count-up via `useCountUp` hook, 1.2s ease-out cubic |
 | Button state | `transition: all 0.15–0.18s ease` |
 | Toast appear | `slideUp 0.18s ease` |
 | Hover states | `transition: color/background 0.12–0.15s ease` |
+| Splash logo in | `splashIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)` |
+| Home header collapse | `0.4s cubic-bezier(0.4, 0, 0.2, 1)` on max-height + opacity |
+| Send burst rings | `sendRing1/2` keyframes, 0.5s + 0.7s, border: 2px solid #58a6ff |
+| Chip ripple | `chipRippleAnim` 0.5s scale(0) → scale(4) opacity 0 |
+| Entry stagger | `0.5s ease` opacity + translateY, 150ms between items |
 
-No ambient animations. No floating. No glow. No gradient shimmer. Nothing decorative.
+All animations guarded by `@media (prefers-reduced-motion: reduce)`.
+
+### DL Logo Mark
+
+`src/components/DLMark.jsx` — shared logo used in Splash + all screen headers.
+- Italic bold **D** in `#e6edf3` + light **L** in `#58a6ff`, Georgia serif
+- CSS in `src/index.css` (`.dl-mark`, `.dl-mark em`, `.dl-mark b`)
+- In screen headers: `.screen-dl-mark { font-size: 18px }` wrapper in `App.css`
+- In Home topbar: `.home-brand` wrapper (22px → 16px on scroll)
+- In Splash: `.splash-logo` wrapper (56px)
+
+### Splash Screen
+
+`src/components/Splash.jsx` / `Splash.css` — shown for ~1.9s on every app open.
+- Rendered in `App.jsx` before the main app (before onboarding check)
+- Animation sequence: logo 0ms → line 300ms → wordmark 500ms → tagline 800ms → dots 1000ms → fade-out 1550ms → done 1900ms
+- Phase state drives `.vis` class on each element
+
+### Custom Hooks
+
+`src/hooks/useCountUp.js` — `useCountUp(target, duration=1200)` → animated integer (ease-out cubic). Re-triggers when `target` changes (month switch).
+
+`src/hooks/useStaggeredEntries.js` — `useStaggeredEntries(items)` → `isVisible(index)` function. Apply `.stagger-item` + `.stagger-vis` CSS classes to rows.
 
 ---
 
@@ -208,10 +235,15 @@ src/
   ai.js                # Anthropic Messages API (claude-haiku-4-5-20251001) + response parser
   utils.js             # CAT_META (no emoji — label + color only), CATEGORIES (18 incl. investment), QUICK_CHIPS, formatRM, formatDate, formatTime
   holidays.js          # Malaysia public holiday lookup — getHolidays(year), loadHolidaysForCalendar(year, month)
+  hooks/
+    useCountUp.js           # count-up animation hook (Spending hero numbers)
+    useStaggeredEntries.js  # staggered fade-up hook (Home recent, Spending expenses)
   components/
-    Home.jsx/css       # topbar + two-line hero greeting + borderless input + preset chips + recent
-    Spending.jsx/css   # budget hero + category breakdown + expense list (all SVG icons)
-    Calendar.jsx/css   # month grid + event list (SVG nav arrows), multi-day span bars, holiday dots
+    DLMark.jsx         # shared DL logo mark (italic D + light L, Georgia serif)
+    Splash.jsx/css     # 1.9s launch splash — DL logo, wordmark, tagline, loading dots
+    Home.jsx/css       # sticky collapsing header, input, burst send, chip ripple, stagger recent
+    Spending.jsx/css   # budget hero (count-up), category breakdown, stagger expense list
+    Calendar.jsx/css   # month grid + event list, multi-day span bars, holiday dots
     Settings.jsx/css   # budgets, name, API key, data actions (SVG category icons)
     Toast.jsx/css      # ephemeral feedback (mono text, dark surface)
 ```

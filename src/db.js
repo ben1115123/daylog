@@ -207,6 +207,7 @@ export const db = {
       end_date:         event.end_date  || event.endDate || null,
       reminder_minutes: event.reminder_minutes ?? event.reminderMinutes ?? null,
     }
+    console.log('[daylog] addEvent row:', row)
     try {
       const { data, error } = await supabase
         .from('events')
@@ -214,13 +215,15 @@ export const db = {
         .select()
         .single()
       if (error) throw error
+      console.log('[daylog] addEvent success:', data)
       const cache = lsLoad(CACHE.events, [])
       cache.push(data)
       cache.sort((a, b) => (a.date + (a.time || '')) < (b.date + (b.time || '')) ? -1 : 1)
       lsSave(CACHE.events, cache)
       syncToAppleCalendar('add', data)
       return data
-    } catch {
+    } catch (err) {
+      console.error('[daylog] addEvent error:', err)
       setOffline(true)
       const fallback = { ...row, id: Date.now() + Math.random(), created_at: new Date().toISOString() }
       const cache = lsLoad(CACHE.events, [])

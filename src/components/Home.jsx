@@ -3,19 +3,28 @@ import { parseInput } from '../ai.js'
 import { db } from '../db.js'
 import { CAT_META, formatRM, formatDate, formatTime } from '../utils.js'
 import { MicIcon, SendIcon, CAT_ICONS } from '../Icons.jsx'
+import DLMark from './DLMark.jsx'
+import { useStaggeredEntries } from '../hooks/useStaggeredEntries.js'
 import './Home.css'
 
 export default function Home({ showToast, onLogged }) {
   const settings = db.getSettings()
   const userName = settings.name || 'You'
 
-  const [text, setText]         = useState('')
-  const [loading, setLoading]   = useState(false)
-  const [recent, setRecent]     = useState([])
+  const [text, setText]               = useState('')
+  const [loading, setLoading]         = useState(false)
+  const [recent, setRecent]           = useState([])
   const [loadingData, setLoadingData] = useState(true)
-  const textareaRef  = useRef(null)
+  const [scrolled, setScrolled]       = useState(false)
+  const [burstKey, setBurstKey]       = useState(null)
+  const [chipRipple, setChipRipple]   = useState(null)
+
+  const textareaRef         = useRef(null)
+  const scrollRef           = useRef(null)
+  const chipRippleTimer     = useRef(null)
+  const burstTimer          = useRef(null)
+  const recognitionRef      = useRef(null)
   const [recording, setRecording] = useState(false)
-  const recognitionRef = useRef(null)
 
   const refreshRecent = useCallback(async () => {
     const [exp, evt, inc] = await Promise.all([
@@ -36,6 +45,19 @@ export default function Home({ showToast, onLogged }) {
 
   useEffect(() => { refreshRecent() }, [refreshRecent])
 
+  const handleScroll = useCallback(() => {
+    setScrolled((scrollRef.current?.scrollTop || 0) > 30)
+  }, [])
+
+  const isVisible = useStaggeredEntries(recent)
+
+  const triggerBurst = () => {
+    clearTimeout(burstTimer.current)
+    const key = Date.now()
+    setBurstKey(key)
+    burstTimer.current = setTimeout(() => setBurstKey(null), 900)
+  }
+
   const handleSend = async () => {
     const input = text.trim()
     if (!input || loading) return
@@ -48,6 +70,7 @@ export default function Home({ showToast, onLogged }) {
       if (parsed.event)   { await db.addEvent(parsed.event);     logged.push('event') }
       if (parsed.income)  { await db.addIncome(parsed.income);   logged.push('income') }
       if (logged.length === 0) { showToast('Could not parse that', 'error'); setLoading(false); return }
+      triggerBurst()
       showToast(
         logged.length === 2 ? 'Logged expense + event' :
         logged[0] === 'expense' ? 'Expense logged' :
@@ -88,24 +111,26 @@ export default function Home({ showToast, onLogged }) {
     refreshRecent(); onLogged()
   }
 
+  const handleChipDown = (e, label) => {
+    const rect = e.currentTarget.getBoundingClientRect()
+    clearTimeout(chipRippleTimer.current)
+    const key = Date.now()
+    setChipRipple({ key, label, x: e.clientX - rect.left, y: e.clientY - rect.top })
+    chipRippleTimer.current = setTimeout(() => setChipRipple(null), 600)
+  }
+
   const toggleMic = () => {
     if (recording) { recognitionRef.current?.stop(); return }
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
     if (!SpeechRecognition) { showToast('Voice input not supported', 'error'); return }
-
     const recognition = new SpeechRecognition()
     recognition.lang = 'en-MY'
     recognition.interimResults = false
     recognition.maxAlternatives = 1
     recognitionRef.current = recognition
-
-    recognition.onresult = (e) => {
-      setText(e.results[0][0].transcript)
-      showToast('Voice captured — edit and send')
-    }
+    recognition.onresult = (e) => { setText(e.results[0][0].transcript); showToast('Voice captured — edit and send') }
     recognition.onerror = () => showToast('Mic access denied', 'error')
     recognition.onend = () => setRecording(false)
-
     recognition.start()
     setRecording(true)
   }
@@ -116,17 +141,21 @@ export default function Home({ showToast, onLogged }) {
   const dateLabel = now.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })
 
   return (
-    <div className="screen home-screen">
-
-      <div className="home-topbar">
-        <span className="home-brand">DAYLOG</span>
-        <span className="home-topdate">{now.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</span>
-      </div>
-
-      <div className="home-hero">
-        <div className="home-subgreeting">{greeting},</div>
-        <div className="home-greeting">{userName}.</div>
-        <div className="home-datestr">{dateLabel}</div>
+    <div
+      ref={scrollRef}
+      className={`screen home-screen${scrolled ? ' scrolled' : ''}`}
+      onScroll={handleScroll}
+    >
+      <div className="home-header">
+        <div className="home-topbar">
+          <span className="home-brand"><DLMark /></span>
+          <span className="home-topdate">{now.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</span>
+        </div>
+        <div className="home-hero">
+          <div className="home-subgreeting">{greeting},</div>
+          <div className="home-greeting">{userName}.</div>
+          <div className="home-datestr">{dateLabel}</div>
+        </div>
       </div>
 
       <div className="home-input-wrap">
@@ -149,17 +178,26 @@ export default function Home({ showToast, onLogged }) {
             >
               <MicIcon active={recording} />
             </button>
-            <button
-              className={`send-btn ${text.trim() ? 'ready' : ''} ${loading ? 'loading' : ''}`}
-              onClick={handleSend}
-              disabled={loading}
-              aria-label="Log entry"
-            >
-              {loading
-                ? <span className="dots"><span/><span/><span/></span>
-                : <SendIcon />
-              }
-            </button>
+            <div className="send-wrap">
+              {burstKey !== null && (
+                <>
+                  <span key={`r1-${burstKey}`} className="send-ring send-ring-1" />
+                  <span key={`r2-${burstKey}`} className="send-ring send-ring-2" />
+                </>
+              )}
+              <button
+                className={`send-btn ${text.trim() ? 'ready' : ''} ${loading ? 'loading' : ''}`}
+                onClick={handleSend}
+                disabled={loading}
+                aria-label="Log entry"
+              >
+                {burstKey !== null && <span key={`rp-${burstKey}`} className="send-btn-ripple" />}
+                {loading
+                  ? <span className="dots"><span/><span/><span/></span>
+                  : <SendIcon />
+                }
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -169,8 +207,21 @@ export default function Home({ showToast, onLogged }) {
         <div className="presets-row">
           {QUICK_CHIPS.map(chip => {
             const color = CAT_META[chip.category]?.color
+            const isRippling = chipRipple?.label === chip.label
             return (
-              <button key={chip.label} className="preset-chip" onClick={() => handleQuickChip(chip)}>
+              <button
+                key={chip.label}
+                className={`preset-chip${isRippling ? ' chip-flash' : ''}`}
+                onPointerDown={(e) => handleChipDown(e, chip.label)}
+                onClick={() => handleQuickChip(chip)}
+              >
+                {isRippling && (
+                  <span
+                    key={chipRipple.key}
+                    className="chip-ripple"
+                    style={{ left: chipRipple.x, top: chipRipple.y }}
+                  />
+                )}
                 <span className="preset-dot" style={{ background: color }} />
                 {chip.label}
               </button>
@@ -189,10 +240,11 @@ export default function Home({ showToast, onLogged }) {
           <div className="card">
             {recent.map((item, i) => {
               const isLast = i === recent.length - 1
+              const vis = isVisible(i)
               if (item._type === 'income') {
                 const meta = CAT_META[item.category]
                 return (
-                  <div key={item.id} className={`entry-row ${isLast ? '' : 'bordered'}`}>
+                  <div key={item.id} className={`entry-row stagger-item${vis ? ' stagger-vis' : ''} ${isLast ? '' : 'bordered'}`}>
                     <span className="entry-icon-wrap" style={{ color: meta?.color, background: (meta?.color || '#fff') + '18' }}>
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
@@ -211,7 +263,7 @@ export default function Home({ showToast, onLogged }) {
                 const meta = CAT_META[item.category]
                 const Icon = CAT_ICONS[item.category]
                 return (
-                  <div key={item.id} className={`entry-row ${isLast ? '' : 'bordered'}`}>
+                  <div key={item.id} className={`entry-row stagger-item${vis ? ' stagger-vis' : ''} ${isLast ? '' : 'bordered'}`}>
                     <span className="entry-icon-wrap" style={{ color: meta?.color, background: meta?.color + '18' }}>
                       {Icon && <Icon size={14} />}
                     </span>
@@ -225,7 +277,7 @@ export default function Home({ showToast, onLogged }) {
                 )
               }
               return (
-                <div key={item.id} className={`entry-row ${isLast ? '' : 'bordered'}`}>
+                <div key={item.id} className={`entry-row stagger-item${vis ? ' stagger-vis' : ''} ${isLast ? '' : 'bordered'}`}>
                   <span className="entry-icon-wrap" style={{ color: 'var(--accent)', background: 'var(--accent-dim)' }}>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
                       <rect x="3" y="4" width="18" height="18" rx="2"/>

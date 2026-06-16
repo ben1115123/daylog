@@ -3,6 +3,7 @@ import { db, DEFAULT_BUDGETS } from '../db.js'
 import supabase from '../supabase.js'
 import { CATEGORIES, CAT_META, formatRM } from '../utils.js'
 import { CAT_ICONS, BackIcon, PlusIcon } from '../Icons.jsx'
+import DLMark from './DLMark.jsx'
 import Sheet from './Sheet.jsx'
 import './Settings.css'
 
@@ -249,6 +250,7 @@ export default function Settings({ showToast, onBack }) {
             </button>
           )}
           <div style={{ flex: 1 }}>
+            <div className="screen-dl-mark"><DLMark /></div>
             <div className="screen-label">Preferences</div>
             <div className="screen-heading">Settings</div>
           </div>
