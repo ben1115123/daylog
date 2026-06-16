@@ -45,6 +45,7 @@ export const EVENT_CATS = {
   health:   { label: 'Health',   color: '#26a69a' },
   social:   { label: 'Social',   color: '#fb923c' },
   finance:  { label: 'Finance',  color: '#facc15' },
+  travel:   { label: 'Travel',   color: '#38bdf8' },
 }
 
 export function formatRM(amount) {

@@ -359,7 +359,8 @@ export default function Calendar({ showToast }) {
   }
 
   const handleAddEvent = async (event) => {
-    await db.addEvent(event)
+    const saved = await db.addEvent(event)
+    console.log('[daylog] event added:', saved)
     setAddOpen(false)
     await loadEvents()
     showToast('Event added')
@@ -411,10 +412,10 @@ export default function Calendar({ showToast }) {
           <div className="ev-title-row">
             <span className="ev-title">{ev.title}</span>
             {ev.recurring && <span className="ev-repeat"><RepeatIcon size={11} /></span>}
-            {ev.end_date && ev.end_date > ev.date && (
-              <span className="ev-range">→ {formatDate(ev.end_date)}</span>
-            )}
           </div>
+          {ev.end_date && ev.end_date > ev.date && (
+            <div className="ev-daterange">{formatDate(ev.date)} → {formatDate(ev.end_date)}</div>
+          )}
           {ev.notes && <div className="ev-notes">{ev.notes}</div>}
         </div>
         <div className="ev-actions">
@@ -521,7 +522,11 @@ export default function Calendar({ showToast }) {
                                 key={ev.id}
                                 className={`cal-span-bar span-${pos}`}
                                 style={{ background: EVENT_CATS[ev.category]?.color || 'var(--accent)' }}
-                              />
+                              >
+                                {pos === 'start' && (
+                                  <span className="cal-span-bar-label">{ev.title}</span>
+                                )}
+                              </span>
                             )
                           })}
                         </div>
