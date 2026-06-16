@@ -27,26 +27,28 @@ async function checkRecurring(showToast) {
 
   const recurring = await db.getRecurring()
   for (const item of recurring.filter(r => r.active && r.day_of_month <= dayOfMonth)) {
-    const { count } = await supabase
+    const { count, error } = await supabase
       .from('expenses')
       .select('*', { count: 'exact', head: true })
       .eq('description', item.description)
       .gte('date', startDate)
       .lte('date', endDate)
-    if (count > 0) continue
+    console.log(`[daylog] recurring check "${item.description}" ${startDate}→${endDate}: count=${count} error=${error?.message ?? null}`)
+    if (error || count === null || count > 0) continue
     await db.addExpense({ description: item.description, amount: item.amount, category: item.category, date: todayStr })
     showToast(`Auto-logged: ${item.description} ${formatRM(item.amount)}`)
   }
 
   const recurringIncome = await db.getRecurringIncome()
   for (const item of recurringIncome.filter(r => r.active && r.day_of_month <= dayOfMonth)) {
-    const { count } = await supabase
+    const { count, error } = await supabase
       .from('income')
       .select('*', { count: 'exact', head: true })
       .eq('description', item.description)
       .gte('date', startDate)
       .lte('date', endDate)
-    if (count > 0) continue
+    console.log(`[daylog] recurring income check "${item.description}" ${startDate}→${endDate}: count=${count} error=${error?.message ?? null}`)
+    if (error || count === null || count > 0) continue
     await db.addIncome({ description: item.description, amount: item.amount, category: item.category, date: todayStr })
     showToast(`Auto-logged: ${item.description} ${formatRM(item.amount)}`)
   }
