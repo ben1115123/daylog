@@ -191,10 +191,12 @@ All animations guarded by `@media (prefers-reduced-motion: reduce)`.
 
 ### Splash Screen
 
-`src/components/Splash.jsx` / `Splash.css` — shown for ~1.9s on every app open.
+`src/components/Splash.jsx` / `Splash.css` — Siri-style orbiting-ellipse splash, shown for 2.2s on every app open.
 - Rendered in `App.jsx` before the main app (before onboarding check)
-- Animation sequence: logo 0ms → line 300ms → wordmark 500ms → tagline 800ms → dots 1000ms → fade-out 1550ms → done 1900ms
-- Phase state drives `.vis` class on each element
+- Black `#000` background. 4 blurred SVG ellipses (`rx:72 ry:20`) orbit the centre at different speeds/angles (`#0066ff` 8s CW, `#ff5500` 6s CCW @60deg, `#00e5ff` 10s CW @120deg, white highlight 3px 5s CW), each behind a `feGaussianBlur` filter + a radial-gradient glow circle
+- Radial-gradient vignette + top/bottom linear fades keep the centre (DL logo, 44px Georgia) and screen edges clean against the glow
+- Tagline "your day · your money" + 3 loading dots (first pulses blue) fade in at 500ms
+- Animation sequence: logo spring-in 0ms → tagline/dots 500ms → fade-out 1850ms → done 2200ms
 
 ### Custom Hooks
 
