@@ -191,12 +191,12 @@ All animations guarded by `@media (prefers-reduced-motion: reduce)`.
 
 ### Splash Screen
 
-`src/components/Splash.jsx` / `Splash.css` — Siri-style orbiting-ellipse splash, shown for 2.2s on every app open.
+`src/components/Splash.jsx` / `Splash.css` — 3D Siri-orb splash, shown for 2.5s on every app open.
 - Rendered in `App.jsx` before the main app (before onboarding check)
-- Black `#000` background. 4 blurred SVG ellipses (`rx:72 ry:20`) orbit the centre at different speeds/angles (`#0066ff` 8s CW, `#ff5500` 6s CCW @60deg, `#00e5ff` 10s CW @120deg, white highlight 3px 5s CW), each behind a `feGaussianBlur` filter + a radial-gradient glow circle
-- Radial-gradient vignette + top/bottom linear fades keep the centre (DL logo, 44px Georgia) and screen edges clean against the glow
-- Tagline "your day · your money" + 3 loading dots (first pulses blue) fade in at 500ms
-- Animation sequence: logo spring-in 0ms → tagline/dots 500ms → fade-out 1850ms → done 2200ms
+- Deep purple radial-gradient background (`#0a0618` centre → `#050310` edges). A glass-sphere SVG orb (clipped circle, r:95) holds 3 fluid blobs — blue/indigo, pink/indigo, teal/cyan gradients — each distorted via `feTurbulence` (animated `baseFrequency`) + `feDisplacementMap`, rotating via SMIL `animateTransform` (12s/18s/8s, mixed directions), and bloomed via `feGaussianBlur` + `feComposite`. Outer purple glow, inner rim shadow, and a top-left specular highlight sell the 3D glass look
+- All SVG motion uses SMIL (`animate`/`animateTransform`), not CSS keyframes — and is skipped entirely when `prefers-reduced-motion: reduce` (checked once via `matchMedia` in JS, since SMIL can't be gated by a CSS media query)
+- DL logo (40px Georgia) + tagline "your day · your money" + 3 loading dots sit **below** the orb, not inside it; logo fades in at 600ms, tagline/dots at 900ms
+- Animation sequence: orb spinning from 0ms → logo 600ms → tagline/dots 900ms → fade-out 2150ms → done 2500ms
 
 ### Custom Hooks
 

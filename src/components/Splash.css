@@ -1,71 +1,40 @@
 .splash {
   position: fixed;
   inset: 0;
-  background: #000;
+  background: #050310;
+  background: radial-gradient(circle at center, #0a0618 0%, #050310 100%);
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 28px;
   z-index: 9999;
   overflow: hidden;
   opacity: 1;
-  transition: opacity 0.35s ease;
+  transition: opacity 0.4s ease;
 }
 .splash.splash-exit { opacity: 0; pointer-events: none; }
 
-/* ── Orbiting ellipses ────────────────────────────────── */
-.splash-orbits {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 0;
+.splash-orb {
+  display: block;
 }
 
-.orbit { transform-origin: 100px 100px; }
-.orbit-1     { animation: orbitCW 8s linear infinite; }
-.orbit-2     { animation: orbitCCW 6s linear infinite; }
-.orbit-3     { animation: orbitCW 10s linear infinite; }
-.orbit-white { animation: orbitCW 5s linear infinite; }
-
-@keyframes orbitCW  { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-@keyframes orbitCCW { from { transform: rotate(0deg); } to { transform: rotate(-360deg); } }
-
-/* ── Centre vignette + edge fades (logo stays readable) ── */
-.splash-vignette {
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(circle at center, #000 0%, #000 26%, rgba(0,0,0,0) 58%);
-  z-index: 1;
-  pointer-events: none;
-}
-
-.splash-fade-top,
-.splash-fade-bottom {
-  position: absolute;
-  left: 0;
-  right: 0;
-  height: 22%;
-  z-index: 2;
-  pointer-events: none;
-}
-.splash-fade-top    { top: 0;    background: linear-gradient(to bottom, #000 0%, rgba(0,0,0,0) 100%); }
-.splash-fade-bottom { bottom: 0; background: linear-gradient(to top, #000 0%, rgba(0,0,0,0) 100%); }
-
-/* ── DL logo + tagline + dots ─────────────────────────── */
+/* ── DL logo + tagline + dots, below the orb ─────────── */
 .splash-core {
-  position: relative;
-  z-index: 3;
   display: flex;
   flex-direction: column;
   align-items: center;
 }
 
 .splash-logo {
-  font-size: 44px;
+  font-size: 40px;
   line-height: 1;
   margin-bottom: 14px;
-  animation: splashIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
+.splash-logo.vis { opacity: 1; transform: translateY(0); }
 .splash-logo .dl-mark { font-family: Georgia, 'Times New Roman', serif; }
 .splash-logo .dl-mark em { font-style: italic; font-weight: 700; color: #ffffff; }
 .splash-logo .dl-mark b  { font-style: normal; font-weight: 300; color: #58a6ff; }
@@ -75,8 +44,8 @@
   font-size: 9px;
   font-weight: 300;
   letter-spacing: 0.06em;
-  color: #6e7681;
-  margin-bottom: 22px;
+  color: #555555;
+  margin-bottom: 20px;
   opacity: 0;
   transition: opacity 0.4s ease;
 }
@@ -101,11 +70,6 @@
   animation: sdotPulse 1.2s ease-in-out infinite;
 }
 
-@keyframes splashIn {
-  from { opacity: 0; transform: translateY(8px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
 @keyframes sdotPulse {
   0%, 100% { opacity: 1; transform: scale(1); }
   50%       { opacity: 0.4; transform: scale(0.8); }
@@ -113,8 +77,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .splash { transition: none; }
-  .orbit { animation: none; }
-  .splash-logo { animation: none; opacity: 1; }
+  .splash-logo { transition: none; opacity: 1; transform: none; }
   .splash-tagline,
   .splash-dots { opacity: 1 !important; transition: none; }
   .sdot-blue { animation: none; }
