@@ -1,21 +1,3 @@
-.insights-header-row {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-}
-
-.gear-btn {
-  width: 36px; height: 36px;
-  display: flex; align-items: center; justify-content: center;
-  color: var(--text3);
-  border-radius: 8px;
-  background: var(--bg3);
-  border: 0.5px solid var(--border);
-  transition: color 0.15s, background 0.15s;
-  flex-shrink: 0;
-}
-.gear-btn:hover { color: var(--text2); background: var(--bg4); }
-
 /* ── Stat pair ─────────────────────────────────────── */
 .stat-pair {
   display: grid;

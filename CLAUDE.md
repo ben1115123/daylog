@@ -126,8 +126,20 @@ Progress track height: **2px**. Slightly heavier than before — balanced agains
 
 ### Navigation
 
+3 tabs, each `flex: 1` (33% width):
+
+| Tab | id | Component | Icon |
+|-----|----|-----------|------|
+| Log | `home` | `Home.jsx` | `NavLogIcon` |
+| Insights | `insights` | `Insights.jsx` | `NavInsightsIcon` |
+| Settings | `settings` | `Settings.jsx` (no `onBack`, no gear icon — direct tab) | `NavSettingsIcon` |
+
+`Spending.jsx` and `Calendar.jsx` are **not** nav tabs. They're reached from Home via shared-element expand overlays:
+- Spending summary card on Home → custom expand overview (uses `DonutChart` exported from `Spending.jsx`, not the whole screen)
+- Upcoming-events strip on Home → expands into `<Calendar/>` embedded inline
+
 ```css
-.bottom-nav  { justify-content: space-around; padding: 6px 8px calc(6px + env(safe-area-inset-bottom)); gap: 4px; }
+.bottom-nav  { padding-top: 10px; padding-bottom: env(safe-area-inset-bottom, 16px); padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-area-inset-right, 0px); gap: 4px; }
 .nav-item    { flex: 1; padding: 8px 4px; border-radius: 10px; }
 .nav-item.active { color: var(--accent); background: var(--accent-dim); }
 .nav-label   { font-family: var(--font-display); font-size: 9px; font-weight: 500; letter-spacing: 0.08em; }

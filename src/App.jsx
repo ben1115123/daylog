@@ -1,13 +1,11 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import Home from './components/Home.jsx'
-import Spending from './components/Spending.jsx'
-import Calendar from './components/Calendar.jsx'
 import Settings from './components/Settings.jsx'
 import Insights from './components/Insights.jsx'
 import Onboarding from './components/Onboarding.jsx'
 import Splash from './components/Splash.jsx'
 import Toast from './components/Toast.jsx'
-import { NavLogIcon, NavChartIcon, NavCalendarIcon, NavInsightsIcon } from './Icons.jsx'
+import { NavLogIcon, NavInsightsIcon, NavSettingsIcon } from './Icons.jsx'
 import { db } from './db.js'
 import supabase from './supabase.js'
 import { formatRM } from './utils.js'
@@ -100,7 +98,6 @@ async function migrateFromLocalStorage(showToast) {
 export default function App() {
   const [splashDone, setSplashDone] = useState(false)
   const [tab, setTab]               = useState('home')
-  const [settingsOpen, setSettingsOpen] = useState(false)
   const [toast, setToast]           = useState(null)
   const [refresh, setRefresh]       = useState(0)
   const [isOffline, setIsOffline]   = useState(false)
@@ -148,13 +145,12 @@ export default function App() {
     setRefresh(r => r + 1)
   }
 
-  const handleTabChange = (id) => { setTab(id); setSettingsOpen(false) }
+  const handleTabChange = (id) => { setTab(id) }
 
   const tabs = [
     { id: 'home',     label: 'Log',      Icon: NavLogIcon },
-    { id: 'spending', label: 'Spending', Icon: NavChartIcon },
-    { id: 'calendar', label: 'Calendar', Icon: NavCalendarIcon },
     { id: 'insights', label: 'Insights', Icon: NavInsightsIcon },
+    { id: 'settings', label: 'Settings', Icon: NavSettingsIcon },
   ]
 
   if (!splashDone) return <Splash onDone={() => setSplashDone(true)} />
@@ -176,13 +172,8 @@ export default function App() {
       {isOffline && <div className="offline-badge">offline</div>}
       <div className="app-body">
         {tab === 'home'     && <Home     key={refresh} showToast={showToast} onLogged={onLogged} />}
-        {tab === 'spending' && <Spending key={refresh} showToast={showToast} />}
-        {tab === 'calendar' && <Calendar key={refresh} showToast={showToast} />}
-        {tab === 'insights' && (
-          settingsOpen
-            ? <Settings key={refresh} showToast={showToast} onBack={() => setSettingsOpen(false)} />
-            : <Insights key={refresh} showToast={showToast} onSettings={() => setSettingsOpen(true)} />
-        )}
+        {tab === 'insights' && <Insights key={refresh} showToast={showToast} />}
+        {tab === 'settings' && <Settings key={refresh} showToast={showToast} />}
       </div>
       <nav className="bottom-nav">
         {tabs.map(({ id, label, Icon }) => (

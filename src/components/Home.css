@@ -442,10 +442,6 @@
   padding: max(52px, calc(env(safe-area-inset-top) + 28px)) 20px calc(40px + env(safe-area-inset-bottom));
 }
 
-.cal-overlay-full {
-  padding-top: max(16px, env(safe-area-inset-top));
-}
-
 .spend-back,
 .cal-back {
   display: flex;
@@ -455,11 +451,29 @@
   font-size: 12px;
   letter-spacing: 0.04em;
   color: var(--text2);
-  padding: 8px 0;
 }
 .spend-back svg, .cal-back svg { width: 16px; height: 16px; }
-.spend-back { margin-bottom: 20px; }
-.cal-back { margin: 0 20px 4px; }
+
+.spend-back {
+  padding: 8px 0;
+  margin-bottom: 20px;
+}
+
+.cal-back {
+  position: sticky;
+  top: 0;
+  background: #0d1117;
+  padding: calc(env(safe-area-inset-top, 0px) + 12px) 16px 8px;
+  z-index: 10;
+}
+
+/* Calendar is embedded directly under the sticky back button here —
+   its own screen-header top padding (sized for a standalone tab) would
+   double up with the back button and reopen the gap, so flatten it. */
+.cal-overlay-body .screen-header {
+  position: static;
+  padding-top: 8px;
+}
 
 /* ── Spend overlay — full content ────────────────────── */
 .spend-overlay-header { margin-bottom: 20px; }
