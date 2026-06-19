@@ -307,7 +307,7 @@ export default function Home({ showToast, onLogged }) {
       </div>
 
       {amountChip && (
-        <Sheet title={`Log ${amountChip.label}`} onClose={() => setAmountChip(null)}>
+        <Sheet title={`Log ${amountChip.label}`} onClose={() => setAmountChip(null)} className="sheet-quicklog">
           <div>
             <div className="sheet-field-label">Amount (RM)</div>
             <input

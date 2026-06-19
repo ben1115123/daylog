@@ -7,6 +7,7 @@
   position: relative;
   overflow: hidden;
   background: var(--bg);
+  padding-top: env(safe-area-inset-top, 0px);
 }
 
 .offline-badge {
@@ -40,7 +41,10 @@
   justify-content: space-around;
   background: var(--bg2);
   border-top: 0.5px solid var(--border);
-  padding: 10px 0 env(safe-area-inset-bottom);
+  padding-top: 10px;
+  padding-bottom: env(safe-area-inset-bottom, 16px);
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
   flex-shrink: 0;
   gap: 4px;
 }

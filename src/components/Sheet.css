@@ -12,7 +12,6 @@
   left: 0;
   right: 0;
   width: 100%;
-  min-height: 50dvh;
   max-height: 92dvh;
   background: var(--bg2);
   border: 0.5px solid var(--border2);
@@ -83,9 +82,17 @@
   background: var(--bg2);
   display: flex;
   gap: 10px;
-  padding: 16px 20px calc(env(safe-area-inset-bottom) + 80px);
+  padding-top: 16px;
+  padding-bottom: calc(env(safe-area-inset-bottom, 16px) + 16px);
+  padding-left: calc(env(safe-area-inset-left, 0px) + 20px);
+  padding-right: calc(env(safe-area-inset-right, 0px) + 20px);
   margin-top: 4px;
   border-top: 0.5px solid var(--border);
+}
+
+/* ── Quick-log amount sheet ───────────────────────────── */
+.sheet-quicklog {
+  min-height: 280px;
 }
 
 .sheet-field-label {
