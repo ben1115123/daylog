@@ -1,0 +1,48 @@
+.confirm-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  animation: fadeIn 0.15s ease;
+}
+
+.confirm-card {
+  width: 100%;
+  max-width: 320px;
+  background: var(--bg2);
+  border: 0.5px solid var(--border2);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  animation: slideUp 0.18s ease;
+}
+
+.confirm-title {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: -0.01em;
+  margin-bottom: 8px;
+}
+
+.confirm-message {
+  font-size: 13px;
+  color: var(--text2);
+  line-height: 1.5;
+  margin-bottom: 20px;
+}
+
+.confirm-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.confirm-actions .sheet-save.confirm-danger {
+  background: var(--red);
+  color: #1a0a0a;
+}
+.confirm-actions .sheet-save.confirm-danger:hover { opacity: 0.85; }

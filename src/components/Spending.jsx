@@ -4,6 +4,7 @@ import { CAT_META, CATEGORIES, formatRM, formatDate, monthLabel } from '../utils
 import { CAT_ICONS, SearchIcon, XIcon, PlusIcon } from '../Icons.jsx'
 import DLMark from './DLMark.jsx'
 import Sheet from './Sheet.jsx'
+import ConfirmDialog from './ConfirmDialog.jsx'
 import { useCountUp } from '../hooks/useCountUp.js'
 import { useStaggeredEntries } from '../hooks/useStaggeredEntries.js'
 import './Spending.css'
@@ -326,6 +327,7 @@ export default function Spending({ showToast }) {
   const [monthIncome, setMonthIncome]   = useState([])
   const [allIncome, setAllIncome]       = useState([])
   const [loadingData, setLoadingData]   = useState(true)
+  const [deleteTarget, setDeleteTarget] = useState(null)
   const searchRef = useRef(null)
 
   useEffect(() => {
@@ -367,13 +369,7 @@ export default function Spending({ showToast }) {
   const prevMonth = () => { if (month === 0) { setMonth(11); setYear(y => y - 1) } else setMonth(m => m - 1) }
   const nextMonth = () => { if (month === 11) { setMonth(0); setYear(y => y + 1) } else setMonth(m => m + 1) }
 
-  const handleDelete = async (id) => {
-    if (confirm('Delete this expense?')) {
-      await db.deleteExpense(id)
-      await doRefresh(year, month)
-      showToast('Deleted')
-    }
-  }
+  const handleDelete = (id) => setDeleteTarget({ type: 'expense', id })
 
   const handleSaveEdit = async (id, updates) => {
     await db.updateExpense(id, updates)
@@ -389,12 +385,15 @@ export default function Spending({ showToast }) {
     showToast('Expense added')
   }
 
-  const handleDeleteIncome = async (id) => {
-    if (confirm('Delete this income entry?')) {
-      await db.deleteIncome(id)
-      await doRefresh(year, month)
-      showToast('Deleted')
-    }
+  const handleDeleteIncome = (id) => setDeleteTarget({ type: 'income', id })
+
+  const confirmDeleteTarget = async () => {
+    const { type, id } = deleteTarget
+    if (type === 'expense') await db.deleteExpense(id)
+    else await db.deleteIncome(id)
+    setDeleteTarget(null)
+    await doRefresh(year, month)
+    showToast('Deleted')
   }
 
   const handleAddIncome = async (income) => {
@@ -854,6 +853,17 @@ export default function Spending({ showToast }) {
             onCancel={() => setAddIncomeOpen(false)}
           />
         </Sheet>
+      )}
+
+      {deleteTarget && (
+        <ConfirmDialog
+          title={deleteTarget.type === 'expense' ? 'Delete expense?' : 'Delete income entry?'}
+          message="This cannot be undone."
+          confirmLabel="Delete"
+          danger
+          onConfirm={confirmDeleteTarget}
+          onCancel={() => setDeleteTarget(null)}
+        />
       )}
     </div>
   )

@@ -4,6 +4,7 @@ import { db } from '../db.js'
 import { CAT_META, formatRM, formatDate, formatTime } from '../utils.js'
 import { MicIcon, SendIcon, CAT_ICONS } from '../Icons.jsx'
 import DLMark from './DLMark.jsx'
+import Sheet from './Sheet.jsx'
 import { useStaggeredEntries } from '../hooks/useStaggeredEntries.js'
 import './Home.css'
 
@@ -18,6 +19,8 @@ export default function Home({ showToast, onLogged }) {
   const [scrolled, setScrolled]       = useState(false)
   const [burstKey, setBurstKey]       = useState(null)
   const [chipRipple, setChipRipple]   = useState(null)
+  const [amountChip, setAmountChip]   = useState(null)
+  const [amountVal, setAmountVal]     = useState('')
 
   const textareaRef         = useRef(null)
   const scrollRef           = useRef(null)
@@ -96,11 +99,15 @@ export default function Home({ showToast, onLogged }) {
     { label: 'Entertainment', category: 'entertainment' },
   ]
 
-  const handleQuickChip = async (chip) => {
-    const val = prompt(`Amount for ${chip.label}? (RM)`)
-    if (!val) return
-    const amount = parseFloat(val)
+  const handleQuickChip = (chip) => {
+    setAmountVal('')
+    setAmountChip(chip)
+  }
+
+  const handleLogAmount = async () => {
+    const amount = parseFloat(amountVal)
     if (isNaN(amount) || amount <= 0) return
+    const chip = amountChip
     await db.addExpense({
       description: chip.label,
       amount,
@@ -108,6 +115,7 @@ export default function Home({ showToast, onLogged }) {
       date: new Date().toISOString().split('T')[0],
     })
     showToast(`${chip.label} — ${formatRM(amount)}`)
+    setAmountChip(null)
     refreshRecent(); onLogged()
   }
 
@@ -297,6 +305,34 @@ export default function Home({ showToast, onLogged }) {
           </div>
         )}
       </div>
+
+      {amountChip && (
+        <Sheet title={`Log ${amountChip.label}`} onClose={() => setAmountChip(null)}>
+          <div>
+            <div className="sheet-field-label">Amount (RM)</div>
+            <input
+              className="sheet-input"
+              type="number"
+              inputMode="decimal"
+              placeholder="0"
+              autoFocus
+              value={amountVal}
+              onChange={e => setAmountVal(e.target.value)}
+            />
+          </div>
+          <div className="sheet-actions">
+            <button className="sheet-cancel" onClick={() => setAmountChip(null)}>Cancel</button>
+            <button
+              className="sheet-save"
+              disabled={!amountVal || parseFloat(amountVal) <= 0}
+              style={{ opacity: (!amountVal || parseFloat(amountVal) <= 0) ? 0.5 : 1 }}
+              onClick={handleLogAmount}
+            >
+              Log
+            </button>
+          </div>
+        </Sheet>
+      )}
 
     </div>
   )

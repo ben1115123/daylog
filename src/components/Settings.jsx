@@ -5,6 +5,7 @@ import { CATEGORIES, CAT_META, formatRM } from '../utils.js'
 import { CAT_ICONS, BackIcon, PlusIcon } from '../Icons.jsx'
 import DLMark from './DLMark.jsx'
 import Sheet from './Sheet.jsx'
+import ConfirmDialog from './ConfirmDialog.jsx'
 import './Settings.css'
 
 /* ── Add recurring form (bottom sheet) ───────────────── */
@@ -164,6 +165,7 @@ export default function Settings({ showToast, onBack }) {
   const [recurringOpen, setRecurringOpen]   = useState(false)
   const [recurringIncomeList, setRecurringIncomeList]   = useState([])
   const [recurringIncomeOpen, setRecurringIncomeOpen]   = useState(false)
+  const [clearConfirmOpen, setClearConfirmOpen]         = useState(false)
 
   useEffect(() => {
     Promise.all([db.getRecurring(), db.getRecurringIncome()]).then(([rec, recInc]) => {
@@ -190,20 +192,19 @@ export default function Settings({ showToast, onBack }) {
   }
 
   const clearData = async () => {
-    if (confirm('Clear ALL data? This cannot be undone.')) {
-      try {
-        await Promise.all([
-          supabase.from('expenses').delete().not('id', 'is', null),
-          supabase.from('events').delete().not('id', 'is', null),
-          supabase.from('recurring_expenses').delete().not('id', 'is', null),
-          supabase.from('income').delete().not('id', 'is', null),
-          supabase.from('recurring_income').delete().not('id', 'is', null),
-        ])
-      } catch {}
-      localStorage.clear()
-      showToast('Data cleared')
-      setTimeout(() => window.location.reload(), 500)
-    }
+    setClearConfirmOpen(false)
+    try {
+      await Promise.all([
+        supabase.from('expenses').delete().not('id', 'is', null),
+        supabase.from('events').delete().not('id', 'is', null),
+        supabase.from('recurring_expenses').delete().not('id', 'is', null),
+        supabase.from('income').delete().not('id', 'is', null),
+        supabase.from('recurring_income').delete().not('id', 'is', null),
+      ])
+    } catch {}
+    localStorage.clear()
+    showToast('Data cleared')
+    setTimeout(() => window.location.reload(), 500)
   }
 
   const exportData = async () => {
@@ -471,7 +472,7 @@ export default function Settings({ showToast, onBack }) {
             <span className="setting-hint-inline">JSON backup</span>
           </div>
           <div className="setting-row">
-            <button className="data-btn danger" onClick={clearData}>Clear all data</button>
+            <button className="data-btn danger" onClick={() => setClearConfirmOpen(true)}>Clear all data</button>
             <span className="setting-hint-inline" style={{ color: 'var(--red)' }}>Cannot undo</span>
           </div>
         </div>
@@ -495,6 +496,17 @@ export default function Settings({ showToast, onBack }) {
             onCancel={() => setRecurringIncomeOpen(false)}
           />
         </Sheet>
+      )}
+
+      {clearConfirmOpen && (
+        <ConfirmDialog
+          title="Clear all data?"
+          message="This cannot be undone."
+          confirmLabel="Clear data"
+          danger
+          onConfirm={clearData}
+          onCancel={() => setClearConfirmOpen(false)}
+        />
       )}
     </div>
   )

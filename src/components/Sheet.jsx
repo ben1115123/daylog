@@ -12,9 +12,7 @@ export default function Sheet({ title, onClose, children }) {
             <XIcon size={16} />
           </button>
         </div>
-        <div className="sheet-scroll">
-          <div className="sheet-body">{children}</div>
-        </div>
+        <div className="sheet-body">{children}</div>
       </div>
     </div>
   )

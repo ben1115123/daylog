@@ -5,6 +5,7 @@ import { RepeatIcon, PlusIcon } from '../Icons.jsx'
 import { loadHolidaysForCalendar } from '../holidays.js'
 import DLMark from './DLMark.jsx'
 import Sheet from './Sheet.jsx'
+import ConfirmDialog from './ConfirmDialog.jsx'
 import './Calendar.css'
 
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December']
@@ -305,6 +306,7 @@ export default function Calendar({ showToast }) {
   const [events, setEvents]     = useState([])
   const [loadingData, setLoadingData] = useState(true)
   const [holidays, setHolidays] = useState({})
+  const [deleteId, setDeleteId] = useState(null)
 
   const todayStr = now.toISOString().split('T')[0]
 
@@ -344,12 +346,13 @@ export default function Calendar({ showToast }) {
     return Object.entries(grouped).sort((a, b) => a[0].localeCompare(b[0]))
   }, [allExpanded, todayStr])
 
-  const handleDelete = async (id) => {
-    if (confirm('Delete this event?')) {
-      await db.deleteEvent(id)
-      await loadEvents()
-      showToast('Deleted')
-    }
+  const handleDelete = (id) => setDeleteId(id)
+
+  const confirmDelete = async () => {
+    await db.deleteEvent(deleteId)
+    setDeleteId(null)
+    await loadEvents()
+    showToast('Deleted')
   }
 
   const handleSaveEdit = async (id, updates) => {
@@ -581,6 +584,17 @@ export default function Calendar({ showToast }) {
             onCancel={() => setAddOpen(false)}
           />
         </Sheet>
+      )}
+
+      {deleteId && (
+        <ConfirmDialog
+          title="Delete event?"
+          message="This event will be permanently removed."
+          confirmLabel="Delete"
+          danger
+          onConfirm={confirmDelete}
+          onCancel={() => setDeleteId(null)}
+        />
       )}
     </div>
   )
