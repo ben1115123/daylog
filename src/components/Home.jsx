@@ -1,12 +1,73 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { parseInput } from '../ai.js'
-import { db } from '../db.js'
-import { CAT_META, formatRM, formatDate, formatTime } from '../utils.js'
-import { MicIcon, SendIcon, CAT_ICONS } from '../Icons.jsx'
+import { db, computeRecentMonths } from '../db.js'
+import { CAT_META, CATEGORIES, formatRM, formatDate, formatTime } from '../utils.js'
+import { MicIcon, SendIcon, CAT_ICONS, BackIcon } from '../Icons.jsx'
 import DLMark from './DLMark.jsx'
 import Sheet from './Sheet.jsx'
+import Calendar from './Calendar.jsx'
+import { DonutChart } from './Spending.jsx'
 import { useStaggeredEntries } from '../hooks/useStaggeredEntries.js'
 import './Home.css'
+
+/* ── Shared-element expand transition (FLIP) ──────────── */
+function useExpand() {
+  const ref = useRef(null)
+  const [phase, setPhase] = useState('closed') // closed | opening | open | closing
+  const rectRef = useRef({ top: 0, left: 0, width: 0, height: 0 })
+
+  const open = useCallback(() => {
+    const r = ref.current.getBoundingClientRect()
+    rectRef.current = { top: r.top, left: r.left, width: r.width, height: r.height }
+    setPhase('opening')
+    requestAnimationFrame(() => setPhase('open'))
+  }, [])
+
+  const close = useCallback(() => {
+    setPhase('closing')
+    setTimeout(() => setPhase('closed'), 460)
+  }, [])
+
+  let overlayStyle = null
+  if (phase === 'opening') {
+    overlayStyle = { top: rectRef.current.top, left: rectRef.current.left, width: rectRef.current.width, height: rectRef.current.height, borderRadius: '16px', transition: 'none' }
+  } else if (phase === 'open') {
+    overlayStyle = { top: 0, left: 0, width: '100%', height: '100%', borderRadius: '20px 20px 0 0' }
+  } else if (phase === 'closing') {
+    overlayStyle = { top: rectRef.current.top, left: rectRef.current.left, width: rectRef.current.width, height: rectRef.current.height, borderRadius: '16px' }
+  }
+
+  return { ref, phase, open, close, overlayStyle }
+}
+
+/* ── Spending summary mini content (closed card + pinned overlay state) ── */
+function SpendMini({ data, label }) {
+  if (!data) return <div className="loading-wrap"><div className="spinner"/></div>
+  const savedPositive = data.saved >= 0
+  return (
+    <div className="spend-mini">
+      <div className="spend-mini-left">
+        <div className="spend-mini-label">{label}</div>
+        <div className="spend-mini-amount">{formatRM(data.total)}</div>
+        <div className={`spend-mini-saved ${savedPositive ? 'pos' : 'neg'}`}>
+          {savedPositive ? 'saved ' : 'over by '}{formatRM(Math.abs(data.saved))}
+        </div>
+      </div>
+      <div className="spend-mini-right">
+        <div className="spend-mini-rate" style={{ color: data.savingsRate >= 20 ? 'var(--accent)' : data.savingsRate > 0 ? 'var(--text2)' : 'var(--red)' }}>
+          {data.incomeTotal > 0 ? `${data.savingsRate}%` : '—'}
+        </div>
+        <span className="spend-mini-chev"><BackIcon /></span>
+      </div>
+    </div>
+  )
+}
+
+const SPEND_TABS = [
+  ['lastMonth', 'Last month'],
+  ['thisMonth', 'This month'],
+  ['avg',       'Avg'],
+]
 
 export default function Home({ showToast, onLogged }) {
   const settings = db.getSettings()
@@ -29,11 +90,102 @@ export default function Home({ showToast, onLogged }) {
   const recognitionRef      = useRef(null)
   const [recording, setRecording] = useState(false)
 
+  /* ── Spending summary expand ─────────────────────────── */
+  const spend                       = useExpand()
+  const [spendTab, setSpendTab]     = useState('thisMonth')
+  const [spendTabs, setSpendTabs]   = useState(null)
+  const [committedTotal, setCommittedTotal] = useState(0)
+  const [arcsDrawn, setArcsDrawn]   = useState(false)
+
+  /* ── Upcoming events strip / calendar expand ─────────── */
+  const cal                         = useExpand()
+  const [upcoming, setUpcoming]     = useState([])
+
+  const loadSpendOverview = useCallback(async () => {
+    const now = new Date()
+    const y = now.getFullYear(), m = now.getMonth()
+    const prevDate = new Date(y, m - 1, 1)
+    const py = prevDate.getFullYear(), pm = prevDate.getMonth()
+
+    const [thisExp, thisInc, lastExp, lastInc, allExp, allInc, recurring] = await Promise.all([
+      db.getMonthExpenses(y, m),
+      db.getMonthIncome(y, m),
+      db.getMonthExpenses(py, pm),
+      db.getMonthIncome(py, pm),
+      db.getExpenses(),
+      db.getIncome(),
+      db.getRecurring(),
+    ])
+
+    setCommittedTotal(recurring.filter(r => r.active).reduce((s, r) => s + (r.amount || 0), 0))
+
+    const buildTab = (exp, inc) => {
+      const total       = exp.reduce((s, e) => s + (e.amount || 0), 0)
+      const incomeTotal = inc.reduce((s, i) => s + (i.amount || 0), 0)
+      const saved       = incomeTotal - total
+      const savingsRate = incomeTotal > 0 ? Math.round((saved / incomeTotal) * 100) : 0
+      const byCat = {}
+      exp.forEach(e => { if (e.category) byCat[e.category] = (byCat[e.category] || 0) + (e.amount || 0) })
+      const donutCats = CATEGORIES.map(cat => ({
+        cat, amount: byCat[cat] || 0, color: CAT_META[cat]?.color, label: CAT_META[cat]?.label,
+      })).filter(c => c.amount > 0)
+      const biggest = exp.length
+        ? exp.reduce((max, e) => (e.amount || 0) > (max?.amount || 0) ? e : max, null)
+        : null
+      return { total, incomeTotal, saved, savingsRate, donutCats, biggest, entriesCount: exp.length }
+    }
+
+    const recentMonths = computeRecentMonths(allExp, 6)
+    const n = recentMonths.length || 1
+    const avgTotal  = recentMonths.reduce((s, mo) => s + mo.total, 0) / n
+    const incomeByMonth = {}
+    allInc.forEach(inc => {
+      const prefix = inc.date?.slice(0, 7)
+      if (prefix) incomeByMonth[prefix] = (incomeByMonth[prefix] || 0) + (inc.amount || 0)
+    })
+    const avgIncome      = recentMonths.reduce((s, mo) => s + (incomeByMonth[mo.key] || 0), 0) / n
+    const avgSaved       = avgIncome - avgTotal
+    const avgSavingsRate = avgIncome > 0 ? Math.round((avgSaved / avgIncome) * 100) : 0
+    const avgByCat = {}
+    allExp.forEach(e => {
+      const prefix = e.date?.slice(0, 7)
+      if (prefix && e.category && recentMonths.some(mo => mo.key === prefix)) {
+        avgByCat[e.category] = (avgByCat[e.category] || 0) + (e.amount || 0) / n
+      }
+    })
+    const avgDonutCats = CATEGORIES.map(cat => ({
+      cat, amount: avgByCat[cat] || 0, color: CAT_META[cat]?.color, label: CAT_META[cat]?.label,
+    })).filter(c => c.amount > 0)
+    const avgBiggest = allExp.length
+      ? allExp.reduce((max, e) => (e.amount || 0) > (max?.amount || 0) ? e : max, null)
+      : null
+
+    setSpendTabs({
+      thisMonth: buildTab(thisExp, thisInc),
+      lastMonth: buildTab(lastExp, lastInc),
+      avg: {
+        total: avgTotal, incomeTotal: avgIncome, saved: avgSaved, savingsRate: avgSavingsRate,
+        donutCats: avgDonutCats, biggest: avgBiggest, entriesCount: Math.round(allExp.length / n),
+      },
+    })
+  }, [])
+
+  useEffect(() => { loadSpendOverview() }, [loadSpendOverview])
+
+  useEffect(() => {
+    if (spend.phase === 'open') {
+      const t = setTimeout(() => setArcsDrawn(true), 300)
+      return () => clearTimeout(t)
+    }
+    setArcsDrawn(false)
+  }, [spend.phase])
+
   const refreshRecent = useCallback(async () => {
-    const [exp, evt, inc] = await Promise.all([
+    const [exp, evt, inc, evtStrip] = await Promise.all([
       db.getExpenses(),
       db.getUpcomingEvents(3),
       db.getIncome(),
+      db.getUpcomingEvents(5),
     ])
     const items = [
       ...exp.slice(0, 4).map(e => ({ ...e, _type: 'expense' })),
@@ -43,6 +195,7 @@ export default function Home({ showToast, onLogged }) {
       .sort((a, b) => new Date(b.created_at || b.createdAt) - new Date(a.created_at || a.createdAt))
       .slice(0, 6)
     setRecent(items)
+    setUpcoming(evtStrip)
     setLoadingData(false)
   }, [])
 
@@ -148,10 +301,13 @@ export default function Home({ showToast, onLogged }) {
   const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening'
   const dateLabel = now.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })
 
+  const dimmed = spend.phase !== 'closed' || cal.phase !== 'closed'
+
   return (
+    <>
     <div
       ref={scrollRef}
-      className={`screen home-screen${scrolled ? ' scrolled' : ''}`}
+      className={`screen home-screen${scrolled ? ' scrolled' : ''}${dimmed ? ' bg-dimmed' : ''}`}
       onScroll={handleScroll}
     >
       <div className="home-header">
@@ -207,6 +363,41 @@ export default function Home({ showToast, onLogged }) {
               </button>
             </div>
           </div>
+        </div>
+      </div>
+
+      <div className="home-section">
+        <div className="section-label">Spending</div>
+        <div
+          ref={spend.ref}
+          className="card spend-card"
+          style={{ visibility: spend.phase === 'closed' ? 'visible' : 'hidden' }}
+          onClick={spend.phase === 'closed' ? spend.open : undefined}
+        >
+          <SpendMini data={spendTabs?.thisMonth} label="This month" />
+        </div>
+      </div>
+
+      <div className="home-section" style={{ marginTop: 24 }}>
+        <div className="section-label">Upcoming</div>
+        <div
+          ref={cal.ref}
+          className={`card upcoming-strip${upcoming.length === 0 ? ' upcoming-strip-empty' : ''}`}
+          style={{ visibility: cal.phase === 'closed' ? 'visible' : 'hidden' }}
+          onClick={cal.phase === 'closed' ? cal.open : undefined}
+        >
+          {upcoming.length === 0 ? (
+            <div className="empty">no upcoming events</div>
+          ) : (
+            <div className="upcoming-strip-row">
+              {upcoming.map(ev => (
+                <div key={`${ev.id}-${ev.date}`} className="upcoming-pill">
+                  <div className="upcoming-pill-date">{formatDate(ev.date)}</div>
+                  <div className="upcoming-pill-title">{ev.title}</div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
@@ -306,6 +497,122 @@ export default function Home({ showToast, onLogged }) {
         )}
       </div>
 
+    </div>
+
+    {spend.phase !== 'closed' && (
+      <div className={`spend-card-overlay ${spend.phase}`} style={spend.overlayStyle}>
+        <div className="spend-overlay-mini" style={{ opacity: spend.phase === 'open' ? 0 : 1 }}>
+          <SpendMini data={spendTabs?.thisMonth} label="This month" />
+        </div>
+
+        <div className="spend-overlay-full" style={{ opacity: spend.phase === 'open' ? 1 : 0, pointerEvents: spend.phase === 'open' ? 'auto' : 'none' }}>
+          <button className="spend-back" onClick={spend.close}><BackIcon /> back</button>
+
+          {(() => {
+            const data = spendTabs?.[spendTab]
+            if (!data) return <div className="loading-wrap"><div className="spinner"/></div>
+            const savedPositive = data.saved >= 0
+            return (
+              <>
+                <div className="spend-overlay-header">
+                  <div className="spend-overlay-amount">{formatRM(data.total)}</div>
+                  <div className={`spend-overlay-saved ${savedPositive ? 'pos' : 'neg'}`}>
+                    {savedPositive ? 'Saved ' : 'Over by '}{formatRM(Math.abs(data.saved))}
+                    {data.incomeTotal > 0 && ` · ${data.savingsRate}% rate`}
+                  </div>
+                </div>
+
+                <div className="spend-tabs">
+                  {SPEND_TABS.map(([key, label]) => (
+                    <button
+                      key={key}
+                      className={`spend-tab${spendTab === key ? ' active' : ''}`}
+                      onClick={() => setSpendTab(key)}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="spend-overlay-donut">
+                  <DonutChart cats={data.donutCats} total={data.total} animate={arcsDrawn} />
+                </div>
+
+                <div className="spend-overlay-bars">
+                  {data.donutCats.map((c, i) => {
+                    const pct = data.total > 0 ? Math.round((c.amount / data.total) * 100) : 0
+                    return (
+                      <div key={c.cat} className="spend-bar-row">
+                        <div className="spend-bar-label">
+                          <span className="spend-bar-dot" style={{ background: c.color }} />
+                          {c.label}
+                        </div>
+                        <div className="spend-bar-track">
+                          <div
+                            className="spend-bar-fill"
+                            style={{
+                              width: arcsDrawn ? `${pct}%` : '0%',
+                              background: c.color,
+                              transitionDelay: `${i * 0.06}s`,
+                            }}
+                          />
+                        </div>
+                        <div className="spend-bar-amount">{formatRM(c.amount)}</div>
+                      </div>
+                    )
+                  })}
+                </div>
+
+                <div className="spend-stat-grid">
+                  <div className="spend-stat-cell">
+                    <div className="spend-stat-label">Biggest</div>
+                    <div className="spend-stat-val">{data.biggest ? formatRM(data.biggest.amount) : '—'}</div>
+                    {data.biggest && <div className="spend-stat-sub">{data.biggest.description}</div>}
+                  </div>
+                  <div className="spend-stat-cell">
+                    <div className="spend-stat-label">Entries</div>
+                    <div className="spend-stat-val">{data.entriesCount}</div>
+                  </div>
+                  <div className="spend-stat-cell">
+                    <div className="spend-stat-label">Committed</div>
+                    <div className="spend-stat-val">{formatRM(committedTotal)}<span className="spend-stat-unit">/mo</span></div>
+                  </div>
+                  <div className="spend-stat-cell">
+                    <div className="spend-stat-label">Savings rate</div>
+                    <div className="spend-stat-val" style={{ color: data.savingsRate >= 20 ? 'var(--accent)' : data.savingsRate > 0 ? 'var(--text)' : 'var(--red)' }}>
+                      {data.incomeTotal > 0 ? `${data.savingsRate}%` : '—'}
+                    </div>
+                  </div>
+                </div>
+              </>
+            )
+          })()}
+        </div>
+      </div>
+    )}
+
+    {cal.phase !== 'closed' && (
+      <div className={`cal-card-overlay ${cal.phase}`} style={cal.overlayStyle}>
+        <div className="cal-overlay-mini" style={{ opacity: cal.phase === 'open' ? 0 : 1 }}>
+          <div className="upcoming-strip-row">
+            {upcoming.map(ev => (
+              <div key={`${ev.id}-${ev.date}`} className="upcoming-pill">
+                <div className="upcoming-pill-date">{formatDate(ev.date)}</div>
+                <div className="upcoming-pill-title">{ev.title}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="cal-overlay-full" style={{ opacity: cal.phase === 'open' ? 1 : 0, pointerEvents: cal.phase === 'open' ? 'auto' : 'none' }}>
+          <button className="cal-back" onClick={cal.close}><BackIcon /> back</button>
+          <div className="cal-overlay-body">
+            <Calendar showToast={showToast} />
+          </div>
+        </div>
+      </div>
+    )}
+
       {amountChip && (
         <Sheet title={`Log ${amountChip.label}`} onClose={() => setAmountChip(null)} className="sheet-quicklog">
           <div>
@@ -333,7 +640,6 @@ export default function Home({ showToast, onLogged }) {
           </div>
         </Sheet>
       )}
-
-    </div>
+    </>
   )
 }

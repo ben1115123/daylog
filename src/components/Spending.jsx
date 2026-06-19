@@ -10,7 +10,7 @@ import { useStaggeredEntries } from '../hooks/useStaggeredEntries.js'
 import './Spending.css'
 
 /* ── SVG donut chart ─────────────────────────────────── */
-function DonutChart({ cats, total }) {
+export function DonutChart({ cats, total, animate }) {
   const R = 52, CX = 72, CY = 72
   const CIRC = 2 * Math.PI * R
   const active = cats.filter(c => c.amount > 0)
@@ -32,6 +32,7 @@ function DonutChart({ cats, total }) {
         const len = pct * CIRC
         const start = cumAngle
         cumAngle += pct * 360
+        const drawing = typeof animate !== 'undefined'
         return (
           <circle
             key={i}
@@ -39,6 +40,8 @@ function DonutChart({ cats, total }) {
             fill="none" stroke={c.color}
             strokeOpacity="0.9" strokeWidth="15" strokeLinecap="butt"
             strokeDasharray={`${len} ${CIRC}`}
+            strokeDashoffset={drawing ? (animate ? 0 : len) : 0}
+            style={drawing ? { transition: `stroke-dashoffset 0.6s ease-out ${i * 0.08}s` } : undefined}
             transform={`rotate(${start - 90}, ${CX}, ${CY})`}
           />
         )
