@@ -1,11 +1,19 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import DLMark from './DLMark.jsx'
 import './Splash.css'
 
 const REDUCED_MOTION = typeof window !== 'undefined'
   && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
 
+const ELLIPSES = [
+  { color: '#0066ff', width: 22,  blur: 12, opacity: 0.7,  speed: 360 / 8000,  offset: 0   },
+  { color: '#ff5500', width: 12,  blur: 10, opacity: 0.6,  speed: -360 / 6000, offset: 60  },
+  { color: '#00e5ff', width: 8,   blur: 6,  opacity: 0.45, speed: 360 / 10000, offset: 120 },
+  { color: '#ffffff', width: 2.5, blur: 4,  opacity: 0.5,  speed: 360 / 5000,  offset: 150 },
+]
+
 export default function Splash({ onDone }) {
+  const canvasRef = useRef(null)
   const [logoVis, setLogoVis]       = useState(false)
   const [taglineVis, setTaglineVis] = useState(false)
   const [dotsVis, setDotsVis]       = useState(false)
@@ -22,65 +30,61 @@ export default function Splash({ onDone }) {
     return () => t.forEach(clearTimeout)
   }, [onDone])
 
+  useEffect(() => {
+    const canvas = canvasRef.current
+    const ctx = canvas.getContext('2d')
+    let raf
+    let running = true
+
+    function resize() {
+      const dpr = window.devicePixelRatio || 1
+      canvas.width  = window.innerWidth * dpr
+      canvas.height = window.innerHeight * dpr
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+    }
+    resize()
+    window.addEventListener('resize', resize)
+
+    function draw(t) {
+      if (!running) return
+      const w  = window.innerWidth
+      const h  = window.innerHeight
+      const cx = w / 2
+      const cy = h / 2
+      const rx = Math.min(w, h) * 0.32
+      const ry = Math.min(w, h) * 0.09
+
+      ctx.clearRect(0, 0, w, h)
+
+      for (const e of ELLIPSES) {
+        const angle = ((e.offset + (REDUCED_MOTION ? 0 : t * e.speed)) * Math.PI) / 180
+        ctx.save()
+        ctx.translate(cx, cy)
+        ctx.rotate(angle)
+        ctx.filter = `blur(${e.blur}px)`
+        ctx.globalAlpha = e.opacity
+        ctx.strokeStyle = e.color
+        ctx.lineWidth = e.width
+        ctx.beginPath()
+        ctx.ellipse(0, 0, rx, ry, 0, 0, Math.PI * 2)
+        ctx.stroke()
+        ctx.restore()
+      }
+
+      raf = requestAnimationFrame(draw)
+    }
+    raf = requestAnimationFrame(draw)
+
+    return () => {
+      running = false
+      cancelAnimationFrame(raf)
+      window.removeEventListener('resize', resize)
+    }
+  }, [])
+
   return (
     <div className={`splash${exiting ? ' splash-exit' : ''}`}>
-      <svg
-        className="splash-orbit"
-        viewBox="0 0 400 400"
-        preserveAspectRatio="none"
-        aria-hidden="true"
-      >
-        <defs>
-          <filter id="orbitBlur1" x="-100%" y="-100%" width="300%" height="300%">
-            <feGaussianBlur stdDeviation="12" />
-          </filter>
-          <filter id="orbitBlur2" x="-100%" y="-100%" width="300%" height="300%">
-            <feGaussianBlur stdDeviation="10" />
-          </filter>
-          <filter id="orbitBlur3" x="-100%" y="-100%" width="300%" height="300%">
-            <feGaussianBlur stdDeviation="6" />
-          </filter>
-          <filter id="orbitBlur4" x="-100%" y="-100%" width="300%" height="300%">
-            <feGaussianBlur stdDeviation="4" />
-          </filter>
-        </defs>
-
-        <g transform="rotate(0 200 200)">
-          <g>
-            {!REDUCED_MOTION && (
-              <animateTransform attributeName="transform" type="rotate" from="0 200 200" to="360 200 200" dur="8s" repeatCount="indefinite" />
-            )}
-            <ellipse cx="200" cy="200" rx="72" ry="20" fill="none" stroke="#0066ff" strokeWidth="22" opacity="0.7" filter="url(#orbitBlur1)" />
-          </g>
-        </g>
-
-        <g transform="rotate(60 200 200)">
-          <g>
-            {!REDUCED_MOTION && (
-              <animateTransform attributeName="transform" type="rotate" from="360 200 200" to="0 200 200" dur="6s" repeatCount="indefinite" />
-            )}
-            <ellipse cx="200" cy="200" rx="72" ry="20" fill="none" stroke="#ff5500" strokeWidth="12" opacity="0.6" filter="url(#orbitBlur2)" />
-          </g>
-        </g>
-
-        <g transform="rotate(120 200 200)">
-          <g>
-            {!REDUCED_MOTION && (
-              <animateTransform attributeName="transform" type="rotate" from="0 200 200" to="360 200 200" dur="10s" repeatCount="indefinite" />
-            )}
-            <ellipse cx="200" cy="200" rx="72" ry="20" fill="none" stroke="#00e5ff" strokeWidth="8" opacity="0.45" filter="url(#orbitBlur3)" />
-          </g>
-        </g>
-
-        <g transform="rotate(150 200 200)">
-          <g>
-            {!REDUCED_MOTION && (
-              <animateTransform attributeName="transform" type="rotate" from="0 200 200" to="360 200 200" dur="5s" repeatCount="indefinite" />
-            )}
-            <ellipse cx="200" cy="200" rx="72" ry="20" fill="none" stroke="#ffffff" strokeWidth="2.5" opacity="0.5" filter="url(#orbitBlur4)" />
-          </g>
-        </g>
-      </svg>
+      <canvas ref={canvasRef} className="splash-orbit" aria-hidden="true" />
 
       <div className="splash-glow" />
       <div className="splash-vignette" />
