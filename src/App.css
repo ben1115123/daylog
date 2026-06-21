@@ -1,14 +1,12 @@
 .app {
-  height: 100svh;
-  height: 100vh;
-  background: #0d1117;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  height: 100svh;
+  background: #0d1117;
   max-width: 430px;
   margin: 0 auto;
   position: relative;
-  padding-top: env(safe-area-inset-top, 0px);
+  overflow: hidden;
 }
 
 .offline-badge {
@@ -38,15 +36,13 @@
 /* ── Bottom nav ────────────────────────────────────── */
 .bottom-nav {
   display: flex;
-  justify-content: space-around;
-  background: var(--bg2);
-  border-top: 0.5px solid var(--border);
-  padding-top: 10px;
-  padding-bottom: env(safe-area-inset-bottom, 0px);
-  padding-left: env(safe-area-inset-left, 0px);
-  padding-right: env(safe-area-inset-right, 0px);
   flex-shrink: 0;
-  gap: 4px;
+  background: #0d1117;
+  border-top: 0.5px solid #1c2128;
+  padding-top: 10px;
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
 }
 
 .nav-item {

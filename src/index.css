@@ -39,16 +39,13 @@
 }
 
 html, body {
-  background: #0d1117;
-  margin: 0;
-  padding: 0;
   height: 100%;
+  background: #0d1117;
   overflow: hidden;
 }
 
-html, body, #root {
+#root {
   height: 100%;
-  background: var(--bg);
   color: var(--text);
   font-family: var(--font-sans);
   font-size: 16px;
