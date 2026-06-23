@@ -38,12 +38,14 @@
 .bottom-nav {
   display: flex;
   flex-shrink: 0;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
   background: #0d1117;
   border-top: 0.5px solid #1c2128;
   padding-top: 10px;
-  padding-bottom: 20px;
-  padding-left: env(safe-area-inset-left, 0px);
-  padding-right: env(safe-area-inset-right, 0px);
+  padding-bottom: 0;
 }
 
 .nav-item {
@@ -88,7 +90,7 @@
 
 /* Used by Spending / Calendar / Settings — not Home */
 .screen-header {
-  padding: max(52px, calc(env(safe-area-inset-top) + 28px)) 24px 20px;
+  padding: 52px 24px 20px;
   position: sticky;
   top: 0;
   background: var(--bg);

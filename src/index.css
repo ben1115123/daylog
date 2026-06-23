@@ -39,12 +39,17 @@
 }
 
 html, body {
-  background: var(--bg);
+  background: #0d1117;
+  margin: 0;
+  padding: 0;
   height: 100%;
   overflow: hidden;
 }
 
 #root {
+  background: #0d1117;
+  margin: 0;
+  padding: 0;
   height: 100%;
   color: var(--text);
   font-family: var(--font-sans);
