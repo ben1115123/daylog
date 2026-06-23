@@ -45,7 +45,7 @@
   background: #0d1117;
   border-top: 0.5px solid #1c2128;
   padding-top: 10px;
-  padding-bottom: 0;
+  padding-bottom: env(safe-area-inset-bottom);
 }
 
 .nav-item {
