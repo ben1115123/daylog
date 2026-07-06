@@ -6,7 +6,9 @@
 }
 
 .stat-card {
-  padding: 18px 16px 16px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
 }
 
 .stat-label {
@@ -45,11 +47,16 @@
 .merchant-row.bordered { border-bottom: 0.5px solid var(--border); }
 
 .merchant-rank {
-  font-size: 11px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--bg3);
+  font-size: 10px;
   font-family: var(--font-mono);
-  color: var(--text3);
-  min-width: 14px;
-  text-align: center;
+  color: var(--text2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
 }
 
@@ -86,7 +93,7 @@
 .month-compare-card {
   display: flex;
   align-items: center;
-  padding: 22px 20px;
+  padding: 20px;
   gap: 12px;
 }
 
@@ -126,9 +133,24 @@
 }
 
 .month-delta {
-  font-size: 13px;
+  font-size: 12px;
   font-family: var(--font-mono);
   font-weight: 500;
   letter-spacing: -0.01em;
   text-align: center;
+  padding: 5px 10px;
+  border-radius: 99px;
+  white-space: nowrap;
+}
+.month-delta.down {
+  color: var(--accent);
+  background: rgba(88,166,255,0.12);
+}
+.month-delta.up {
+  color: var(--red);
+  background: rgba(248,81,73,0.10);
+}
+.month-delta.flat {
+  color: var(--text3);
+  background: var(--bg3);
 }

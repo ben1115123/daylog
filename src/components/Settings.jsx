@@ -259,7 +259,7 @@ export default function Settings({ showToast, onBack }) {
       </div>
 
       {/* ── Profile ──────────────────────────────────── */}
-      <div className="section" style={{ marginTop: 20 }}>
+      <div className="section" >
         <div className="section-label">Profile</div>
         <div className="card settings-card">
           <div className="setting-row bordered">
@@ -287,7 +287,7 @@ export default function Settings({ showToast, onBack }) {
       </div>
 
       {/* ── Recurring expenses ────────────────────────── */}
-      <div className="section" style={{ marginTop: 20 }}>
+      <div className="section" >
         <div className="section-label">Recurring Expenses</div>
         {recurringList.length > 0 && (
           <div className="recurring-committed-total">
@@ -349,7 +349,7 @@ export default function Settings({ showToast, onBack }) {
       </div>
 
       {/* ── Recurring income ─────────────────────────── */}
-      <div className="section" style={{ marginTop: 20 }}>
+      <div className="section" >
         <div className="section-label">Recurring Income</div>
         {recurringIncomeList.length > 0 && (
           <div className="recurring-committed-total">
@@ -413,7 +413,7 @@ export default function Settings({ showToast, onBack }) {
       </div>
 
       {/* ── Category budgets ──────────────────────────── */}
-      <div className="section" style={{ marginTop: 20 }}>
+      <div className="section" >
         <div className="section-label">Category budgets</div>
         <div className="card settings-card">
           {CATEGORIES.map((cat, i) => {
@@ -443,7 +443,7 @@ export default function Settings({ showToast, onBack }) {
       </div>
 
       {/* ── API key ───────────────────────────────────── */}
-      <div className="section" style={{ marginTop: 20 }}>
+      <div className="section" >
         <div className="section-label">Anthropic API key</div>
         <div className="card settings-card">
           <div className="setting-row">
@@ -459,12 +459,12 @@ export default function Settings({ showToast, onBack }) {
         <p className="setting-hint">Get a key at console.anthropic.com</p>
       </div>
 
-      <div className="section" style={{ marginTop: 20 }}>
+      <div className="section" >
         <button className="save-btn" onClick={saveSettings}>Save settings</button>
       </div>
 
       {/* ── Data ─────────────────────────────────────── */}
-      <div className="section" style={{ marginTop: 32 }}>
+      <div className="section" >
         <div className="section-label">Data</div>
         <div className="card settings-card">
           <div className="setting-row bordered">

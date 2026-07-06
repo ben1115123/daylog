@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { parseInput } from '../ai.js'
 import { db, computeRecentMonths } from '../db.js'
-import { CAT_META, CATEGORIES, formatRM, formatDate, formatTime } from '../utils.js'
+import { CAT_META, CATEGORIES, formatRM, formatRMParts, formatDate, formatTime } from '../utils.js'
 import { MicIcon, SendIcon, CAT_ICONS, BackIcon } from '../Icons.jsx'
 import DLMark from './DLMark.jsx'
 import Sheet from './Sheet.jsx'
@@ -41,22 +41,25 @@ function useExpand() {
 }
 
 /* ── Spending summary mini content (closed card + pinned overlay state) ── */
-function SpendMini({ data, label }) {
+function SpendMini({ data, label, budget }) {
   if (!data) return <div className="loading-wrap"><div className="spinner"/></div>
   const savedPositive = data.saved >= 0
+  const pct = budget > 0 ? Math.min(100, Math.round((data.total / budget) * 100)) : 0
+  const amount = formatRMParts(data.total)
   return (
     <div className="spend-mini">
-      <div className="spend-mini-left">
-        <div className="spend-mini-label">{label}</div>
-        <div className="spend-mini-amount">{formatRM(data.total)}</div>
-        <div className={`spend-mini-saved ${savedPositive ? 'pos' : 'neg'}`}>
-          {savedPositive ? 'saved ' : 'over by '}{formatRM(Math.abs(data.saved))}
-        </div>
+      <div className="spend-mini-pill">{budget > 0 ? `${pct}%` : '—'}</div>
+      <div className="spend-mini-label">{label}</div>
+      <div className="big-number spend-mini-amount">
+        <span className="rm-prefix">{amount.prefix}</span>{amount.value}
       </div>
-      <div className="spend-mini-right">
-        <div className="spend-mini-rate" style={{ color: data.savingsRate >= 20 ? 'var(--accent)' : data.savingsRate > 0 ? 'var(--text2)' : 'var(--red)' }}>
-          {data.incomeTotal > 0 ? `${data.savingsRate}%` : '—'}
-        </div>
+      <div className="spend-mini-track">
+        <div className="spend-mini-fill" style={{ width: pct + '%' }} />
+      </div>
+      <div className="spend-mini-foot">
+        <span className={`spend-mini-saved ${savedPositive ? 'pos' : 'neg'}`}>
+          {savedPositive ? 'saved ' : 'over by '}{formatRM(Math.abs(data.saved))}
+        </span>
         <span className="spend-mini-chev"><BackIcon /></span>
       </div>
     </div>
@@ -374,7 +377,7 @@ export default function Home({ showToast, onLogged }) {
           style={{ visibility: spend.phase === 'closed' ? 'visible' : 'hidden' }}
           onClick={spend.phase === 'closed' ? spend.open : undefined}
         >
-          <SpendMini data={spendTabs?.thisMonth} label="This month" />
+          <SpendMini data={spendTabs?.thisMonth} label="This month" budget={settings.totalBudget} />
         </div>
       </div>
 
@@ -502,7 +505,7 @@ export default function Home({ showToast, onLogged }) {
     {spend.phase !== 'closed' && (
       <div className={`spend-card-overlay ${spend.phase}`} style={spend.overlayStyle}>
         <div className="spend-overlay-mini" style={{ opacity: spend.phase === 'open' ? 0 : 1 }}>
-          <SpendMini data={spendTabs?.thisMonth} label="This month" />
+          <SpendMini data={spendTabs?.thisMonth} label="This month" budget={settings.totalBudget} />
         </div>
 
         <div className="spend-overlay-full" style={{ opacity: spend.phase === 'open' ? 1 : 0, pointerEvents: spend.phase === 'open' ? 'auto' : 'none' }}>
@@ -515,7 +518,9 @@ export default function Home({ showToast, onLogged }) {
             return (
               <>
                 <div className="spend-overlay-header">
-                  <div className="spend-overlay-amount">{formatRM(data.total)}</div>
+                  <div className="big-number spend-overlay-amount">
+                    <span className="rm-prefix">{formatRMParts(data.total).prefix}</span>{formatRMParts(data.total).value}
+                  </div>
                   <div className={`spend-overlay-saved ${savedPositive ? 'pos' : 'neg'}`}>
                     {savedPositive ? 'Saved ' : 'Over by '}{formatRM(Math.abs(data.saved))}
                     {data.incomeTotal > 0 && ` · ${data.savingsRate}% rate`}

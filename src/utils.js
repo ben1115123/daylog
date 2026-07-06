@@ -53,6 +53,11 @@ export function formatRM(amount) {
   return `RM ${Number(amount).toFixed(0)}`
 }
 
+export function formatRMParts(amount) {
+  if (amount == null) return { prefix: '—', value: '' }
+  return { prefix: 'RM', value: Number(amount).toFixed(0) }
+}
+
 export function formatDate(dateStr) {
   if (!dateStr) return ''
   const d = new Date(dateStr + 'T00:00:00')

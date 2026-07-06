@@ -18,7 +18,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 52px 20px 12px;
+  padding: 36px 20px 12px;
   transition: padding-top 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -72,8 +72,8 @@
   font-weight: 700;
   color: var(--text);
   letter-spacing: -0.04em;
-  line-height: 1;
-  margin-bottom: 14px;
+  line-height: 0.95;
+  margin-bottom: 12px;
 }
 
 .home-datestr {
@@ -85,8 +85,11 @@
 
 /* ── Input ──────────────────────────────────────────── */
 .home-input-wrap {
-  padding: 20px 20px 0;
-  border-bottom: 0.5px solid var(--border);
+  margin: 16px 20px 0;
+  padding: 16px 16px 12px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 16px;
 }
 
 .home-input-wrap textarea {
@@ -108,7 +111,9 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 0 16px;
+  padding-top: 10px;
+  margin-top: 4px;
+  border-top: 1px solid var(--border);
 }
 
 .input-hint {
@@ -313,10 +318,21 @@
 }
 
 .spend-mini {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px;
+  position: relative;
+  padding: 20px;
+}
+
+.spend-mini-pill {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--accent);
+  background: rgba(88,166,255,0.12);
+  padding: 4px 10px;
+  border-radius: 99px;
 }
 
 .spend-mini-label {
@@ -325,36 +341,39 @@
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--text3);
-  margin-bottom: 4px;
+  margin-bottom: 6px;
 }
 
 .spend-mini-amount {
-  font-family: var(--font-display);
-  font-size: 24px;
-  font-weight: 600;
-  color: var(--text);
-  letter-spacing: -0.02em;
+  margin-bottom: 14px;
+}
+
+.spend-mini-track {
+  height: 4px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 99px;
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+.spend-mini-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 99px;
+  transition: width 0.6s ease-out;
+}
+
+.spend-mini-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .spend-mini-saved {
   font-family: var(--font-mono);
-  font-size: 11px;
-  margin-top: 3px;
+  font-size: 13px;
 }
 .spend-mini-saved.pos { color: var(--accent); }
 .spend-mini-saved.neg { color: var(--red); }
-
-.spend-mini-right {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.spend-mini-rate {
-  font-family: var(--font-mono);
-  font-size: 14px;
-  font-weight: 500;
-}
 
 .spend-mini-chev {
   color: var(--text3);
@@ -381,9 +400,9 @@
 .upcoming-pill {
   flex-shrink: 0;
   min-width: 120px;
-  background: var(--bg3);
-  border: 0.5px solid var(--border);
-  border-radius: 12px;
+  background: var(--bg2);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 14px;
   padding: 10px 12px;
 }
 
@@ -392,7 +411,7 @@
   font-size: 9px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--text3);
+  color: var(--accent);
   margin-bottom: 4px;
 }
 
@@ -479,11 +498,7 @@
 .spend-overlay-header { margin-bottom: 20px; }
 
 .spend-overlay-amount {
-  font-family: var(--font-display);
-  font-size: 36px;
-  font-weight: 700;
-  color: var(--text);
-  letter-spacing: -0.02em;
+  margin-bottom: 2px;
 }
 
 .spend-overlay-saved {
@@ -496,26 +511,28 @@
 
 .spend-tabs {
   display: flex;
-  gap: 8px;
+  gap: 2px;
+  padding: 3px;
+  background: var(--bg3);
+  border-radius: var(--radius-sm);
   margin-bottom: 24px;
 }
 
 .spend-tab {
   flex: 1;
-  padding: 10px 0;
+  padding: 9px 0;
   text-align: center;
-  background: var(--bg3);
-  border: 0.5px solid var(--border2);
-  border-radius: var(--radius-sm);
+  background: transparent;
+  border: none;
+  border-radius: 7px;
   font-family: var(--font-mono);
   font-size: 11px;
   letter-spacing: 0.04em;
   color: var(--text2);
-  transition: all 0.15s ease;
+  transition: all 0.2s ease;
 }
 .spend-tab.active {
-  background: var(--accent-dim);
-  border-color: var(--accent-border);
+  background: rgba(88,166,255,0.15);
   color: var(--accent);
 }
 

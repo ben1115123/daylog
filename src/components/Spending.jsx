@@ -13,11 +13,19 @@ import './Spending.css'
 export function DonutChart({ cats, total, animate }) {
   const R = 52, CX = 72, CY = 72
   const CIRC = 2 * Math.PI * R
+  const STROKE = 14
+  const GAP = 2
   const active = cats.filter(c => c.amount > 0)
+
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => {
+    const t = requestAnimationFrame(() => setMounted(true))
+    return () => cancelAnimationFrame(t)
+  }, [])
 
   if (total === 0) return (
     <svg viewBox="0 0 144 144" width="150" height="150">
-      <circle cx={CX} cy={CY} r={R} fill="none" stroke="var(--bg4)" strokeWidth="15"/>
+      <circle cx={CX} cy={CY} r={R} fill="none" stroke="var(--bg4)" strokeWidth={STROKE}/>
       <text x={CX} y={CY - 4} textAnchor="middle" style={{ fill: 'var(--text3)', fontFamily: 'JetBrains Mono', fontSize: 10 }}>spent</text>
       <text x={CX} y={CY + 14} textAnchor="middle" style={{ fill: 'var(--text2)', fontFamily: 'JetBrains Mono', fontSize: 14 }}>RM 0</text>
     </svg>
@@ -26,22 +34,24 @@ export function DonutChart({ cats, total, animate }) {
   let cumAngle = 0
   return (
     <svg viewBox="0 0 144 144" width="150" height="150">
-      <circle cx={CX} cy={CY} r={R} fill="none" stroke="var(--bg4)" strokeWidth="15"/>
+      <circle cx={CX} cy={CY} r={R} fill="none" stroke="var(--bg4)" strokeWidth={STROKE}/>
       {active.map((c, i) => {
         const pct = c.amount / total
-        const len = pct * CIRC
+        const fullLen = pct * CIRC
+        const len = Math.max(fullLen - GAP, 0)
         const start = cumAngle
         cumAngle += pct * 360
-        const drawing = typeof animate !== 'undefined'
+        const drawExplicit = typeof animate !== 'undefined'
+        const drawn = drawExplicit ? animate : mounted
         return (
           <circle
             key={i}
             cx={CX} cy={CY} r={R}
             fill="none" stroke={c.color}
-            strokeOpacity="0.9" strokeWidth="15" strokeLinecap="butt"
+            strokeOpacity="0.9" strokeWidth={STROKE} strokeLinecap="butt"
             strokeDasharray={`${len} ${CIRC}`}
-            strokeDashoffset={drawing ? (animate ? 0 : len) : 0}
-            style={drawing ? { transition: `stroke-dashoffset 0.6s ease-out ${i * 0.08}s` } : undefined}
+            strokeDashoffset={drawn ? 0 : len}
+            style={{ transition: `stroke-dashoffset 0.6s ease-out ${i * 0.08}s` }}
             transform={`rotate(${start - 90}, ${CX}, ${CY})`}
           />
         )
@@ -541,7 +551,7 @@ export default function Spending({ showToast }) {
 
       {/* ── SEARCH RESULTS ───────────────────────────── */}
       {searchOpen && (
-        <div className="section" style={{ marginTop: 16, paddingBottom: 32 }}>
+        <div className="section" style={{ paddingBottom: 32 }}>
           <div className="section-label">{filteredExpenses.length} result{filteredExpenses.length !== 1 ? 's' : ''}</div>
           {filteredExpenses.length === 0 ? (
             <div className="empty">no matching expenses</div>
@@ -572,7 +582,7 @@ export default function Spending({ showToast }) {
       {/* ── SPENDING VIEW ─────────────────────────────── */}
       {!searchOpen && view === 'spending' && (
         <>
-          <div className="section" style={{ marginTop: 20 }}>
+          <div className="section" >
             <div className="budget-hero card">
               <div className="budget-top">
                 <div>
@@ -603,7 +613,7 @@ export default function Spending({ showToast }) {
           </div>
 
           {expenses.length > 0 && (
-            <div className="section" style={{ marginTop: 16 }}>
+            <div className="section" >
               <div className="insight-chips">
                 <div className="insight-chip">
                   <div className="insight-chip-label">biggest</div>
@@ -627,7 +637,7 @@ export default function Spending({ showToast }) {
           )}
 
           {total > 0 && (
-            <div className="section" style={{ marginTop: 20 }}>
+            <div className="section" >
               <div className="section-label">By category</div>
               <div className="card donut-card">
                 <div className="donut-wrap">
@@ -654,7 +664,7 @@ export default function Spending({ showToast }) {
             </div>
           )}
 
-          <div className="section" style={{ marginTop: 20, paddingBottom: 32 }}>
+          <div className="section" style={{ paddingBottom: 32 }}>
             <div className="section-label">All expenses</div>
             {expenses.length === 0 ? (
               <div className="empty">no expenses this month</div>
@@ -717,7 +727,7 @@ export default function Spending({ showToast }) {
       {!searchOpen && view === 'savings' && (
         <>
           {/* Income + Spent header */}
-          <div className="section" style={{ marginTop: 20 }}>
+          <div className="section" >
             <div className="card">
               <div className="saving-input-row">
                 <div>
@@ -735,7 +745,7 @@ export default function Spending({ showToast }) {
           </div>
 
           {/* Net saved + savings rate */}
-          <div className="section" style={{ marginTop: 16 }}>
+          <div className="section" >
             <div className="card budget-hero">
               <div className="budget-top">
                 <div>
@@ -763,7 +773,7 @@ export default function Spending({ showToast }) {
           </div>
 
           {/* Income breakdown */}
-          <div className="section" style={{ marginTop: 20 }}>
+          <div className="section" >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, paddingRight: 0 }}>
               <div className="section-label">Income this month</div>
               <button
@@ -811,7 +821,7 @@ export default function Spending({ showToast }) {
           </div>
 
           {/* 6-month savings history */}
-          <div className="section" style={{ marginTop: 20 }}>
+          <div className="section" >
             <div className="section-label">6-month savings history</div>
             <div className="card" style={{ padding: '20px 16px 16px' }}>
               <SavingsBarChart months={savingsHistory} />
@@ -819,7 +829,7 @@ export default function Spending({ showToast }) {
           </div>
 
           {/* Running total */}
-          <div className="section" style={{ marginTop: 16, paddingBottom: 32 }}>
+          <div className="section" style={{ paddingBottom: 32 }}>
             <div className="card">
               <div className="saving-total-row">
                 <div>

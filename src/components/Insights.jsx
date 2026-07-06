@@ -65,8 +65,8 @@ function TrendChart({ months }) {
             <rect
               x={x} y={y}
               width={barW} height={barH}
-              rx="3"
-              fill={isCurrentMonth ? 'var(--accent)' : 'var(--bg4)'}
+              rx="6"
+              fill={isCurrentMonth ? 'var(--accent)' : 'rgba(255,255,255,0.12)'}
             />
             <text
               x={x + barW / 2} y={H + 16}
@@ -75,11 +75,11 @@ function TrendChart({ months }) {
             >
               {monthLabel(m.year, m.month)}
             </text>
-            {m.total > 0 && (
+            {m.total > 0 && isCurrentMonth && (
               <text
                 x={x + barW / 2} y={y - 5}
                 textAnchor="middle"
-                style={{ fill: isCurrentMonth ? 'var(--accent)' : 'var(--text3)', fontFamily: 'JetBrains Mono', fontSize: 9 }}
+                style={{ fill: 'var(--accent)', fontFamily: 'JetBrains Mono', fontSize: 9 }}
               >
                 {m.total >= 1000 ? Math.round(m.total / 100) / 10 + 'k' : Math.round(m.total)}
               </text>
@@ -194,17 +194,17 @@ export default function Insights({ showToast }) {
       </div>
 
       {/* ── 6-month trend ─────────────────────────────── */}
-      <div className="section" style={{ marginTop: 20 }}>
+      <div className="section" >
         <div className="section-label">Spending trend</div>
-        <div className="card" style={{ padding: '18px 16px 14px' }}>
+        <div className="card" style={{ padding: '20px 20px 16px' }}>
           <TrendChart months={recentMonths} />
         </div>
       </div>
 
       {/* ── Income vs expenses ────────────────────────── */}
-      <div className="section" style={{ marginTop: 16 }}>
+      <div className="section" >
         <div className="section-label">Income vs expenses</div>
-        <div className="card" style={{ padding: '18px 16px 14px' }}>
+        <div className="card" style={{ padding: '20px 20px 16px' }}>
           <div style={{ display: 'flex', gap: 16, marginBottom: 12 }}>
             <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontFamily: 'JetBrains Mono', fontSize: 10, color: 'var(--text3)' }}>
               <span style={{ width: 8, height: 8, borderRadius: 2, background: '#58a6ff', display: 'inline-block' }}/>income
@@ -218,7 +218,7 @@ export default function Insights({ showToast }) {
       </div>
 
       {/* ── Stat pair row ─────────────────────────────── */}
-      <div className="section" style={{ marginTop: 16 }}>
+      <div className="section" >
         <div className="stat-pair">
           <div className="stat-card card">
             <div className="stat-label">most expensive day</div>
@@ -236,7 +236,7 @@ export default function Insights({ showToast }) {
       </div>
 
       {/* ── Top merchants ─────────────────────────────── */}
-      <div className="section" style={{ marginTop: 16 }}>
+      <div className="section" >
         <div className="section-label">Top merchants this month</div>
         {merchants.length === 0 ? (
           <div className="empty">no expenses yet</div>
@@ -246,7 +246,7 @@ export default function Insights({ showToast }) {
               const pct = totalForMerchants > 0 ? Math.round((amount / totalForMerchants) * 100) : 0
               return (
                 <div key={desc} className={`merchant-row ${i < merchants.length - 1 ? 'bordered' : ''}`}>
-                  <span className="merchant-rank">{i + 1}</span>
+                  <span className="merchant-rank">#{i + 1}</span>
                   <span className="merchant-name">{desc}</span>
                   <span className="merchant-pct">{pct}%</span>
                   <span className="merchant-amount">{formatRM(amount)}</span>
@@ -258,7 +258,7 @@ export default function Insights({ showToast }) {
       </div>
 
       {/* ── Month comparison ──────────────────────────── */}
-      <div className="section" style={{ marginTop: 16, paddingBottom: 32 }}>
+      <div className="section" style={{ paddingBottom: 32 }}>
         <div className="section-label">Month comparison</div>
         <div className="card month-compare-card">
           <div className="month-col">
@@ -268,12 +268,12 @@ export default function Insights({ showToast }) {
           </div>
           <div className="month-divider">
             {monthDelta !== 0 && (
-              <div className="month-delta" style={{ color: monthDelta > 0 ? 'var(--red)' : 'var(--accent)' }}>
+              <div className={`month-delta ${monthDelta > 0 ? 'up' : 'down'}`}>
                 {monthDelta > 0 ? '↑' : '↓'}
                 {monthDeltaPct !== null ? ` ${monthDeltaPct}%` : ''}
               </div>
             )}
-            {monthDelta === 0 && <div className="month-delta" style={{ color: 'var(--text3)' }}>same</div>}
+            {monthDelta === 0 && <div className="month-delta flat">same</div>}
           </div>
           <div className="month-col" style={{ textAlign: 'right' }}>
             <div className="month-col-label">Last month</div>

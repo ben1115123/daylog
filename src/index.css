@@ -1,11 +1,11 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 
 :root {
-  /* ── Surfaces — GitHub dark palette ──────────────── */
+  /* ── Surfaces — 3-level elevation ─────────────────── */
   --bg:  #0d1117;
-  --bg2: #161b22;
-  --bg3: #1c2128;
-  --bg4: #21262d;
+  --bg2: #161b26;
+  --bg3: #1c2333;
+  --bg4: #232b3d;
 
   /* ── Borders ──────────────────────────────────────── */
   --border:  rgba(255,255,255,0.06);
@@ -13,8 +13,8 @@
 
   /* ── Text ─────────────────────────────────────────── */
   --text:  #e6edf3;
-  --text2: #7d8590;
-  --text3: #484f58;
+  --text2: rgba(255,255,255,0.45);
+  --text3: rgba(255,255,255,0.35);
 
   /* ── Accent — cool blue ───────────────────────────── */
   --accent:        #58a6ff;
@@ -92,6 +92,23 @@ input, textarea, select { font-family: var(--font-sans); color: inherit; }
   border-top-color: var(--accent);
   border-radius: 50%;
   animation: spin 0.65s linear infinite;
+}
+
+/* ── Big hero numbers (RM prefix smaller + dimmer) ───── */
+.big-number {
+  font-family: var(--font-mono);
+  font-size: 40px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  color: var(--text);
+  line-height: 1;
+}
+.big-number .rm-prefix {
+  font-size: 20px;
+  font-weight: 400;
+  color: var(--text3);
+  margin-right: 3px;
 }
 
 /* ── DL logo mark ─────────────────────────────────────── */
