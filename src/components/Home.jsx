@@ -401,7 +401,11 @@ export default function Home({ showToast, onLogged }) {
           ) : (
             <div className="upcoming-strip-row">
               {upcoming.map(ev => (
-                <div key={`${ev.id}-${ev.date}`} className="upcoming-pill">
+                <div
+                  key={`${ev.id}-${ev.date}`}
+                  className="upcoming-pill"
+                  onClick={(e) => { e.stopPropagation(); setEditingEntry({ ...ev, _type: 'event' }) }}
+                >
                   <div className="upcoming-pill-date">{formatDate(ev.date)}</div>
                   <div className="upcoming-pill-title">{ev.title}</div>
                 </div>
