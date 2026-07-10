@@ -2,7 +2,7 @@
   height: 100%;
   overflow-y: auto;
   overflow-x: hidden;
-  padding-bottom: 3rem;
+  padding-bottom: var(--tabbar-height);
 }
 
 /* ── Collapsing sticky header ────────────────────────── */
@@ -458,7 +458,11 @@
 }
 
 .spend-overlay-full {
-  padding: 52px 20px 40px;
+  padding: 52px 20px var(--tabbar-height);
+}
+
+.cal-overlay-full {
+  padding-bottom: var(--tabbar-height);
 }
 
 .spend-back,
