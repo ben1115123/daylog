@@ -6,6 +6,7 @@ import { MicIcon, SendIcon, CAT_ICONS, BackIcon } from '../Icons.jsx'
 import DLMark from './DLMark.jsx'
 import Sheet from './Sheet.jsx'
 import Calendar from './Calendar.jsx'
+import EditEntrySheet from './EditEntrySheet.jsx'
 import { DonutChart } from './Spending.jsx'
 import { useStaggeredEntries } from '../hooks/useStaggeredEntries.js'
 import './Home.css'
@@ -97,6 +98,7 @@ export default function Home({ showToast, onLogged }) {
   const spend                       = useExpand()
   const [spendTab, setSpendTab]     = useState('thisMonth')
   const [spendTabs, setSpendTabs]   = useState(null)
+  const [editingEntry, setEditingEntry] = useState(null)
   const [committedTotal, setCommittedTotal] = useState(0)
   const [arcsDrawn, setArcsDrawn]   = useState(false)
 
@@ -135,7 +137,11 @@ export default function Home({ showToast, onLogged }) {
       const biggest = exp.length
         ? exp.reduce((max, e) => (e.amount || 0) > (max?.amount || 0) ? e : max, null)
         : null
-      return { total, incomeTotal, saved, savingsRate, donutCats, biggest, entriesCount: exp.length }
+      const items = [
+        ...exp.map(e => ({ ...e, _type: 'expense' })),
+        ...inc.map(i => ({ ...i, _type: 'income' })),
+      ].sort((a, b) => (b.date || '').localeCompare(a.date || ''))
+      return { total, incomeTotal, saved, savingsRate, donutCats, biggest, entriesCount: exp.length, items }
     }
 
     const recentMonths = computeRecentMonths(allExp, 6)
@@ -169,6 +175,7 @@ export default function Home({ showToast, onLogged }) {
       avg: {
         total: avgTotal, incomeTotal: avgIncome, saved: avgSaved, savingsRate: avgSavingsRate,
         donutCats: avgDonutCats, biggest: avgBiggest, entriesCount: Math.round(allExp.length / n),
+        items: [],
       },
     })
   }, [])
@@ -589,6 +596,44 @@ export default function Home({ showToast, onLogged }) {
                     </div>
                   </div>
                 </div>
+
+                {data.items.length > 0 && (
+                  <div className="home-section" style={{ marginTop: 24, padding: 0 }}>
+                    <div className="section-label">Entries</div>
+                    <div className="card">
+                      {data.items.map((item, i) => {
+                        const isLast = i === data.items.length - 1
+                        const meta = CAT_META[item.category]
+                        const Icon = item._type === 'expense' ? CAT_ICONS[item.category] : null
+                        return (
+                          <div
+                            key={`${item._type}-${item.id}`}
+                            className={`entry-row ${isLast ? '' : 'bordered'}`}
+                            onClick={() => setEditingEntry(item)}
+                            role="button"
+                            tabIndex={0}
+                          >
+                            <span className="entry-icon-wrap" style={{ color: meta?.color, background: (meta?.color || '#fff') + '18' }}>
+                              {item._type === 'expense' ? (Icon && <Icon size={14} />) : (
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                                </svg>
+                              )}
+                            </span>
+                            <div className="entry-body">
+                              <div className="entry-title">{item.description}</div>
+                              {item.notes && <div className="entry-notes">{item.notes}</div>}
+                              <div className="entry-sub">{meta?.label} · {formatDate(item.date)}</div>
+                            </div>
+                            <div className="entry-amount" style={item._type === 'income' ? { color: meta?.color } : undefined}>
+                              {item._type === 'income' ? '+' : ''}{formatRM(item.amount)}
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
               </>
             )
           })()}
@@ -616,6 +661,31 @@ export default function Home({ showToast, onLogged }) {
           </div>
         </div>
       </div>
+    )}
+
+    {editingEntry && (
+      <EditEntrySheet
+        entry={editingEntry}
+        onClose={() => setEditingEntry(null)}
+        onSave={async (updates) => {
+          if (editingEntry._type === 'expense') await db.updateExpense(editingEntry.id, updates)
+          else if (editingEntry._type === 'income') await db.updateIncome(editingEntry.id, updates)
+          else await db.updateEvent(editingEntry.id, updates)
+          setEditingEntry(null)
+          await loadSpendOverview()
+          await refreshRecent()
+          showToast('Updated')
+        }}
+        onDelete={async () => {
+          if (editingEntry._type === 'expense') await db.deleteExpense(editingEntry.id)
+          else if (editingEntry._type === 'income') await db.deleteIncome(editingEntry.id)
+          else await db.deleteEvent(editingEntry.id)
+          setEditingEntry(null)
+          await loadSpendOverview()
+          await refreshRecent()
+          showToast('Deleted')
+        }}
+      />
     )}
 
       {amountChip && (
