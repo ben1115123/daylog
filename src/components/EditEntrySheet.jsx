@@ -23,6 +23,7 @@ export default function EditEntrySheet({ entry, onSave, onDelete, onClose }) {
 
   const handleSave = () => {
     if (isEvent) {
+      // Partial update — recurring/end_date/reminder_minutes are left untouched (not editable from this quick-edit sheet)
       onSave({
         title: form.description.trim(),
         date: form.date,

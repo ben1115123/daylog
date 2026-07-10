@@ -404,7 +404,20 @@ export default function Home({ showToast, onLogged }) {
                 <div
                   key={`${ev.id}-${ev.date}`}
                   className="upcoming-pill"
-                  onClick={(e) => { e.stopPropagation(); setEditingEntry({ ...ev, _type: 'event' }) }}
+                  role="button"
+                  tabIndex={0}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    if (ev.isRecurringInstance) { showToast('Edit repeating events from the Calendar', 'error'); return }
+                    setEditingEntry({ ...ev, _type: 'event' })
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key !== 'Enter' && e.key !== ' ') return
+                    e.preventDefault()
+                    e.stopPropagation()
+                    if (ev.isRecurringInstance) { showToast('Edit repeating events from the Calendar', 'error'); return }
+                    setEditingEntry({ ...ev, _type: 'event' })
+                  }}
                 >
                   <div className="upcoming-pill-date">{formatDate(ev.date)}</div>
                   <div className="upcoming-pill-title">{ev.title}</div>
@@ -614,6 +627,7 @@ export default function Home({ showToast, onLogged }) {
                             key={`${item._type}-${item.id}`}
                             className={`entry-row ${isLast ? '' : 'bordered'}`}
                             onClick={() => setEditingEntry(item)}
+                            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setEditingEntry(item) } }}
                             role="button"
                             tabIndex={0}
                           >
