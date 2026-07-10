@@ -411,6 +411,18 @@ export const db = {
     }
   },
 
+  async updateIncome(id, updates) {
+    try {
+      const { error } = await supabase.from('income').update(updates).eq('id', id)
+      if (error) throw error
+    } catch {
+      setOffline(true)
+    }
+    const cache = lsLoad(CACHE.income, [])
+    const idx = cache.findIndex(e => e.id === id)
+    if (idx !== -1) { cache[idx] = { ...cache[idx], ...updates }; lsSave(CACHE.income, cache) }
+  },
+
   async deleteIncome(id) {
     try {
       const { error } = await supabase.from('income').delete().eq('id', id)
