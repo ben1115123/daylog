@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import Sheet from './Sheet.jsx'
 import ConfirmDialog from './ConfirmDialog.jsx'
-import { CATEGORIES, CAT_META, INCOME_CATEGORIES } from '../utils.js'
+import { CATEGORIES, CAT_META, INCOME_CATEGORIES, EVENT_CATS } from '../utils.js'
 
 const TITLES = { expense: 'Edit expense', income: 'Edit income', event: 'Edit event' }
 
@@ -10,7 +10,7 @@ export default function EditEntrySheet({ entry, onSave, onDelete, onClose }) {
   const [form, setForm] = useState({
     description: entry.description || entry.title || '',
     amount: entry.amount ?? '',
-    category: entry.category || (entry._type === 'income' ? INCOME_CATEGORIES[0] : CATEGORIES[0]),
+    category: entry.category || (entry._type === 'income' ? INCOME_CATEGORIES[0] : entry._type === 'event' ? '' : CATEGORIES[0]),
     date: entry.date || '',
     time: entry.time || '',
     notes: entry.notes || '',
@@ -19,7 +19,7 @@ export default function EditEntrySheet({ entry, onSave, onDelete, onClose }) {
 
   const canSave = isEvent
     ? form.description.trim() && form.date
-    : form.description.trim() && form.amount && form.date
+    : form.description.trim() && form.amount !== '' && form.date
 
   const handleSave = () => {
     if (isEvent) {
@@ -110,7 +110,14 @@ export default function EditEntrySheet({ entry, onSave, onDelete, onClose }) {
           onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
         >
           {entry._type === 'income'
-            ? INCOME_CATEGORIES.map(c => <option key={c} value={c}>{c === 'salary' ? 'Salary' : 'Trading'}</option>)
+            ? INCOME_CATEGORIES.map(c => <option key={c} value={c}>{CAT_META[c]?.label || c}</option>)
+            : entry._type === 'event'
+            ? (
+              <>
+                <option value="">No category</option>
+                {Object.entries(EVENT_CATS).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+              </>
+            )
             : CATEGORIES.map(c => <option key={c} value={c}>{CAT_META[c]?.label}</option>)}
         </select>
       </div>
