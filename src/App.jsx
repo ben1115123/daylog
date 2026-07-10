@@ -103,6 +103,8 @@ export default function App() {
   const [isOffline, setIsOffline]   = useState(false)
   const [showOnboarding, setShowOnboarding] = useState(null)
   const recurringChecked = useRef(false)
+  const navRef = useRef(null)
+  const appRef = useRef(null)
 
   const showToast = useCallback((msg, type = 'success') => {
     setToast({ msg, type })
@@ -130,6 +132,19 @@ export default function App() {
     recurringChecked.current = true
     checkRecurring(showToast)
   }, [showOnboarding, showToast])
+
+  useEffect(() => {
+    if (!navRef.current || !appRef.current) return
+    const el = navRef.current
+    const target = appRef.current
+    const apply = () => {
+      target.style.setProperty('--tabbar-height', `${el.getBoundingClientRect().height}px`)
+    }
+    apply()
+    const ro = new ResizeObserver(apply)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [showOnboarding])
 
   const handleOnboardingComplete = (name, income, budget) => {
     const now = new Date()
@@ -168,14 +183,14 @@ export default function App() {
   }
 
   return (
-    <div className="app">
+    <div className="app" ref={appRef}>
       {isOffline && <div className="offline-badge">offline</div>}
       <div className="app-body">
         {tab === 'home'     && <Home     key={refresh} showToast={showToast} onLogged={onLogged} />}
         {tab === 'insights' && <Insights key={refresh} showToast={showToast} />}
         {tab === 'settings' && <Settings key={refresh} showToast={showToast} />}
       </div>
-      <nav className="bottom-nav">
+      <nav className="bottom-nav" ref={navRef}>
         {tabs.map(({ id, label, Icon }) => (
           <button
             key={id}
