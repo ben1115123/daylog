@@ -144,7 +144,7 @@ export default function App() {
     const ro = new ResizeObserver(apply)
     ro.observe(el)
     return () => ro.disconnect()
-  }, [showOnboarding])
+  }, [showOnboarding, splashDone])
 
   const handleOnboardingComplete = (name, income, budget) => {
     const now = new Date()
