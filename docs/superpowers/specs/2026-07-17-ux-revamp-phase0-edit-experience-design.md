@@ -16,6 +16,15 @@ Scope: this spec covers Phase 0 only (edit sheet + undo). Phases 1-5 (motion, lo
 2. **Undo scope**: undo applies everywhere an entry is created, edited, or deleted — edit-sheet save/delete (Home + Spending overlay), NLP-parsed log, and preset-chip quick-log. Not spec-literal-only.
 3. **Category chip layout**: horizontal-scroll single row (matches existing Home "Quick log" preset-chip pattern), not a wrapping grid.
 
+## Correction — found during plan-writing
+
+The original design assumed `Spending.jsx` renders an edit sheet reachable from a "Spending overlay." That's wrong. Two corrections to file scope:
+
+1. **`Spending.jsx`'s default export is orphaned** — never imported/rendered anywhere in the app (only its named export `DonutChart` is used, by `Home.jsx`). Its inline `EditExpenseForm` and delete-confirm flow are unreachable dead code. Out of scope for Phase 0 — not touched, not fixed, just noted. (Worth a cleanup ticket later, not now — YAGNI.)
+2. **The actual "spend overlay" lives inside `Home.jsx`** (`.spend-overlay-full`, opened via the `spend` `useExpand()` hook). Its expense/income list (`Home.jsx:531-630`) already shares the *same* `editingEntry` state and the *same* single `EditEntrySheet` instance (`Home.jsx:684-707`) as the "Recent" list on the base screen and the upcoming-events pills. There is exactly one edit/delete code path in the whole app, and it lives entirely in `Home.jsx`.
+
+This simplifies Phase 0: all undo wiring for edit/delete happens once, in `Home.jsx`. `Spending.jsx` is removed from the file list below.
+
 ## Design
 
 ### 1. Toast system — generalized for undo
@@ -30,13 +39,13 @@ Scope: this spec covers Phase 0 only (edit sheet + undo). Phases 1-5 (motion, lo
 
 ### 2. Undo data flow — snapshot-and-revert
 
-No new persistence layer. Each mutation site captures state before calling `db.js`, and reverses it via a plain `db.js` call on undo.
+No new persistence layer. Each mutation site captures state before calling `db.js`, and reverses it via a plain `db.js` call on undo. All of this lives in `Home.jsx` — see correction above.
 
-- **Edit save** (Home.jsx, Spending.jsx): capture the full pre-edit entry object before calling `db.updateExpense/updateEvent/updateIncome`. Undo → re-call `update*` with the captured snapshot, then revert local list state the same way the normal save path does.
-- **Delete**: capture the full entry object before calling `db.delete*`. Undo → call the matching `db.add*` with the snapshot's fields. This re-inserts as a **new row with a new id** (Supabase auto-generates ids on insert; `db.js` has no id-preserving insert path). Data content is identical; id is not. This is an accepted, standard re-insert-on-undo tradeoff — not a bug to fix.
-- **NLP log** (`Home.jsx` `onLogged`): the created row is already returned from `db.add*`. Undo → `db.delete*(newRow.id)`, revert local list state.
-- **Preset quick-log**: same pattern as NLP log — capture returned row, undo deletes it by id.
-- Every mutation site remains responsible for its own local React state revert after the undo db call resolves, mirroring how it already handles normal save/delete.
+- **Edit save** (`Home.jsx:688-696`, the `EditEntrySheet` `onSave` handler): capture the full pre-edit `editingEntry` object before calling `db.updateExpense/updateEvent/updateIncome`. Undo → re-call the matching `update*` with the captured snapshot, then `loadSpendOverview()` + `refreshRecent()` (both already-stable local `useCallback`s Home calls after every save/delete — no `onLogged()` / remount involved on this path).
+- **Delete** (`Home.jsx:697-705`, `onDelete` handler): capture the full entry object before calling `db.delete*`. Undo → call the matching `db.add*` with the snapshot's fields. This re-inserts as a **new row with a new id** (Supabase auto-generates ids on insert; `db.js` has no id-preserving insert path). Data content is identical; id is not. Accepted, standard re-insert-on-undo tradeoff — not a bug to fix. Then `loadSpendOverview()` + `refreshRecent()`, same as above.
+- **NLP log** (`Home.jsx:227-248`, `handleSend`): `db.addExpense/addEvent/addIncome` currently discard their return value — change to capture the created row(s). `onLogged()` is called right after logging, which changes `App.jsx`'s `refresh` key and **fully remounts `Home`**. The undo closure passed to `showToast` must therefore only close over stable, App-owned things — `db`, the captured row id(s), and `onLogged` (a stable `useCallback` in `App.jsx`) — never Home's local `setRecent`/`refreshRecent`, which belong to the pre-remount instance and would silently no-op after remount. Undo → `db.delete*(id)` for each logged row, then `onLogged()` to force the fresh remount/reload that reflects the deletion.
+- **Preset quick-log** (`Home.jsx:270-283`, `handleLogAmount`): same pattern and same remount constraint as NLP log — capture the returned row, undo deletes it by id then calls `onLogged()`.
+- On the edit/delete path (no remount), the mutation site is responsible for its own local state revert as today. On the log path (remount happens), undo relies on the remount's fresh data load instead of local state patching.
 
 ### 3. EditEntrySheet rebuild
 
@@ -78,11 +87,10 @@ Modified:
 - `src/components/Toast.jsx`, `Toast.css` — action slot
 - `src/components/Sheet.jsx`, `Sheet.css` — swipe dismiss, keyboard-aware, spring open
 - `src/components/EditEntrySheet.jsx` — wire in the three new sub-components
-- `src/App.jsx` — `showToast` action param, undo wiring for NLP-logged entries
-- `src/components/Home.jsx` — undo snapshots for edit/delete/NLP-log/preset-log
-- `src/components/Spending.jsx` — undo snapshots for edit/delete
+- `src/App.jsx` — `showToast` action param
+- `src/components/Home.jsx` — undo snapshots for edit/delete (`EditEntrySheet` handlers) and NLP-log/preset-log (`handleSend`/`handleLogAmount`)
 
-Not touched: `db.js` schema/methods, Supabase tables, Calendar/Insights/Settings visuals, any other screen's layout.
+Not touched: `db.js` schema/methods, Supabase tables, Calendar/Insights/Settings visuals, `Spending.jsx` (orphaned, see correction above), any other screen's layout.
 
 ## Testing / Verification
 
@@ -90,7 +98,7 @@ Not touched: `db.js` schema/methods, Supabase tables, Calendar/Insights/Settings
 - Manual on-device pass (iOS Safari, since that's the target runtime):
   - Keyboard-aware save button visibility on amount focus
   - Swipe-down dismiss, both with and without unsaved changes
-  - Undo round-trip for all four mutation paths: expense edit, expense delete, NLP-parsed log, preset quick-log (and income/event edit-delete via Spending/Home)
+  - Undo round-trip for all mutation paths in `Home.jsx`: expense/income/event edit, expense/income/event delete, NLP-parsed log, preset quick-log — exercised both from the base "Recent" list and from the spend-overlay list (same `EditEntrySheet` instance, both entry points)
   - Amount thousand-separator formatting: empty input, single digit, 4+ digit number, decimal entry
   - Category chip auto-scroll-to-selected on sheet open, for a category near the end of the row
 - No regression check: existing Home/Spending/Calendar/Settings screens unaffected — this phase only touches the edit sheet, toast, and their direct callers.
