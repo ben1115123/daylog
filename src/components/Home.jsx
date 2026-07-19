@@ -231,17 +231,27 @@ export default function Home({ showToast, onLogged }) {
     setLoading(true)
     try {
       const parsed = await parseInput(input)
-      let logged = []
-      if (parsed.expense) { await db.addExpense(parsed.expense); logged.push('expense') }
-      if (parsed.event)   { await db.addEvent(parsed.event);     logged.push('event') }
-      if (parsed.income)  { await db.addIncome(parsed.income);   logged.push('income') }
-      if (logged.length === 0) { showToast('Could not parse that', 'error'); setLoading(false); return }
+      const created = []
+      if (parsed.expense) created.push(['expense', await db.addExpense(parsed.expense)])
+      if (parsed.event)   created.push(['event',   await db.addEvent(parsed.event)])
+      if (parsed.income)  created.push(['income',  await db.addIncome(parsed.income)])
+      if (created.length === 0) { showToast('Could not parse that', 'error'); setLoading(false); return }
       triggerBurst()
-      showToast(
-        logged.length === 2 ? 'Logged expense + event' :
-        logged[0] === 'expense' ? 'Expense logged' :
-        logged[0] === 'income'  ? 'Income logged' : 'Event added'
-      )
+      const msg =
+        created.length === 2 ? 'Logged expense + event' :
+        created[0][0] === 'expense' ? 'Expense logged' :
+        created[0][0] === 'income'  ? 'Income logged' : 'Event added'
+      showToast(msg, 'success', {
+        label: 'UNDO',
+        onClick: async () => {
+          for (const [type, row] of created) {
+            if (type === 'expense') await db.deleteExpense(row.id)
+            else if (type === 'income') await db.deleteIncome(row.id)
+            else await db.deleteEvent(row.id)
+          }
+          onLogged()
+        },
+      })
       await refreshRecent(); onLogged()
     } catch { showToast('Parse failed — check API key', 'error') }
     setLoading(false)
@@ -271,13 +281,16 @@ export default function Home({ showToast, onLogged }) {
     const amount = parseFloat(amountVal)
     if (isNaN(amount) || amount <= 0) return
     const chip = amountChip
-    await db.addExpense({
+    const row = await db.addExpense({
       description: chip.label,
       amount,
       category: chip.category,
       date: new Date().toISOString().split('T')[0],
     })
-    showToast(`${chip.label} — ${formatRM(amount)}`)
+    showToast(`${chip.label} — ${formatRM(amount)}`, 'success', {
+      label: 'UNDO',
+      onClick: async () => { await db.deleteExpense(row.id); onLogged() },
+    })
     setAmountChip(null)
     refreshRecent(); onLogged()
   }
