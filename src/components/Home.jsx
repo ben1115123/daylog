@@ -686,22 +686,45 @@ export default function Home({ showToast, onLogged }) {
         entry={editingEntry}
         onClose={() => setEditingEntry(null)}
         onSave={async (updates) => {
-          if (editingEntry._type === 'expense') await db.updateExpense(editingEntry.id, updates)
-          else if (editingEntry._type === 'income') await db.updateIncome(editingEntry.id, updates)
-          else await db.updateEvent(editingEntry.id, updates)
-          setEditingEntry(null)
+          const prevEntry = editingEntry
+          const type = prevEntry._type
+          if (type === 'expense') await db.updateExpense(prevEntry.id, updates)
+          else if (type === 'income') await db.updateIncome(prevEntry.id, updates)
+          else await db.updateEvent(prevEntry.id, updates)
           await loadSpendOverview()
           await refreshRecent()
-          showToast('Updated')
+          const revert = {}
+          for (const key of Object.keys(updates)) revert[key] = prevEntry[key]
+          showToast('Entry updated', 'success', {
+            label: 'UNDO',
+            onClick: async () => {
+              if (type === 'expense') await db.updateExpense(prevEntry.id, revert)
+              else if (type === 'income') await db.updateIncome(prevEntry.id, revert)
+              else await db.updateEvent(prevEntry.id, revert)
+              await loadSpendOverview()
+              await refreshRecent()
+            },
+          })
         }}
         onDelete={async () => {
-          if (editingEntry._type === 'expense') await db.deleteExpense(editingEntry.id)
-          else if (editingEntry._type === 'income') await db.deleteIncome(editingEntry.id)
-          else await db.deleteEvent(editingEntry.id)
+          const prevEntry = editingEntry
+          const type = prevEntry._type
+          if (type === 'expense') await db.deleteExpense(prevEntry.id)
+          else if (type === 'income') await db.deleteIncome(prevEntry.id)
+          else await db.deleteEvent(prevEntry.id)
           setEditingEntry(null)
           await loadSpendOverview()
           await refreshRecent()
-          showToast('Deleted')
+          showToast('Entry deleted', 'success', {
+            label: 'UNDO',
+            onClick: async () => {
+              if (type === 'expense') await db.addExpense(prevEntry)
+              else if (type === 'income') await db.addIncome(prevEntry)
+              else await db.addEvent(prevEntry)
+              await loadSpendOverview()
+              await refreshRecent()
+            },
+          })
         }}
       />
     )}
