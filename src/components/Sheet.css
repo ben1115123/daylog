@@ -17,7 +17,7 @@
   border: 0.5px solid var(--border2);
   border-bottom: none;
   border-radius: 20px 20px 0 0;
-  animation: sheetUp 0.22s ease;
+  animation: sheetUp 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -35,6 +35,8 @@
   margin: 10px auto 6px;
   flex-shrink: 0;
 }
+
+.sheet-drag-region { touch-action: none; }
 
 .sheet-header {
   display: flex;
