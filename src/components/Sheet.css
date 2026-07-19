@@ -186,3 +186,32 @@
   transition: color 0.15s, background 0.15s;
 }
 .add-btn:hover { color: var(--accent); background: var(--accent-dim); }
+
+/* ── Amount input (EditEntrySheet) ────────────────────── */
+.amount-input-wrap {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 6px;
+  padding: 20px 0;
+  cursor: text;
+}
+.amount-input-prefix {
+  font-family: var(--font-mono);
+  font-size: 20px;
+  font-weight: 400;
+  color: var(--text3);
+}
+.amount-input {
+  font-family: var(--font-mono);
+  font-size: 40px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--text);
+  background: none;
+  border: none;
+  outline: none;
+  max-width: 220px;
+  font-variant-numeric: tabular-nums;
+}
+.amount-input::placeholder { color: var(--text3); }
