@@ -2,7 +2,7 @@
   position: fixed;
   inset: 0;
   background: rgba(0,0,0,0.5);
-  z-index: 500;
+  z-index: 1000;
   animation: fadeIn 0.15s ease;
 }
 
@@ -85,7 +85,7 @@
   display: flex;
   gap: 10px;
   padding-top: 16px;
-  padding-bottom: 32px;
+  padding-bottom: max(32px, calc(env(safe-area-inset-bottom, 0px) + 16px));
   padding-left: 20px;
   padding-right: 20px;
   margin-top: 4px;

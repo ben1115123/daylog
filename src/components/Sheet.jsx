@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import './Sheet.css'
 import { XIcon } from '../Icons.jsx'
 
@@ -43,7 +44,7 @@ export default function Sheet({ title, onClose, children, className = '' }) {
 
   const transform = `translateY(${dragY - kbOffset}px)`
 
-  return (
+  return createPortal(
     <div className="sheet-backdrop" onClick={onClose}>
       <div
         className={`sheet${className ? ' ' + className : ''}`}
@@ -66,6 +67,7 @@ export default function Sheet({ title, onClose, children, className = '' }) {
         </div>
         <div className="sheet-body">{children}</div>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
