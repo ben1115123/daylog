@@ -34,7 +34,7 @@ function useExpand() {
   if (phase === 'opening') {
     overlayStyle = { top: rectRef.current.top, left: rectRef.current.left, width: rectRef.current.width, height: rectRef.current.height, borderRadius: '16px', transition: 'none' }
   } else if (phase === 'open') {
-    overlayStyle = { top: 0, left: 0, width: '100%', height: '100%', borderRadius: '20px 20px 0 0' }
+    overlayStyle = { top: 0, left: 0, width: '100%', height: '100%', borderRadius: 0 }
   } else if (phase === 'closing') {
     overlayStyle = { top: rectRef.current.top, left: rectRef.current.left, width: rectRef.current.width, height: rectRef.current.height, borderRadius: '16px' }
   }
