@@ -3,7 +3,7 @@
   flex-direction: column;
   height: 100vh;
   height: 100dvh;
-  background: #0d1117;
+  background: var(--bg);
   max-width: 430px;
   margin: 0 auto;
   position: relative;
@@ -45,10 +45,10 @@
   left: 0;
   right: 0;
   z-index: 1;
-  background: #0d1117;
+  background: var(--bg);
   border-top: 1px solid rgba(255,255,255,0.06);
   padding-top: 10px;
-  padding-bottom: 20px;
+  padding-bottom: max(env(safe-area-inset-bottom, 0px), 20px);
 }
 
 .nav-item {
