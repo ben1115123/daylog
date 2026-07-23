@@ -4,12 +4,10 @@ import ConfirmDialog from './ConfirmDialog.jsx'
 import AmountInput from './AmountInput.jsx'
 import CategoryChipRow from './CategoryChipRow.jsx'
 import DateChipRow from './DateChipRow.jsx'
-import { CATEGORIES, CAT_META, INCOME_CATEGORIES, EVENT_CATS } from '../utils.js'
+import { CATEGORIES, CAT_META, INCOME_CATEGORIES, EVENT_CAT_LIST, EVENT_CAT_META } from '../utils.js'
 import { CAT_ICONS, CheckIcon } from '../Icons.jsx'
 
 const TITLES = { expense: 'Edit expense', income: 'Edit income', event: 'Edit event' }
-const EVENT_CAT_LIST = ['', ...Object.keys(EVENT_CATS)]
-const EVENT_CAT_META = { '': { label: 'No category', color: 'var(--text3)' }, ...EVENT_CATS }
 
 export default function EditEntrySheet({ entry, onSave, onDelete, onClose }) {
   const isEvent = entry._type === 'event'
@@ -66,8 +64,22 @@ export default function EditEntrySheet({ entry, onSave, onDelete, onClose }) {
     ? { categories: EVENT_CAT_LIST, meta: EVENT_CAT_META, icons: CAT_ICONS }
     : { categories: CATEGORIES, meta: CAT_META, icons: CAT_ICONS }
 
+  const footer = (
+    <>
+      <button className="sheet-cancel" onClick={requestClose}>Cancel</button>
+      <button
+        className="sheet-save"
+        disabled={!canSave || saved}
+        style={{ opacity: canSave || saved ? 1 : 0.5 }}
+        onClick={handleSave}
+      >
+        {saved ? <CheckIcon size={16} /> : 'Save'}
+      </button>
+    </>
+  )
+
   return (
-    <Sheet title={TITLES[entry._type]} onClose={requestClose}>
+    <Sheet title={TITLES[entry._type]} onClose={requestClose} footer={footer}>
       {!isEvent && (
         <AmountInput
           value={form.amount}
@@ -125,18 +137,6 @@ export default function EditEntrySheet({ entry, onSave, onDelete, onClose }) {
 
       <div style={{ textAlign: 'center', marginTop: 4 }}>
         <button className="data-btn danger" onClick={() => setConfirmOpen(true)}>Delete</button>
-      </div>
-
-      <div className="sheet-actions">
-        <button className="sheet-cancel" onClick={requestClose}>Cancel</button>
-        <button
-          className="sheet-save"
-          disabled={!canSave || saved}
-          style={{ opacity: canSave || saved ? 1 : 0.5 }}
-          onClick={handleSave}
-        >
-          {saved ? <CheckIcon size={16} /> : 'Save'}
-        </button>
       </div>
 
       {confirmOpen && (

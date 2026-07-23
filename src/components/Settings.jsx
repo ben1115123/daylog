@@ -1,11 +1,13 @@
 import { useState, useEffect, useMemo } from 'react'
 import { db, DEFAULT_BUDGETS } from '../db.js'
 import supabase from '../supabase.js'
-import { CATEGORIES, CAT_META, formatRM } from '../utils.js'
+import { CATEGORIES, CAT_META, INCOME_CATEGORIES, formatRM } from '../utils.js'
 import { CAT_ICONS, BackIcon, PlusIcon } from '../Icons.jsx'
 import DLMark from './DLMark.jsx'
 import Sheet from './Sheet.jsx'
 import ConfirmDialog from './ConfirmDialog.jsx'
+import AmountInput from './AmountInput.jsx'
+import CategoryChipRow from './CategoryChipRow.jsx'
 import './Settings.css'
 
 /* ── Add recurring form (bottom sheet) ───────────────── */
@@ -16,7 +18,32 @@ function AddRecurringForm({ onSave, onCancel }) {
   const canSave = form.description.trim() && form.amount && form.day_of_month
 
   return (
-    <>
+    <Sheet
+      title="New recurring expense"
+      onClose={onCancel}
+      footer={
+        <>
+          <button className="sheet-cancel" onClick={onCancel}>Cancel</button>
+          <button
+            className="sheet-save"
+            disabled={!canSave}
+            style={{ opacity: canSave ? 1 : 0.5 }}
+            onClick={() => onSave({
+              description: form.description.trim(),
+              amount:      parseFloat(form.amount) || 0,
+              category:    form.category,
+              day_of_month: parseInt(form.day_of_month) || 1,
+            })}
+          >
+            Save
+          </button>
+        </>
+      }
+    >
+      <AmountInput
+        value={form.amount}
+        onChange={v => setForm(f => ({ ...f, amount: v }))}
+      />
       <div>
         <div className="sheet-field-label">Description</div>
         <input
@@ -26,60 +53,29 @@ function AddRecurringForm({ onSave, onCancel }) {
           onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
         />
       </div>
-      <div className="sheet-row">
-        <div>
-          <div className="sheet-field-label">Amount (RM)</div>
-          <input
-            className="sheet-input"
-            type="number"
-            placeholder="0"
-            value={form.amount}
-            onChange={e => setForm(f => ({ ...f, amount: e.target.value }))}
-            inputMode="decimal"
-          />
-        </div>
-        <div>
-          <div className="sheet-field-label">Day of month</div>
-          <input
-            className="sheet-input"
-            type="number"
-            min="1" max="31"
-            placeholder="1"
-            value={form.day_of_month}
-            onChange={e => setForm(f => ({ ...f, day_of_month: e.target.value }))}
-            inputMode="numeric"
-          />
-        </div>
+      <div>
+        <div className="sheet-field-label">Day of month</div>
+        <input
+          className="sheet-input"
+          type="number"
+          min="1" max="31"
+          placeholder="1"
+          value={form.day_of_month}
+          onChange={e => setForm(f => ({ ...f, day_of_month: e.target.value }))}
+          inputMode="numeric"
+        />
       </div>
       <div>
         <div className="sheet-field-label">Category</div>
-        <select
-          className="sheet-select"
+        <CategoryChipRow
+          categories={CATEGORIES}
+          meta={CAT_META}
+          icons={CAT_ICONS}
           value={form.category}
-          onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
-        >
-          {CATEGORIES.map(c => (
-            <option key={c} value={c}>{CAT_META[c]?.label}</option>
-          ))}
-        </select>
+          onChange={category => setForm(f => ({ ...f, category }))}
+        />
       </div>
-      <div className="sheet-actions">
-        <button className="sheet-cancel" onClick={onCancel}>Cancel</button>
-        <button
-          className="sheet-save"
-          disabled={!canSave}
-          style={{ opacity: canSave ? 1 : 0.5 }}
-          onClick={() => onSave({
-            description: form.description.trim(),
-            amount:      parseFloat(form.amount) || 0,
-            category:    form.category,
-            day_of_month: parseInt(form.day_of_month) || 1,
-          })}
-        >
-          Save
-        </button>
-      </div>
-    </>
+    </Sheet>
   )
 }
 
@@ -91,7 +87,32 @@ function AddRecurringIncomeForm({ onSave, onCancel }) {
   const canSave = form.description.trim() && form.amount && form.day_of_month
 
   return (
-    <>
+    <Sheet
+      title="New recurring income"
+      onClose={onCancel}
+      footer={
+        <>
+          <button className="sheet-cancel" onClick={onCancel}>Cancel</button>
+          <button
+            className="sheet-save"
+            disabled={!canSave}
+            style={{ opacity: canSave ? 1 : 0.5 }}
+            onClick={() => onSave({
+              description: form.description.trim(),
+              amount:       parseFloat(form.amount) || 0,
+              category:     form.category,
+              day_of_month: parseInt(form.day_of_month) || 1,
+            })}
+          >
+            Save
+          </button>
+        </>
+      }
+    >
+      <AmountInput
+        value={form.amount}
+        onChange={v => setForm(f => ({ ...f, amount: v }))}
+      />
       <div>
         <div className="sheet-field-label">Description</div>
         <input
@@ -101,59 +122,29 @@ function AddRecurringIncomeForm({ onSave, onCancel }) {
           onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
         />
       </div>
-      <div className="sheet-row">
-        <div>
-          <div className="sheet-field-label">Amount (RM)</div>
-          <input
-            className="sheet-input"
-            type="number"
-            placeholder="0"
-            value={form.amount}
-            onChange={e => setForm(f => ({ ...f, amount: e.target.value }))}
-            inputMode="decimal"
-          />
-        </div>
-        <div>
-          <div className="sheet-field-label">Day of month</div>
-          <input
-            className="sheet-input"
-            type="number"
-            min="1" max="31"
-            placeholder="1"
-            value={form.day_of_month}
-            onChange={e => setForm(f => ({ ...f, day_of_month: e.target.value }))}
-            inputMode="numeric"
-          />
-        </div>
+      <div>
+        <div className="sheet-field-label">Day of month</div>
+        <input
+          className="sheet-input"
+          type="number"
+          min="1" max="31"
+          placeholder="1"
+          value={form.day_of_month}
+          onChange={e => setForm(f => ({ ...f, day_of_month: e.target.value }))}
+          inputMode="numeric"
+        />
       </div>
       <div>
         <div className="sheet-field-label">Category</div>
-        <select
-          className="sheet-select"
+        <CategoryChipRow
+          categories={INCOME_CATEGORIES}
+          meta={CAT_META}
+          icons={CAT_ICONS}
           value={form.category}
-          onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
-        >
-          <option value="salary">Salary</option>
-          <option value="trading">Trading</option>
-        </select>
+          onChange={category => setForm(f => ({ ...f, category }))}
+        />
       </div>
-      <div className="sheet-actions">
-        <button className="sheet-cancel" onClick={onCancel}>Cancel</button>
-        <button
-          className="sheet-save"
-          disabled={!canSave}
-          style={{ opacity: canSave ? 1 : 0.5 }}
-          onClick={() => onSave({
-            description: form.description.trim(),
-            amount:       parseFloat(form.amount) || 0,
-            category:     form.category,
-            day_of_month: parseInt(form.day_of_month) || 1,
-          })}
-        >
-          Save
-        </button>
-      </div>
-    </>
+    </Sheet>
   )
 }
 
@@ -481,21 +472,17 @@ export default function Settings({ showToast, onBack }) {
       <div style={{ height: 40 }} />
 
       {recurringOpen && (
-        <Sheet title="New recurring expense" onClose={() => setRecurringOpen(false)}>
-          <AddRecurringForm
-            onSave={handleAddRecurring}
-            onCancel={() => setRecurringOpen(false)}
-          />
-        </Sheet>
+        <AddRecurringForm
+          onSave={handleAddRecurring}
+          onCancel={() => setRecurringOpen(false)}
+        />
       )}
 
       {recurringIncomeOpen && (
-        <Sheet title="New recurring income" onClose={() => setRecurringIncomeOpen(false)}>
-          <AddRecurringIncomeForm
-            onSave={handleAddRecurringIncome}
-            onCancel={() => setRecurringIncomeOpen(false)}
-          />
-        </Sheet>
+        <AddRecurringIncomeForm
+          onSave={handleAddRecurringIncome}
+          onCancel={() => setRecurringIncomeOpen(false)}
+        />
       )}
 
       {clearConfirmOpen && (

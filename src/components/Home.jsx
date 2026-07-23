@@ -7,6 +7,7 @@ import DLMark from './DLMark.jsx'
 import Sheet from './Sheet.jsx'
 import Calendar from './Calendar.jsx'
 import EditEntrySheet from './EditEntrySheet.jsx'
+import AmountInput from './AmountInput.jsx'
 import { DonutChart } from './Spending.jsx'
 import { useStaggeredEntries } from '../hooks/useStaggeredEntries.js'
 import './Home.css'
@@ -743,30 +744,25 @@ export default function Home({ showToast, onLogged }) {
     )}
 
       {amountChip && (
-        <Sheet title={`Log ${amountChip.label}`} onClose={() => setAmountChip(null)} className="sheet-quicklog">
-          <div>
-            <div className="sheet-field-label">Amount (RM)</div>
-            <input
-              className="sheet-input"
-              type="number"
-              inputMode="decimal"
-              placeholder="0"
-              autoFocus
-              value={amountVal}
-              onChange={e => setAmountVal(e.target.value)}
-            />
-          </div>
-          <div className="sheet-actions">
-            <button className="sheet-cancel" onClick={() => setAmountChip(null)}>Cancel</button>
-            <button
-              className="sheet-save"
-              disabled={!amountVal || parseFloat(amountVal) <= 0}
-              style={{ opacity: (!amountVal || parseFloat(amountVal) <= 0) ? 0.5 : 1 }}
-              onClick={handleLogAmount}
-            >
-              Log
-            </button>
-          </div>
+        <Sheet
+          title={`Log ${amountChip.label}`}
+          onClose={() => setAmountChip(null)}
+          className="sheet-quicklog"
+          footer={
+            <>
+              <button className="sheet-cancel" onClick={() => setAmountChip(null)}>Cancel</button>
+              <button
+                className="sheet-save"
+                disabled={!amountVal || parseFloat(amountVal) <= 0}
+                style={{ opacity: (!amountVal || parseFloat(amountVal) <= 0) ? 0.5 : 1 }}
+                onClick={handleLogAmount}
+              >
+                Log
+              </button>
+            </>
+          }
+        >
+          <AmountInput value={amountVal} onChange={setAmountVal} />
         </Sheet>
       )}
     </>

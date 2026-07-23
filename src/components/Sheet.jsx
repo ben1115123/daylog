@@ -5,7 +5,7 @@ import { XIcon } from '../Icons.jsx'
 
 const DISMISS_THRESHOLD = 80
 
-export default function Sheet({ title, onClose, children, className = '' }) {
+export default function Sheet({ title, onClose, children, footer, className = '' }) {
   const [dragY, setDragY] = useState(0)
   const [dragging, setDragging] = useState(false)
   const [kbOffset, setKbOffset] = useState(0)
@@ -66,6 +66,7 @@ export default function Sheet({ title, onClose, children, className = '' }) {
           </div>
         </div>
         <div className="sheet-body">{children}</div>
+        {footer && <div className="sheet-footer">{footer}</div>}
       </div>
     </div>,
     document.body

@@ -1,7 +1,7 @@
 .sheet-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.5);
+  background: rgba(0,0,0,0.6);
   z-index: 1000;
   animation: fadeIn 0.15s ease;
 }
@@ -12,7 +12,7 @@
   left: 0;
   right: 0;
   width: 100%;
-  max-height: 92dvh;
+  max-height: 90dvh;
   background: var(--bg2);
   border: 0.5px solid var(--border2);
   border-bottom: none;
@@ -67,28 +67,24 @@
 /* ── Scrollable body ─────────────────────────────────── */
 .sheet-body {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
   display: flex;
   flex-direction: column;
   gap: 12px;
-  padding: 16px 20px 0;
+  padding: 16px 20px;
 }
 
-/* ── Actions pinned to bottom of scroll area ─────────── */
+/* ── Non-scrolling footer, always visible ─────────────── */
+.sheet-footer,
 .sheet-actions {
-  position: sticky;
-  bottom: 0;
   flex-shrink: 0;
   background: var(--bg2);
   display: flex;
   gap: 10px;
-  padding-top: 16px;
-  padding-bottom: max(32px, calc(env(safe-area-inset-bottom, 0px) + 16px));
-  padding-left: 20px;
-  padding-right: 20px;
-  margin-top: 4px;
+  padding: 16px 20px calc(env(safe-area-inset-bottom, 0px) + 12px);
   border-top: 0.5px solid var(--border);
 }
 
@@ -125,8 +121,20 @@
 .sheet-input::placeholder { color: var(--text3); }
 .sheet-select { cursor: pointer; }
 
-.sheet-row { display: flex; gap: 10px; }
-.sheet-row > * { flex: 1; min-width: 0; }
+.sheet-row { display: flex; gap: 12px; max-width: 100%; }
+.sheet-row > * { flex: 1 1 0; min-width: 0; max-width: 100%; }
+
+/* Native date/time inputs render internal segments that ignore
+   container width on iOS Safari — constrain explicitly or they
+   overflow the sheet regardless of the flex parent's width. */
+.sheet-input[type="date"],
+.sheet-input[type="time"],
+.sheet-input[type="number"] {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  padding: 0 10px;
+}
 
 .sheet-toggle-row {
   display: flex;
