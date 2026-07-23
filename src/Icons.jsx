@@ -199,6 +199,12 @@ export const EditIcon = ({ size = 14 }) => (
   </svg>
 )
 
+export const CheckIcon = ({ size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" {...s}>
+    <polyline points="20 6 9 17 4 12"/>
+  </svg>
+)
+
 export const SearchIcon = ({ size = 18 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" {...s}>
     <circle cx="11" cy="11" r="8"/>

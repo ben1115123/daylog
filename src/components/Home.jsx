@@ -7,6 +7,7 @@ import DLMark from './DLMark.jsx'
 import Sheet from './Sheet.jsx'
 import Calendar from './Calendar.jsx'
 import EditEntrySheet from './EditEntrySheet.jsx'
+import AmountInput from './AmountInput.jsx'
 import { DonutChart } from './Spending.jsx'
 import { useStaggeredEntries } from '../hooks/useStaggeredEntries.js'
 import './Home.css'
@@ -33,7 +34,7 @@ function useExpand() {
   if (phase === 'opening') {
     overlayStyle = { top: rectRef.current.top, left: rectRef.current.left, width: rectRef.current.width, height: rectRef.current.height, borderRadius: '16px', transition: 'none' }
   } else if (phase === 'open') {
-    overlayStyle = { top: 0, left: 0, width: '100%', height: '100%', borderRadius: '20px 20px 0 0' }
+    overlayStyle = { top: 0, left: 0, width: '100%', height: '100%', borderRadius: 0 }
   } else if (phase === 'closing') {
     overlayStyle = { top: rectRef.current.top, left: rectRef.current.left, width: rectRef.current.width, height: rectRef.current.height, borderRadius: '16px' }
   }
@@ -231,17 +232,27 @@ export default function Home({ showToast, onLogged }) {
     setLoading(true)
     try {
       const parsed = await parseInput(input)
-      let logged = []
-      if (parsed.expense) { await db.addExpense(parsed.expense); logged.push('expense') }
-      if (parsed.event)   { await db.addEvent(parsed.event);     logged.push('event') }
-      if (parsed.income)  { await db.addIncome(parsed.income);   logged.push('income') }
-      if (logged.length === 0) { showToast('Could not parse that', 'error'); setLoading(false); return }
+      const created = []
+      if (parsed.expense) created.push(['expense', await db.addExpense(parsed.expense)])
+      if (parsed.event)   created.push(['event',   await db.addEvent(parsed.event)])
+      if (parsed.income)  created.push(['income',  await db.addIncome(parsed.income)])
+      if (created.length === 0) { showToast('Could not parse that', 'error'); setLoading(false); return }
       triggerBurst()
-      showToast(
-        logged.length === 2 ? 'Logged expense + event' :
-        logged[0] === 'expense' ? 'Expense logged' :
-        logged[0] === 'income'  ? 'Income logged' : 'Event added'
-      )
+      const msg =
+        created.length === 2 ? 'Logged expense + event' :
+        created[0][0] === 'expense' ? 'Expense logged' :
+        created[0][0] === 'income'  ? 'Income logged' : 'Event added'
+      showToast(msg, 'success', {
+        label: 'UNDO',
+        onClick: async () => {
+          for (const [type, row] of created) {
+            if (type === 'expense') await db.deleteExpense(row.id)
+            else if (type === 'income') await db.deleteIncome(row.id)
+            else await db.deleteEvent(row.id)
+          }
+          onLogged()
+        },
+      })
       await refreshRecent(); onLogged()
     } catch { showToast('Parse failed — check API key', 'error') }
     setLoading(false)
@@ -271,13 +282,16 @@ export default function Home({ showToast, onLogged }) {
     const amount = parseFloat(amountVal)
     if (isNaN(amount) || amount <= 0) return
     const chip = amountChip
-    await db.addExpense({
+    const row = await db.addExpense({
       description: chip.label,
       amount,
       category: chip.category,
       date: new Date().toISOString().split('T')[0],
     })
-    showToast(`${chip.label} — ${formatRM(amount)}`)
+    showToast(`${chip.label} — ${formatRM(amount)}`, 'success', {
+      label: 'UNDO',
+      onClick: async () => { await db.deleteExpense(row.id); onLogged() },
+    })
     setAmountChip(null)
     refreshRecent(); onLogged()
   }
@@ -686,51 +700,69 @@ export default function Home({ showToast, onLogged }) {
         entry={editingEntry}
         onClose={() => setEditingEntry(null)}
         onSave={async (updates) => {
-          if (editingEntry._type === 'expense') await db.updateExpense(editingEntry.id, updates)
-          else if (editingEntry._type === 'income') await db.updateIncome(editingEntry.id, updates)
-          else await db.updateEvent(editingEntry.id, updates)
-          setEditingEntry(null)
+          const prevEntry = editingEntry
+          const type = prevEntry._type
+          if (type === 'expense') await db.updateExpense(prevEntry.id, updates)
+          else if (type === 'income') await db.updateIncome(prevEntry.id, updates)
+          else await db.updateEvent(prevEntry.id, updates)
           await loadSpendOverview()
           await refreshRecent()
-          showToast('Updated')
+          const revert = {}
+          for (const key of Object.keys(updates)) revert[key] = prevEntry[key]
+          showToast('Entry updated', 'success', {
+            label: 'UNDO',
+            onClick: async () => {
+              if (type === 'expense') await db.updateExpense(prevEntry.id, revert)
+              else if (type === 'income') await db.updateIncome(prevEntry.id, revert)
+              else await db.updateEvent(prevEntry.id, revert)
+              await loadSpendOverview()
+              await refreshRecent()
+            },
+          })
         }}
         onDelete={async () => {
-          if (editingEntry._type === 'expense') await db.deleteExpense(editingEntry.id)
-          else if (editingEntry._type === 'income') await db.deleteIncome(editingEntry.id)
-          else await db.deleteEvent(editingEntry.id)
+          const prevEntry = editingEntry
+          const type = prevEntry._type
+          if (type === 'expense') await db.deleteExpense(prevEntry.id)
+          else if (type === 'income') await db.deleteIncome(prevEntry.id)
+          else await db.deleteEvent(prevEntry.id)
           setEditingEntry(null)
           await loadSpendOverview()
           await refreshRecent()
-          showToast('Deleted')
+          showToast('Entry deleted', 'success', {
+            label: 'UNDO',
+            onClick: async () => {
+              if (type === 'expense') await db.addExpense(prevEntry)
+              else if (type === 'income') await db.addIncome(prevEntry)
+              else await db.addEvent(prevEntry)
+              await loadSpendOverview()
+              await refreshRecent()
+            },
+          })
         }}
       />
     )}
 
       {amountChip && (
-        <Sheet title={`Log ${amountChip.label}`} onClose={() => setAmountChip(null)} className="sheet-quicklog">
-          <div>
-            <div className="sheet-field-label">Amount (RM)</div>
-            <input
-              className="sheet-input"
-              type="number"
-              inputMode="decimal"
-              placeholder="0"
-              autoFocus
-              value={amountVal}
-              onChange={e => setAmountVal(e.target.value)}
-            />
-          </div>
-          <div className="sheet-actions">
-            <button className="sheet-cancel" onClick={() => setAmountChip(null)}>Cancel</button>
-            <button
-              className="sheet-save"
-              disabled={!amountVal || parseFloat(amountVal) <= 0}
-              style={{ opacity: (!amountVal || parseFloat(amountVal) <= 0) ? 0.5 : 1 }}
-              onClick={handleLogAmount}
-            >
-              Log
-            </button>
-          </div>
+        <Sheet
+          title={`Log ${amountChip.label}`}
+          onClose={() => setAmountChip(null)}
+          className="sheet-quicklog"
+          footer={
+            <>
+              <button className="sheet-cancel" onClick={() => setAmountChip(null)}>Cancel</button>
+              <button
+                className="sheet-save"
+                disabled={!amountVal || parseFloat(amountVal) <= 0}
+                style={{ opacity: (!amountVal || parseFloat(amountVal) <= 0) ? 0.5 : 1 }}
+                onClick={handleLogAmount}
+              >
+                Log
+              </button>
+            </>
+          }
+        >
+          <AmountInput value={amountVal} onChange={setAmountVal} />
         </Sheet>
       )}
     </>

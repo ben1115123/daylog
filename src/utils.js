@@ -48,6 +48,17 @@ export const EVENT_CATS = {
   travel:   { label: 'Travel',   color: '#38bdf8' },
 }
 
+export const EVENT_CAT_LIST = ['', ...Object.keys(EVENT_CATS)]
+export const EVENT_CAT_META = { '': { label: 'No category', color: 'var(--text3)' }, ...EVENT_CATS }
+
+export const REMINDER_OPTIONS = [
+  ['', 'None'],
+  ['15', '15 min'],
+  ['30', '30 min'],
+  ['60', '1 hour'],
+  ['1440', '1 day'],
+]
+
 export function formatRM(amount) {
   if (amount == null) return '—'
   return `RM ${Number(amount).toFixed(0)}`

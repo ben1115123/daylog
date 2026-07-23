@@ -1,10 +1,13 @@
 import { useState, useRef, useEffect, useMemo } from 'react'
 import { db, computeRecentMonths } from '../db.js'
-import { CAT_META, CATEGORIES, formatRM, formatDate, monthLabel } from '../utils.js'
+import { CAT_META, CATEGORIES, INCOME_CATEGORIES, formatRM, formatDate, monthLabel } from '../utils.js'
 import { CAT_ICONS, SearchIcon, XIcon, PlusIcon } from '../Icons.jsx'
 import DLMark from './DLMark.jsx'
 import Sheet from './Sheet.jsx'
 import ConfirmDialog from './ConfirmDialog.jsx'
+import AmountInput from './AmountInput.jsx'
+import CategoryChipRow from './CategoryChipRow.jsx'
+import DateChipRow from './DateChipRow.jsx'
 import { useCountUp } from '../hooks/useCountUp.js'
 import { useStaggeredEntries } from '../hooks/useStaggeredEntries.js'
 import './Spending.css'
@@ -166,7 +169,33 @@ function AddExpenseForm({ defaultDate, onSave, onCancel }) {
   const canSave = form.description.trim() && form.amount && form.date
 
   return (
-    <>
+    <Sheet
+      title="New expense"
+      onClose={onCancel}
+      footer={
+        <>
+          <button className="sheet-cancel" onClick={onCancel}>Cancel</button>
+          <button
+            className="sheet-save"
+            disabled={!canSave}
+            style={{ opacity: canSave ? 1 : 0.5 }}
+            onClick={() => onSave({
+              description: form.description.trim(),
+              amount: parseFloat(form.amount) || 0,
+              category: form.category,
+              date: form.date,
+              notes: form.notes.trim() || null,
+            })}
+          >
+            Save
+          </button>
+        </>
+      }
+    >
+      <AmountInput
+        value={form.amount}
+        onChange={v => setForm(f => ({ ...f, amount: v }))}
+      />
       <div>
         <div className="sheet-field-label">Description</div>
         <input
@@ -176,40 +205,22 @@ function AddExpenseForm({ defaultDate, onSave, onCancel }) {
           onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
         />
       </div>
-      <div className="sheet-row">
-        <div>
-          <div className="sheet-field-label">Amount (RM)</div>
-          <input
-            className="sheet-input"
-            type="number"
-            placeholder="0"
-            value={form.amount}
-            onChange={e => setForm(f => ({ ...f, amount: e.target.value }))}
-            inputMode="decimal"
-          />
-        </div>
-        <div>
-          <div className="sheet-field-label">Date</div>
-          <input
-            className="sheet-input"
-            type="date"
-            value={form.date}
-            onChange={e => setForm(f => ({ ...f, date: e.target.value }))}
-            style={{ colorScheme: 'dark' }}
-          />
-        </div>
+      <div>
+        <div className="sheet-field-label">Date</div>
+        <DateChipRow
+          value={form.date}
+          onChange={date => setForm(f => ({ ...f, date }))}
+        />
       </div>
       <div>
         <div className="sheet-field-label">Category</div>
-        <select
-          className="sheet-select"
+        <CategoryChipRow
+          categories={CATEGORIES}
+          meta={CAT_META}
+          icons={CAT_ICONS}
           value={form.category}
-          onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
-        >
-          {CATEGORIES.map(c => (
-            <option key={c} value={c}>{CAT_META[c]?.label}</option>
-          ))}
-        </select>
+          onChange={category => setForm(f => ({ ...f, category }))}
+        />
       </div>
       <div>
         <div className="sheet-field-label">Notes (optional)</div>
@@ -220,24 +231,7 @@ function AddExpenseForm({ defaultDate, onSave, onCancel }) {
           onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
         />
       </div>
-      <div className="sheet-actions">
-        <button className="sheet-cancel" onClick={onCancel}>Cancel</button>
-        <button
-          className="sheet-save"
-          disabled={!canSave}
-          style={{ opacity: canSave ? 1 : 0.5 }}
-          onClick={() => onSave({
-            description: form.description.trim(),
-            amount: parseFloat(form.amount) || 0,
-            category: form.category,
-            date: form.date,
-            notes: form.notes.trim() || null,
-          })}
-        >
-          Save
-        </button>
-      </div>
-    </>
+    </Sheet>
   )
 }
 
@@ -249,7 +243,33 @@ function AddIncomeForm({ defaultDate, onSave, onCancel }) {
   const canSave = form.description.trim() && form.amount && form.date
 
   return (
-    <>
+    <Sheet
+      title="Log income"
+      onClose={onCancel}
+      footer={
+        <>
+          <button className="sheet-cancel" onClick={onCancel}>Cancel</button>
+          <button
+            className="sheet-save"
+            disabled={!canSave}
+            style={{ opacity: canSave ? 1 : 0.5 }}
+            onClick={() => onSave({
+              description: form.description.trim(),
+              amount: parseFloat(form.amount) || 0,
+              category: form.category,
+              date: form.date,
+              notes: form.notes.trim() || null,
+            })}
+          >
+            Save
+          </button>
+        </>
+      }
+    >
+      <AmountInput
+        value={form.amount}
+        onChange={v => setForm(f => ({ ...f, amount: v }))}
+      />
       <div>
         <div className="sheet-field-label">Description</div>
         <input
@@ -259,39 +279,22 @@ function AddIncomeForm({ defaultDate, onSave, onCancel }) {
           onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
         />
       </div>
-      <div className="sheet-row">
-        <div>
-          <div className="sheet-field-label">Amount (RM)</div>
-          <input
-            className="sheet-input"
-            type="number"
-            placeholder="0"
-            value={form.amount}
-            onChange={e => setForm(f => ({ ...f, amount: e.target.value }))}
-            inputMode="decimal"
-          />
-        </div>
-        <div>
-          <div className="sheet-field-label">Date</div>
-          <input
-            className="sheet-input"
-            type="date"
-            value={form.date}
-            onChange={e => setForm(f => ({ ...f, date: e.target.value }))}
-            style={{ colorScheme: 'dark' }}
-          />
-        </div>
+      <div>
+        <div className="sheet-field-label">Date</div>
+        <DateChipRow
+          value={form.date}
+          onChange={date => setForm(f => ({ ...f, date }))}
+        />
       </div>
       <div>
         <div className="sheet-field-label">Category</div>
-        <select
-          className="sheet-select"
+        <CategoryChipRow
+          categories={INCOME_CATEGORIES}
+          meta={CAT_META}
+          icons={CAT_ICONS}
           value={form.category}
-          onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
-        >
-          <option value="salary">Salary</option>
-          <option value="trading">Trading</option>
-        </select>
+          onChange={category => setForm(f => ({ ...f, category }))}
+        />
       </div>
       <div>
         <div className="sheet-field-label">Notes (optional)</div>
@@ -302,24 +305,7 @@ function AddIncomeForm({ defaultDate, onSave, onCancel }) {
           onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
         />
       </div>
-      <div className="sheet-actions">
-        <button className="sheet-cancel" onClick={onCancel}>Cancel</button>
-        <button
-          className="sheet-save"
-          disabled={!canSave}
-          style={{ opacity: canSave ? 1 : 0.5 }}
-          onClick={() => onSave({
-            description: form.description.trim(),
-            amount: parseFloat(form.amount) || 0,
-            category: form.category,
-            date: form.date,
-            notes: form.notes.trim() || null,
-          })}
-        >
-          Save
-        </button>
-      </div>
-    </>
+    </Sheet>
   )
 }
 
@@ -849,23 +835,19 @@ export default function Spending({ showToast }) {
       )}
 
       {addOpen && (
-        <Sheet title="New expense" onClose={() => setAddOpen(false)}>
-          <AddExpenseForm
-            defaultDate={new Date().toISOString().split('T')[0]}
-            onSave={handleAddExpense}
-            onCancel={() => setAddOpen(false)}
-          />
-        </Sheet>
+        <AddExpenseForm
+          defaultDate={new Date().toISOString().split('T')[0]}
+          onSave={handleAddExpense}
+          onCancel={() => setAddOpen(false)}
+        />
       )}
 
       {addIncomeOpen && (
-        <Sheet title="Log income" onClose={() => setAddIncomeOpen(false)}>
-          <AddIncomeForm
-            defaultDate={new Date().toISOString().split('T')[0]}
-            onSave={handleAddIncome}
-            onCancel={() => setAddIncomeOpen(false)}
-          />
-        </Sheet>
+        <AddIncomeForm
+          defaultDate={new Date().toISOString().split('T')[0]}
+          onSave={handleAddIncome}
+          onCancel={() => setAddIncomeOpen(false)}
+        />
       )}
 
       {deleteTarget && (

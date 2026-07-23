@@ -106,9 +106,9 @@ export default function App() {
   const navRef = useRef(null)
   const appRef = useRef(null)
 
-  const showToast = useCallback((msg, type = 'success') => {
-    setToast({ msg, type })
-    setTimeout(() => setToast(null), 3000)
+  const showToast = useCallback((msg, type = 'success', action) => {
+    setToast({ msg, type, action })
+    setTimeout(() => setToast(null), action ? 5000 : 3000)
   }, [])
 
   const onLogged = useCallback(() => setRefresh(r => r + 1), [])
@@ -203,7 +203,7 @@ export default function App() {
           </button>
         ))}
       </nav>
-      {toast && <Toast msg={toast.msg} type={toast.type} />}
+      {toast && <Toast msg={toast.msg} type={toast.type} action={toast.action} />}
     </div>
   )
 }

@@ -900,7 +900,6 @@ with:
           if (type === 'expense') await db.updateExpense(prevEntry.id, updates)
           else if (type === 'income') await db.updateIncome(prevEntry.id, updates)
           else await db.updateEvent(prevEntry.id, updates)
-          setEditingEntry(null)
           await loadSpendOverview()
           await refreshRecent()
           const revert = {}
@@ -941,6 +940,8 @@ with:
 ```
 
 (`db.addExpense`/`addIncome`/`addEvent` each build their insert row by reading only the specific fields they need off the object passed in — `description`/`amount`/`category`/`date`/`notes` for expense/income, `title`/`date`/`time`/`category`/`notes`/`recurring`/`end_date`/`reminder_minutes` for event — all of which are already present on `prevEntry` since it's a full row fetched from Supabase. Passing `prevEntry` straight through is correct and doesn't require field remapping.)
+
+**Why `onSave` no longer calls `setEditingEntry(null)` (found during Task 6 review):** `EditEntrySheet.handleSave` (Task 6) does `await onSave(...)` and only calls `setSaved(true)` / `setTimeout(onClose, 250)` — the checkmark-then-close flow — after that `await` resolves. If `onSave` calls `setEditingEntry(null)` itself partway through its body (as the *original*, pre-Task-6 code did), `Home`'s `{editingEntry && <EditEntrySheet .../>}` unmounts the sheet before `onSave`'s promise even resolves, so `setSaved(true)` fires on an already-unmounted component and the checkmark never renders — silently defeating the Task 6 spec requirement ("shows brief success state (checkmark) before sheet closes"). The fix: `onSave` no longer closes the sheet itself; `EditEntrySheet`'s own `setTimeout(onClose, 250)` is the sole path that eventually calls `onClose` (`() => setEditingEntry(null)`), giving the checkmark 250ms to actually render first. `onDelete` is unaffected and keeps its own `setEditingEntry(null)` — delete has no checkmark step in the spec, so closing immediately on confirm is correct there.
 
 - [ ] **Step 2: Verify build**
 

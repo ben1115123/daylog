@@ -1,23 +1,17 @@
 import { useState, useMemo, useEffect, useCallback } from 'react'
 import { db, expandEvents } from '../db.js'
-import { EVENT_CATS, formatTime, formatDate } from '../utils.js'
+import { EVENT_CATS, EVENT_CAT_LIST, EVENT_CAT_META, REMINDER_OPTIONS, formatTime, formatDate } from '../utils.js'
 import { RepeatIcon, PlusIcon } from '../Icons.jsx'
 import { loadHolidaysForCalendar } from '../holidays.js'
 import DLMark from './DLMark.jsx'
 import Sheet from './Sheet.jsx'
 import ConfirmDialog from './ConfirmDialog.jsx'
+import CategoryChipRow from './CategoryChipRow.jsx'
+import DateChipRow from './DateChipRow.jsx'
 import './Calendar.css'
 
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December']
 const DOWS   = ['Su','Mo','Tu','We','Th','Fr','Sa']
-
-const REMINDER_OPTIONS = [
-  ['', 'None'],
-  ['15', '15 mins before'],
-  ['30', '30 mins before'],
-  ['60', '1 hour before'],
-  ['1440', '1 day before'],
-]
 
 const ChevL = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -167,7 +161,32 @@ function AddEventForm({ defaultDate, onSave, onCancel }) {
   const canSave = form.title.trim() && form.date
 
   return (
-    <>
+    <Sheet
+      title="New event"
+      onClose={onCancel}
+      footer={
+        <>
+          <button className="sheet-cancel" onClick={onCancel}>Cancel</button>
+          <button
+            className="sheet-save"
+            disabled={!canSave}
+            style={{ opacity: canSave ? 1 : 0.5 }}
+            onClick={() => onSave({
+              title: form.title.trim(),
+              date: form.date,
+              time: form.time || null,
+              category: form.category || null,
+              notes: form.notes.trim() || null,
+              recurring: form.recurring || null,
+              end_date: multiDay && form.endDate ? form.endDate : null,
+              reminder_minutes: form.reminder ? Number(form.reminder) : null,
+            })}
+          >
+            Save
+          </button>
+        </>
+      }
+    >
       <div>
         <div className="sheet-field-label">Title</div>
         <input
@@ -177,39 +196,36 @@ function AddEventForm({ defaultDate, onSave, onCancel }) {
           onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
         />
       </div>
-      <div className="sheet-row">
-        <div>
-          <div className="sheet-field-label">Date</div>
-          <input
-            className="sheet-input"
-            type="date"
-            value={form.date}
-            onChange={e => setForm(f => ({ ...f, date: e.target.value }))}
-            style={{ colorScheme: 'dark' }}
-          />
-        </div>
-        <div>
-          <div className="sheet-field-label">Time (optional)</div>
-          <input
-            className="sheet-input"
-            type="time"
-            value={form.time}
-            onChange={e => setForm(f => ({ ...f, time: e.target.value }))}
-            style={{ colorScheme: 'dark' }}
-          />
-        </div>
+      <div>
+        <div className="sheet-field-label">Date</div>
+        <DateChipRow
+          value={form.date}
+          onChange={date => setForm(f => ({ ...f, date }))}
+        />
+      </div>
+      <div>
+        <div className="sheet-field-label">Time (optional)</div>
+        <input
+          className="sheet-input"
+          type="time"
+          value={form.time}
+          onChange={e => setForm(f => ({ ...f, time: e.target.value }))}
+          style={{ colorScheme: 'dark' }}
+        />
       </div>
       <div>
         <div className="sheet-field-label">Remind me</div>
-        <select
-          className="sheet-select"
-          value={form.reminder}
-          onChange={e => setForm(f => ({ ...f, reminder: e.target.value }))}
-        >
+        <div className="sheet-toggle-row">
           {REMINDER_OPTIONS.map(([val, label]) => (
-            <option key={val} value={val}>{val === '' ? 'None' : label}</option>
+            <button
+              key={val}
+              className={`sheet-toggle ${form.reminder === val ? 'active' : ''}`}
+              onClick={() => setForm(f => ({ ...f, reminder: val }))}
+            >
+              {label}
+            </button>
           ))}
-        </select>
+        </div>
       </div>
       <div>
         <div className="sheet-field-label">Multi-day event</div>
@@ -237,16 +253,13 @@ function AddEventForm({ defaultDate, onSave, onCancel }) {
       )}
       <div>
         <div className="sheet-field-label">Category</div>
-        <select
-          className="sheet-select"
+        <CategoryChipRow
+          categories={EVENT_CAT_LIST}
+          meta={EVENT_CAT_META}
+          icons={{}}
           value={form.category}
-          onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
-        >
-          <option value="">No category</option>
-          {Object.entries(EVENT_CATS).map(([k, v]) => (
-            <option key={k} value={k}>{v.label}</option>
-          ))}
-        </select>
+          onChange={category => setForm(f => ({ ...f, category }))}
+        />
       </div>
       <div>
         <div className="sheet-field-label">Notes (optional)</div>
@@ -271,27 +284,7 @@ function AddEventForm({ defaultDate, onSave, onCancel }) {
           ))}
         </div>
       </div>
-      <div className="sheet-actions">
-        <button className="sheet-cancel" onClick={onCancel}>Cancel</button>
-        <button
-          className="sheet-save"
-          disabled={!canSave}
-          style={{ opacity: canSave ? 1 : 0.5 }}
-          onClick={() => onSave({
-            title: form.title.trim(),
-            date: form.date,
-            time: form.time || null,
-            category: form.category || null,
-            notes: form.notes.trim() || null,
-            recurring: form.recurring || null,
-            end_date: multiDay && form.endDate ? form.endDate : null,
-            reminder_minutes: form.reminder ? Number(form.reminder) : null,
-          })}
-        >
-          Save
-        </button>
-      </div>
-    </>
+    </Sheet>
   )
 }
 
@@ -577,13 +570,11 @@ export default function Calendar({ showToast }) {
       )}
 
       {addOpen && (
-        <Sheet title="New event" onClose={() => setAddOpen(false)}>
-          <AddEventForm
-            defaultDate={selected || todayStr}
-            onSave={handleAddEvent}
-            onCancel={() => setAddOpen(false)}
-          />
-        </Sheet>
+        <AddEventForm
+          defaultDate={selected || todayStr}
+          onSave={handleAddEvent}
+          onCancel={() => setAddOpen(false)}
+        />
       )}
 
       {deleteId && (
