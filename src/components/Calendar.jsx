@@ -3,6 +3,7 @@ import { db, expandEvents } from '../db.js'
 import { EVENT_CATS, EVENT_CAT_LIST, EVENT_CAT_META, REMINDER_OPTIONS, formatTime, formatDate } from '../utils.js'
 import { RepeatIcon, PlusIcon } from '../Icons.jsx'
 import { loadHolidaysForCalendar } from '../holidays.js'
+import { todayISO, shiftISO, parseISODate, daysBetween } from '../lib/dates.js'
 import DLMark from './DLMark.jsx'
 import Sheet from './Sheet.jsx'
 import ConfirmDialog from './ConfirmDialog.jsx'
@@ -25,16 +26,13 @@ const ChevR = () => (
 )
 
 function agendaDateLabel(dateStr, todayStr) {
-  const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1)
-  const tomorrowStr = tomorrow.toISOString().split('T')[0]
   if (dateStr === todayStr) return 'Today'
-  if (dateStr === tomorrowStr) return 'Tomorrow'
-  const d = new Date(dateStr + 'T00:00:00')
-  return d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })
+  if (dateStr === shiftISO(todayStr, 1)) return 'Tomorrow'
+  return parseISODate(dateStr).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })
 }
 
 function daysUntil(dateStr, todayStr) {
-  return Math.round((new Date(dateStr + 'T00:00:00') - new Date(todayStr + 'T00:00:00')) / 86400000)
+  return daysBetween(todayStr, dateStr)
 }
 
 function EventCatDot({ category }) {
@@ -292,7 +290,7 @@ export default function Calendar({ showToast }) {
   const now = new Date()
   const [year, setYear]         = useState(now.getFullYear())
   const [month, setMonth]       = useState(now.getMonth())
-  const [selected, setSelected] = useState(now.toISOString().split('T')[0])
+  const [selected, setSelected] = useState(todayISO())
   const [calView, setCalView]   = useState('grid')
   const [editId, setEditId]     = useState(null)
   const [addOpen, setAddOpen]   = useState(false)
@@ -301,7 +299,7 @@ export default function Calendar({ showToast }) {
   const [holidays, setHolidays] = useState({})
   const [deleteId, setDeleteId] = useState(null)
 
-  const todayStr = now.toISOString().split('T')[0]
+  const todayStr = todayISO()
 
   const loadEvents = useCallback(async () => {
     const evs = await db.getEvents()

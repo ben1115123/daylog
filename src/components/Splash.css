@@ -28,10 +28,14 @@
   pointer-events: none;
 }
 
+/* These three overlays terminate in var(--bg), not #000000. Pure black over a
+   #0d1117 backdrop rendered the bottom strip as a visibly darker band across
+   the home-indicator area — the "blank bar". The splash itself is already
+   inset: 0 with no safe-area padding, so nothing else needs to change. */
 .splash-vignette {
   position: absolute;
   inset: 0;
-  background: radial-gradient(circle at 50% 50%, #000000 0%, rgba(0,0,0,0.55) 35%, rgba(0,0,0,0) 70%);
+  background: radial-gradient(circle at 50% 50%, var(--bg) 0%, rgba(13,17,23,0.55) 35%, rgba(13,17,23,0) 70%);
   pointer-events: none;
 }
 
@@ -39,7 +43,7 @@
   position: absolute;
   top: 0; left: 0; right: 0;
   height: 30%;
-  background: linear-gradient(to bottom, #000000 0%, rgba(0,0,0,0) 100%);
+  background: linear-gradient(to bottom, var(--bg) 0%, rgba(13,17,23,0) 100%);
   pointer-events: none;
 }
 
@@ -47,7 +51,7 @@
   position: absolute;
   bottom: 0; left: 0; right: 0;
   height: 30%;
-  background: linear-gradient(to top, #000000 0%, rgba(0,0,0,0) 100%);
+  background: linear-gradient(to top, var(--bg) 0%, rgba(13,17,23,0) 100%);
   pointer-events: none;
 }
 

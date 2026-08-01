@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { db, computeRecentMonths } from '../db.js'
 import { CAT_META, formatRM, monthLabel } from '../utils.js'
+import { todayISO, shiftISO, parseISODate, monthKey, shiftMonth } from '../lib/dates.js'
 import DLMark from './DLMark.jsx'
 import './Insights.css'
 
@@ -107,11 +108,10 @@ export default function Insights({ showToast }) {
   const now = new Date()
   const thisYear  = now.getFullYear()
   const thisMonth = now.getMonth()
-  const prevYear  = thisMonth === 0 ? thisYear - 1 : thisYear
-  const prevMonth = thisMonth === 0 ? 11 : thisMonth - 1
+  const { year: prevYear, month: prevMonth } = shiftMonth(thisYear, thisMonth, -1)
 
-  const thisPrefix = `${thisYear}-${String(thisMonth + 1).padStart(2, '0')}`
-  const prevPrefix = `${prevYear}-${String(prevMonth + 1).padStart(2, '0')}`
+  const thisPrefix = monthKey(thisYear, thisMonth)
+  const prevPrefix = monthKey(prevYear, prevMonth)
 
   const expenses     = useMemo(() => allExpenses.filter(e => e.date?.startsWith(thisPrefix)), [allExpenses])
   const prevExpenses = useMemo(() => allExpenses.filter(e => e.date?.startsWith(prevPrefix)), [allExpenses])
@@ -127,7 +127,7 @@ export default function Insights({ showToast }) {
   const dayTotals = Array(7).fill(0)
   const dayCounts = Array(7).fill(0)
   expenses.forEach(e => {
-    const d = new Date(e.date + 'T00:00:00').getDay()
+    const d = parseISODate(e.date).getDay()
     dayTotals[d] += e.amount || 0
     dayCounts[d]++
   })
@@ -156,10 +156,10 @@ export default function Insights({ showToast }) {
   const streak = useMemo(() => {
     const allDates = new Set(allExpenses.map(e => e.date))
     let count = 0
-    const d = new Date()
-    while (allDates.has(d.toISOString().split('T')[0])) {
+    let cursor = todayISO()
+    while (allDates.has(cursor)) {
       count++
-      d.setDate(d.getDate() - 1)
+      cursor = shiftISO(cursor, -1)
     }
     return count
   }, [allExpenses])

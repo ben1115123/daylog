@@ -1,8 +1,13 @@
+import { todayISO } from './lib/dates.js'
+
 const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages'
 
-const today = () => new Date().toISOString().split('T')[0]
+const today = todayISO
 
-const SYSTEM_PROMPT = `You are a smart parser for a personal finance and calendar app used in Malaysia (currency RM).
+/* Built per call, not once at module load — the PWA stays resident for days on
+   iOS, so a baked-in date would go stale after midnight and every relative date
+   ("tomorrow", "next Friday") would resolve against the wrong day. */
+const systemPrompt = () => `You are a smart parser for a personal finance and calendar app used in Malaysia (currency RM).
 Parse user input and return ONLY valid JSON, no markdown, no explanation.
 
 Today's date: ${today()}
@@ -102,7 +107,7 @@ export async function parseInput(text) {
     body: JSON.stringify({
       model: 'claude-haiku-4-5-20251001',
       max_tokens: 512,
-      system: SYSTEM_PROMPT,
+      system: systemPrompt(),
       messages: [{ role: 'user', content: text }]
     })
   })

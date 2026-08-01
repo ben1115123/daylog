@@ -3,6 +3,7 @@ import { db, DEFAULT_BUDGETS } from '../db.js'
 import supabase from '../supabase.js'
 import { CATEGORIES, CAT_META, INCOME_CATEGORIES, formatRM } from '../utils.js'
 import { CAT_ICONS, BackIcon, PlusIcon } from '../Icons.jsx'
+import { todayISO } from '../lib/dates.js'
 import DLMark from './DLMark.jsx'
 import Sheet from './Sheet.jsx'
 import ConfirmDialog from './ConfirmDialog.jsx'
@@ -203,7 +204,7 @@ export default function Settings({ showToast, onBack }) {
     const data = { expenses, events, income, exported: new Date().toISOString() }
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob)
-    a.download = `daylog-export-${new Date().toISOString().split('T')[0]}.json`; a.click()
+    a.download = `daylog-export-${todayISO()}.json`; a.click()
     showToast('Data exported')
   }
 
@@ -270,7 +271,11 @@ export default function Settings({ showToast, onBack }) {
                 className="setting-input num"
                 type="number"
                 value={settings.totalBudget}
-                onChange={e => setSettings(s => ({ ...s, totalBudget: +e.target.value }))}
+                /* keep the field clearable while typing — db.saveSettings
+                   restores the default if it is left empty or zero */
+                onChange={e => setSettings(s => ({
+                  ...s, totalBudget: e.target.value === '' ? '' : +e.target.value,
+                }))}
               />
             </div>
           </div>

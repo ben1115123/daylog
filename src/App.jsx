@@ -9,19 +9,18 @@ import { NavLogIcon, NavInsightsIcon, NavSettingsIcon } from './Icons.jsx'
 import { db } from './db.js'
 import supabase from './supabase.js'
 import { formatRM } from './utils.js'
+import { toISODate, monthRange, todayISO } from './lib/dates.js'
 import './App.css'
 
 async function checkRecurring(showToast) {
+  /* Every value below comes from the same local-time source. Previously the
+     "already logged this month?" window was local while the date stamped on the
+     new row was UTC — at 03:xx KL on the 1st that queried August, found nothing,
+     and wrote the row into July, so it re-fired on every app open. */
   const today      = new Date()
-  const todayStr   = today.toISOString().split('T')[0]
+  const todayStr   = toISODate(today)
   const dayOfMonth = today.getDate()
-  const year       = today.getFullYear()
-  const monthNum   = today.getMonth() + 1
-  const month      = String(monthNum).padStart(2, '0')
-  const monthPrefix = `${year}-${month}`
-  const lastDay    = new Date(year, monthNum, 0).getDate()
-  const startDate  = `${monthPrefix}-01`
-  const endDate    = `${monthPrefix}-${lastDay}`
+  const { start: startDate, end: endDate } = monthRange(today.getFullYear(), today.getMonth())
 
   const recurring = await db.getRecurring()
   for (const item of recurring.filter(r => r.active && r.day_of_month <= dayOfMonth)) {
@@ -147,13 +146,12 @@ export default function App() {
   }, [showOnboarding, splashDone])
 
   const handleOnboardingComplete = (name, income, budget) => {
-    const now = new Date()
     db.saveSettings({ ...db.getSettings(), name, totalBudget: budget })
     if (income > 0) db.addIncome({
       description: 'Salary',
       amount: income,
       category: 'salary',
-      date: now.toISOString().split('T')[0],
+      date: todayISO(),
     })
     db.setOnboarded()
     setShowOnboarding(false)

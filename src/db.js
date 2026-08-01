@@ -1,4 +1,5 @@
 import supabase from './supabase.js'
+import { todayISO, toISODate, parseISODate, monthKey, monthRange } from './lib/dates.js'
 
 const CACHE = {
   expenses:         'dl_cache_expenses',
@@ -32,9 +33,6 @@ function lsLoad(key, fallback) {
 }
 function lsSave(key, val) {
   try { localStorage.setItem(key, JSON.stringify(val)) } catch {}
-}
-function monthKey(year, month) {
-  return `${year}-${String(month + 1).padStart(2, '0')}`
 }
 
 /* ── App-wide flags (Supabase-backed, port-independent) ─ */
@@ -75,15 +73,15 @@ function setOffline(val) {
 
 export function expandEvents(base, fromDate, toDate) {
   const ceiling = toDate || (() => {
-    const d = new Date(); d.setFullYear(d.getFullYear() + 1); return d.toISOString().split('T')[0]
+    const d = new Date(); d.setFullYear(d.getFullYear() + 1); return toISODate(d)
   })()
   const result = []
   base.forEach(ev => {
     if (!ev.recurring) { result.push(ev); return }
-    const end = new Date(ceiling + 'T00:00:00')
-    let cur = new Date(ev.date + 'T00:00:00'), guard = 0
+    const end = parseISODate(ceiling)
+    let cur = parseISODate(ev.date), guard = 0
     while (cur <= end && guard++ < 500) {
-      const dateStr = cur.toISOString().split('T')[0]
+      const dateStr = toISODate(cur)
       result.push({ ...ev, date: dateStr, isRecurringInstance: dateStr !== ev.date, _baseId: ev.id })
       if (ev.recurring === 'daily')        cur.setDate(cur.getDate() + 1)
       else if (ev.recurring === 'weekly')  cur.setDate(cur.getDate() + 7)
@@ -260,14 +258,13 @@ export const db = {
 
   /* ── Month / range queries ─────────────────────────── */
   async getMonthExpenses(year, month) {
-    const prefix  = monthKey(year, month)
-    const lastDay = new Date(year, month + 1, 0).getDate()
+    const { prefix, start, end } = monthRange(year, month)
     try {
       const { data, error } = await supabase
         .from('expenses')
         .select('*')
-        .gte('date', `${prefix}-01`)
-        .lte('date', `${prefix}-${lastDay}`)
+        .gte('date', start)
+        .lte('date', end)
         .order('date', { ascending: false })
       if (error) throw error
       return data
@@ -283,7 +280,7 @@ export const db = {
   },
 
   async getUpcomingEvents(limit = 10) {
-    const today = new Date().toISOString().split('T')[0]
+    const today = todayISO()
     const base  = await db.getEvents()
     return expandEvents(base, today).filter(e => e.date >= today).slice(0, limit)
   },
@@ -364,8 +361,23 @@ export const db = {
   /* ── Budgets / Settings (localStorage) ─────────────── */
   getBudgets:   () => ({ ...DEFAULT_BUDGETS, ...lsLoad(LS.budgets, {}) }),
   saveBudgets:  (v) => lsSave(LS.budgets, v),
-  getSettings:  () => ({ ...DEFAULT_SETTINGS, ...lsLoad(LS.settings, {}) }),
-  saveSettings: (v) => lsSave(LS.settings, v),
+
+  /* totalBudget is a divisor for every percentage in the app. Clearing the
+     Settings field writes `+'' === 0`, which turns those into Infinity/NaN —
+     so sanitize on read and on write rather than at each call site. */
+  getSettings: () => {
+    const s = { ...DEFAULT_SETTINGS, ...lsLoad(LS.settings, {}) }
+    const budget = Number(s.totalBudget)
+    s.totalBudget = Number.isFinite(budget) && budget > 0 ? budget : DEFAULT_SETTINGS.totalBudget
+    return s
+  },
+  saveSettings: (v) => {
+    const budget = Number(v.totalBudget)
+    lsSave(LS.settings, {
+      ...v,
+      totalBudget: Number.isFinite(budget) && budget > 0 ? budget : DEFAULT_SETTINGS.totalBudget,
+    })
+  },
 
   /* ── Income ──────────────────────────────────────────── */
   async getIncome() {
@@ -434,14 +446,13 @@ export const db = {
   },
 
   async getMonthIncome(year, month) {
-    const prefix  = monthKey(year, month)
-    const lastDay = new Date(year, month + 1, 0).getDate()
+    const { prefix, start, end } = monthRange(year, month)
     try {
       const { data, error } = await supabase
         .from('income')
         .select('*')
-        .gte('date', `${prefix}-01`)
-        .lte('date', `${prefix}-${lastDay}`)
+        .gte('date', start)
+        .lte('date', end)
         .order('date', { ascending: false })
       if (error) throw error
       return data

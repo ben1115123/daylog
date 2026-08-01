@@ -1,8 +1,12 @@
+/* No padding-bottom here. .home-screen is the scroller nested inside
+   .app-body, which already reserves --tabbar-height for the fixed nav
+   (App.css). Setting it in both places reserved the nav height twice —
+   and since --tabbar-height is measured from the rendered nav, that
+   double-counted its safe-area-inset-bottom too. */
 .home-screen {
   height: 100%;
   overflow-y: auto;
   overflow-x: hidden;
-  padding-bottom: var(--tabbar-height);
 }
 
 /* ── Collapsing sticky header ────────────────────────── */

@@ -3,6 +3,7 @@ import { parseInput } from '../ai.js'
 import { db, computeRecentMonths } from '../db.js'
 import { CAT_META, CATEGORIES, formatRM, formatRMParts, formatDate, formatTime } from '../utils.js'
 import { MicIcon, SendIcon, CAT_ICONS, BackIcon } from '../Icons.jsx'
+import { todayISO, shiftMonth } from '../lib/dates.js'
 import DLMark from './DLMark.jsx'
 import Sheet from './Sheet.jsx'
 import Calendar from './Calendar.jsx'
@@ -110,8 +111,7 @@ export default function Home({ showToast, onLogged }) {
   const loadSpendOverview = useCallback(async () => {
     const now = new Date()
     const y = now.getFullYear(), m = now.getMonth()
-    const prevDate = new Date(y, m - 1, 1)
-    const py = prevDate.getFullYear(), pm = prevDate.getMonth()
+    const { year: py, month: pm } = shiftMonth(y, m, -1)
 
     const [thisExp, thisInc, lastExp, lastInc, allExp, allInc, recurring] = await Promise.all([
       db.getMonthExpenses(y, m),
@@ -286,7 +286,7 @@ export default function Home({ showToast, onLogged }) {
       description: chip.label,
       amount,
       category: chip.category,
-      date: new Date().toISOString().split('T')[0],
+      date: todayISO(),
     })
     showToast(`${chip.label} — ${formatRM(amount)}`, 'success', {
       label: 'UNDO',

@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useMemo } from 'react'
 import { db, computeRecentMonths } from '../db.js'
 import { CAT_META, CATEGORIES, INCOME_CATEGORIES, formatRM, formatDate, monthLabel } from '../utils.js'
 import { CAT_ICONS, SearchIcon, XIcon, PlusIcon } from '../Icons.jsx'
+import { todayISO, toISODate, shiftISO, startOfWeek } from '../lib/dates.js'
 import DLMark from './DLMark.jsx'
 import Sheet from './Sheet.jsx'
 import ConfirmDialog from './ConfirmDialog.jsx'
@@ -409,13 +410,9 @@ export default function Spending({ showToast }) {
   const topCatEntry = Object.entries(byCat).sort((a, b) => b[1] - a[1])[0]
   const topCat = topCatEntry ? CAT_META[topCatEntry[0]]?.label : null
 
-  const todayDate = new Date()
-  const thisWeekStart = new Date(todayDate); thisWeekStart.setDate(todayDate.getDate() - todayDate.getDay())
-  const lastWeekStart = new Date(thisWeekStart); lastWeekStart.setDate(thisWeekStart.getDate() - 7)
-  const lastWeekEnd   = new Date(thisWeekStart); lastWeekEnd.setDate(thisWeekStart.getDate() - 1)
-  const thisWeekStr   = thisWeekStart.toISOString().split('T')[0]
-  const lwStartStr    = lastWeekStart.toISOString().split('T')[0]
-  const lwEndStr      = lastWeekEnd.toISOString().split('T')[0]
+  const thisWeekStr = toISODate(startOfWeek())
+  const lwStartStr  = shiftISO(thisWeekStr, -7)
+  const lwEndStr    = shiftISO(thisWeekStr, -1)
   const thisWeekTotal = allExpenses.filter(e => e.date >= thisWeekStr).reduce((s, e) => s + (e.amount || 0), 0)
   const lastWeekTotal = allExpenses.filter(e => e.date >= lwStartStr && e.date <= lwEndStr).reduce((s, e) => s + (e.amount || 0), 0)
   const weekDiff = thisWeekTotal - lastWeekTotal
@@ -836,7 +833,7 @@ export default function Spending({ showToast }) {
 
       {addOpen && (
         <AddExpenseForm
-          defaultDate={new Date().toISOString().split('T')[0]}
+          defaultDate={todayISO()}
           onSave={handleAddExpense}
           onCancel={() => setAddOpen(false)}
         />
@@ -844,7 +841,7 @@ export default function Spending({ showToast }) {
 
       {addIncomeOpen && (
         <AddIncomeForm
-          defaultDate={new Date().toISOString().split('T')[0]}
+          defaultDate={todayISO()}
           onSave={handleAddIncome}
           onCancel={() => setAddIncomeOpen(false)}
         />

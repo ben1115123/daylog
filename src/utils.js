@@ -1,3 +1,10 @@
+import { todayISO, shiftISO, parseISODate } from './lib/dates.js'
+
+/* Date helpers live in src/lib/dates.js — the single local-timezone date path.
+   Re-exported here so existing `import { todayStr } from './utils.js'` call
+   sites keep working without a second, competing implementation. */
+export { todayISO as todayStr, monthLabel } from './lib/dates.js'
+
 export const CATEGORIES = [
   'food', 'transport', 'grocery', 'rental', 'subscription', 'sports', 'shopping',
   'coffee', 'dining', 'petrol', 'toll', 'online_shopping', 'health', 'entertainment', 'travel', 'utilities', 'education', 'investment',
@@ -71,14 +78,11 @@ export function formatRMParts(amount) {
 
 export function formatDate(dateStr) {
   if (!dateStr) return ''
-  const d = new Date(dateStr + 'T00:00:00')
-  const today = new Date()
-  const tomorrow = new Date(today); tomorrow.setDate(today.getDate() + 1)
-  const yesterday = new Date(today); yesterday.setDate(today.getDate() - 1)
-  if (dateStr === today.toISOString().split('T')[0]) return 'Today'
-  if (dateStr === tomorrow.toISOString().split('T')[0]) return 'Tomorrow'
-  if (dateStr === yesterday.toISOString().split('T')[0]) return 'Yesterday'
-  return d.toLocaleDateString('en-MY', { day: 'numeric', month: 'short' })
+  const today = todayISO()
+  if (dateStr === today) return 'Today'
+  if (dateStr === shiftISO(today, 1)) return 'Tomorrow'
+  if (dateStr === shiftISO(today, -1)) return 'Yesterday'
+  return parseISODate(dateStr).toLocaleDateString('en-MY', { day: 'numeric', month: 'short' })
 }
 
 export function formatTime(timeStr) {
@@ -89,10 +93,3 @@ export function formatTime(timeStr) {
   return `${hour}:${String(m).padStart(2, '0')}${ampm}`
 }
 
-export function todayStr() {
-  return new Date().toISOString().split('T')[0]
-}
-
-export function monthLabel(year, month) {
-  return new Date(year, month, 1).toLocaleDateString('en-MY', { month: 'short' })
-}

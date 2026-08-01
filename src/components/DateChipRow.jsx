@@ -1,18 +1,13 @@
 import { useRef } from 'react'
+import { todayISO, shiftISO, parseISODate } from '../lib/dates.js'
 
-function todayStr() { return new Date().toISOString().split('T')[0] }
-function yesterdayStr() {
-  const d = new Date()
-  d.setDate(d.getDate() - 1)
-  return d.toISOString().split('T')[0]
-}
 function dayOfWeek(dateStr) {
-  return new Date(dateStr + 'T00:00:00').toLocaleDateString('en-MY', { weekday: 'short' })
+  return parseISODate(dateStr).toLocaleDateString('en-MY', { weekday: 'short' })
 }
 
 export default function DateChipRow({ value, onChange }) {
-  const today = todayStr()
-  const yesterday = yesterdayStr()
+  const today = todayISO()
+  const yesterday = shiftISO(today, -1)
   const isToday = value === today
   const isYesterday = value === yesterday
   const isCustom = !isToday && !isYesterday
