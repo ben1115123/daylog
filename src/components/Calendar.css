@@ -155,7 +155,9 @@
 .ev-edit-input {
   background: var(--bg3); border: 0.5px solid var(--border2);
   border-radius: var(--radius-sm); padding: 9px 12px;
-  font-size: 13px; color: var(--text); outline: none; flex: 1;
+  /* >= 16px: iOS Safari zooms the viewport when a focused text control is
+     smaller, and never zooms back out on blur. */
+  font-size: 16px; color: var(--text); outline: none; flex: 1;
   min-height: 40px; transition: border-color 0.15s; width: 100%;
 }
 .ev-edit-input:focus { border-color: var(--accent); }
@@ -164,7 +166,7 @@
 .ev-edit-select {
   flex: 1; background: var(--bg3); border: 0.5px solid var(--border2);
   border-radius: var(--radius-sm); padding: 9px 12px;
-  font-size: 13px; color: var(--text); outline: none; min-height: 40px; cursor: pointer;
+  font-size: 16px; color: var(--text); outline: none; min-height: 40px; cursor: pointer;
 }
 
 .ev-edit-actions { display: flex; gap: 8px; justify-content: flex-end; }

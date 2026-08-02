@@ -110,7 +110,9 @@
   border: 0.5px solid var(--border2);
   border-radius: var(--radius-sm);
   padding: 0 14px;
-  font-size: 14px;
+  /* >= 16px: iOS Safari zooms the viewport when a focused text control is
+     smaller, and never zooms back out on blur. */
+  font-size: 16px;
   font-family: var(--font-sans);
   color: var(--text);
   outline: none;
@@ -290,4 +292,7 @@
   height: 1px;
   opacity: 0;
   pointer-events: none;
+  /* Hidden, but still focused to open the native picker — and iOS zooms on
+     focus regardless of visibility. */
+  font-size: 16px;
 }

@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from 'react'
+import { useState, useCallback, useEffect, useLayoutEffect, useRef } from 'react'
 import Home from './components/Home.jsx'
 import Settings from './components/Settings.jsx'
 import Insights from './components/Insights.jsx'
@@ -102,8 +102,13 @@ export default function App() {
   const [isOffline, setIsOffline]   = useState(false)
   const [showOnboarding, setShowOnboarding] = useState(null)
   const recurringChecked = useRef(false)
-  const navRef = useRef(null)
   const appRef = useRef(null)
+  /* Callback ref, not useRef: the nav mounts only after both the splash and the
+     onboarding check clear, so an effect keyed on state has to guess which state
+     change made it appear (that guess was already wrong once — see 0bb907b).
+     A callback ref fires exactly when the node mounts, so the measurement can
+     never be skipped or run against a stale element. */
+  const [navEl, setNavEl] = useState(null)
 
   const showToast = useCallback((msg, type = 'success', action) => {
     setToast({ msg, type, action })
@@ -132,18 +137,59 @@ export default function App() {
     checkRecurring(showToast)
   }, [showOnboarding, showToast])
 
-  useEffect(() => {
-    if (!navRef.current || !appRef.current) return
-    const el = navRef.current
+  /* Measures the real bottom-nav height into --tabbar-height, which every
+     scroll container uses to reserve space for the fixed nav.
+     useLayoutEffect, not useEffect: the first measurement must land before
+     paint, otherwise the first frame renders against the 84px CSS fallback. */
+  useLayoutEffect(() => {
     const target = appRef.current
-    const apply = () => {
-      target.style.setProperty('--tabbar-height', `${el.getBoundingClientRect().height}px`)
+    if (!navEl || !target) return
+
+    let last = -1
+    const apply = (reason) => {
+      const h = navEl.getBoundingClientRect().height
+      if (h <= 0) return
+      if (import.meta.env.DEV) {
+        const delta = last < 0 ? 'first measurement' : `delta ${(h - last).toFixed(2)}px`
+        console.log(`[tabbar] ${reason}: ${h.toFixed(2)}px (${delta})`)
+      }
+      if (Math.abs(h - last) < 0.5) return
+      last = h
+      target.style.setProperty('--tabbar-height', `${h}px`)
     }
-    apply()
-    const ro = new ResizeObserver(apply)
-    ro.observe(el)
-    return () => ro.disconnect()
-  }, [showOnboarding, splashDone])
+
+    apply('layout-effect')
+
+    /* border-box: the nav's height moves with padding-bottom
+       (max(env(safe-area-inset-bottom), 20px)), and a padding-only change
+       leaves the content box — the ResizeObserver default — untouched. */
+    const ro = new ResizeObserver(() => apply('resize-observer'))
+    try { ro.observe(navEl, { box: 'border-box' }) }
+    catch { ro.observe(navEl) }
+
+    const onResize = () => apply('window-resize')
+    const onOrientation = () => {
+      apply('orientationchange')
+      requestAnimationFrame(() => apply('orientationchange-raf'))
+    }
+    const onViewport = () => apply('visualviewport-resize')
+
+    window.addEventListener('resize', onResize)
+    window.addEventListener('orientationchange', onOrientation)
+    window.visualViewport?.addEventListener('resize', onViewport)
+
+    /* Webfont swap can change the nav label's line box. */
+    let cancelled = false
+    document.fonts?.ready.then(() => { if (!cancelled) apply('fonts-ready') })
+
+    return () => {
+      cancelled = true
+      ro.disconnect()
+      window.removeEventListener('resize', onResize)
+      window.removeEventListener('orientationchange', onOrientation)
+      window.visualViewport?.removeEventListener('resize', onViewport)
+    }
+  }, [navEl])
 
   const handleOnboardingComplete = (name, income, budget) => {
     db.saveSettings({ ...db.getSettings(), name, totalBudget: budget })
@@ -188,7 +234,7 @@ export default function App() {
         {tab === 'insights' && <Insights key={refresh} showToast={showToast} />}
         {tab === 'settings' && <Settings key={refresh} showToast={showToast} />}
       </div>
-      <nav className="bottom-nav" ref={navRef}>
+      <nav className="bottom-nav" ref={setNavEl}>
         {tabs.map(({ id, label, Icon }) => (
           <button
             key={id}
