@@ -1,14 +1,108 @@
+/* ── Spending trend chart ──────────────────────────── */
+.trend-bar { cursor: pointer; }
+.trend-bar-fill { transition: fill 0.24s ease, opacity 0.24s ease; }
+.trend-bar.dim .trend-bar-fill { opacity: 0.4; }
+.trend-bar:focus { outline: none; }
+.trend-bar:focus-visible .trend-bar-fill { stroke: var(--accent); stroke-width: 1.5; }
+
+.trend-hint {
+  margin-top: 10px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text3);
+  text-align: center;
+}
+
 /* ── Stat pair ─────────────────────────────────────── */
 .stat-pair {
   display: grid;
   grid-template-columns: 1fr 1fr;
+  align-items: stretch;
   gap: 8px;
 }
+/* The pair are side by side, not stacked — `.card + .card { margin-top: 8px }`
+   (App.css) was pushing the second one 8px down out of its grid row. */
+.stat-pair .card + .card { margin-top: 0; }
 
 .stat-card {
   padding: 20px;
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  text-align: left;
+  width: 100%;
+  /* Explicit, because Chrome does not stretch a <button> grid item to its row
+     the way it stretches a <div> — without this the two cards end up different
+     heights and bottom-aligned. */
+  height: 100%;
+  cursor: pointer;
+  transition: background 0.18s ease, border-color 0.18s ease;
+}
+.stat-card:disabled { cursor: default; }
+.stat-card.open {
+  background: var(--accent-dim);
+  border-color: var(--accent-border);
+}
+
+/* ── Stat supporting detail ────────────────────────── */
+/* 0fr -> 1fr animates to the content's natural height with no measuring and
+   no max-height guess that would clip a long list. */
+.stat-detail {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.32s cubic-bezier(0.32, 0.72, 0, 1),
+              margin-top 0.32s cubic-bezier(0.32, 0.72, 0, 1);
+  margin-top: 0;
+}
+.stat-detail.open {
+  grid-template-rows: 1fr;
+  margin-top: 8px;
+}
+.stat-detail-inner { overflow: hidden; }
+
+.stat-detail-card { padding: 4px 0; }
+
+.stat-detail-head {
+  padding: 10px 16px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--text3);
+  border-bottom: 0.5px solid var(--border);
+}
+
+.stat-detail-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+}
+
+.stat-detail-date {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text3);
+  flex-shrink: 0;
+}
+
+.stat-detail-desc {
+  flex: 1;
+  font-size: 13px;
+  color: var(--text2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.stat-detail-amount {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text2);
+  flex-shrink: 0;
 }
 
 .stat-label {
@@ -38,13 +132,77 @@
 }
 
 /* ── Top merchants ─────────────────────────────────── */
+.merchant-group.bordered { border-bottom: 0.5px solid var(--border); }
+
 .merchant-row {
   display: flex;
   align-items: center;
   gap: 12px;
   padding: 13px 16px;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s ease;
 }
-.merchant-row.bordered { border-bottom: 0.5px solid var(--border); }
+.merchant-row.open { background: var(--bg3); }
+
+.merchant-caret {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  color: var(--text3);
+  flex-shrink: 0;
+  transition: transform 0.24s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.merchant-row.open .merchant-caret { transform: rotate(90deg); }
+
+.merchant-expand {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.merchant-expand.open { grid-template-rows: 1fr; }
+.merchant-expand-inner { overflow: hidden; }
+
+.merchant-txn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 16px 9px 48px;
+  background: var(--bg3);
+}
+.merchant-txn:last-child { padding-bottom: 13px; }
+
+.merchant-txn-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.merchant-txn-date {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text3);
+  flex-shrink: 0;
+}
+
+.merchant-txn-note {
+  flex: 1;
+  font-size: 12px;
+  color: var(--text3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.merchant-txn-amount {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text2);
+  flex-shrink: 0;
+}
 
 .merchant-rank {
   width: 20px;
@@ -153,4 +311,208 @@
 .month-delta.flat {
   color: var(--text3);
   background: var(--bg3);
+}
+
+/* ── Month detail overlay ──────────────────────────── */
+/* Sits above the nav at the same layer as the Home expand overlays, so the
+   month view owns the screen and its own back affordance is the way out. */
+.md-panel {
+  position: fixed;
+  inset: 0;
+  max-width: 430px;
+  margin: 0 auto;
+  z-index: 700;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  animation: mdSlideIn 0.34s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+@keyframes mdSlideIn {
+  from { transform: translateX(100%); }
+  to   { transform: translateX(0); }
+}
+
+.md-head {
+  flex-shrink: 0;
+  padding: calc(env(safe-area-inset-top, 0px) + 12px) 20px 12px;
+  background: var(--bg);
+  border-bottom: 0.5px solid var(--border);
+}
+
+.md-back {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--text2);
+  cursor: pointer;
+}
+.md-back svg { width: 16px; height: 16px; }
+
+.md-head-month {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.md-head-label {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+
+.md-step {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  background: var(--bg3);
+  border: 0.5px solid var(--border2);
+  color: var(--text2);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+.md-step:disabled { opacity: 0.3; cursor: default; }
+
+.md-dots {
+  display: flex;
+  justify-content: center;
+  gap: 5px;
+  margin-top: 12px;
+}
+.md-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--bg4);
+  transition: background 0.24s ease, width 0.24s ease;
+}
+.md-dot.on {
+  width: 14px;
+  border-radius: 3px;
+  background: var(--accent);
+}
+
+.md-viewport {
+  flex: 1;
+  overflow: hidden;
+  /* Vertical panning stays with the browser; only horizontal drags are ours. */
+  touch-action: pan-y;
+}
+
+.md-track {
+  display: flex;
+  height: 100%;
+  transition: transform 0.36s cubic-bezier(0.32, 0.72, 0, 1);
+  will-change: transform;
+}
+.md-track.dragging { transition: none; }
+
+.md-pane {
+  flex: 0 0 100%;
+  height: 100%;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 0 20px calc(env(safe-area-inset-bottom, 0px) + 24px);
+}
+
+.md-total { padding: 24px 0 4px; }
+.md-total-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text3);
+  margin-bottom: 8px;
+}
+.md-total-value {
+  font-family: var(--font-display);
+  font-size: 34px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.md-total-sub {
+  margin-top: 6px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text3);
+}
+
+.md-block { margin-top: 28px; }
+.md-block .section-label { margin-bottom: 10px; }
+
+.md-cat-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 16px;
+}
+.md-cat-row.bordered { border-bottom: 0.5px solid var(--border); }
+
+.md-cat-body { flex: 1; min-width: 0; }
+
+.md-cat-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 7px;
+}
+
+.md-cat-name {
+  font-size: 14px;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.md-cat-amount {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text2);
+  flex-shrink: 0;
+}
+
+.md-cat-track {
+  height: 2px;
+  border-radius: 2px;
+  background: var(--bg4);
+  overflow: hidden;
+}
+.md-cat-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.36s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .md-panel { animation: none; }
+  .md-track,
+  .md-cat-fill,
+  .md-dot,
+  .md-step,
+  .merchant-row,
+  .merchant-caret,
+  .merchant-expand,
+  .stat-card,
+  .stat-detail,
+  .trend-bar-fill {
+    transition: none;
+  }
 }

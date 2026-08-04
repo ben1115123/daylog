@@ -1,8 +1,10 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { db, computeRecentMonths } from '../db.js'
-import { CAT_META, formatRM, monthLabel } from '../utils.js'
+import { CAT_META, formatRM, formatDate, monthLabel } from '../utils.js'
 import { todayISO, shiftISO, parseISODate, monthKey, shiftMonth } from '../lib/dates.js'
 import DLMark from './DLMark.jsx'
+import MerchantList from './MerchantList.jsx'
+import InsightsMonthDetail from './InsightsMonthDetail.jsx'
 import './Insights.css'
 
 /* ── Income vs Expenses dual bar chart ───────────────── */
@@ -46,7 +48,9 @@ function IncomeExpensesChart({ months }) {
 }
 
 /* ── 6-month spending bar chart ──────────────────────── */
-function TrendChart({ months }) {
+/* `selected` is the index whose detail is open, or null for none — in which
+   case the current month keeps the accent, as it always has. */
+function TrendChart({ months, selected, onSelect }) {
   const W = 300, H = 90
   const n = months.length
   if (!n) return null
@@ -60,23 +64,36 @@ function TrendChart({ months }) {
         const barH = Math.max((m.total / max) * H, m.total > 0 ? 3 : 0)
         const x = gap + i * (barW + gap)
         const y = H - barH
-        const isCurrentMonth = i === n - 1
+        const isAccent = selected === null ? i === n - 1 : i === selected
+        const isDimmed = selected !== null && i !== selected
         return (
-          <g key={i}>
+          <g
+            key={i}
+            className={`trend-bar${isDimmed ? ' dim' : ''}`}
+            onClick={() => onSelect(i)}
+            role="button"
+            tabIndex={0}
+            aria-label={`${monthLabel(m.year, m.month)} ${m.year}, ${Math.round(m.total)} ringgit`}
+            onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect(i) } }}
+          >
+            {/* Full-column transparent hit area — a short bar is only a few px
+                tall, far under the 44px minimum touch target. */}
+            <rect x={x - gap / 2} y={0} width={barW + gap} height={H + 28} fill="transparent" />
             <rect
+              className="trend-bar-fill"
               x={x} y={y}
               width={barW} height={barH}
               rx="6"
-              fill={isCurrentMonth ? 'var(--accent)' : 'rgba(255,255,255,0.12)'}
+              fill={isAccent ? 'var(--accent)' : 'rgba(255,255,255,0.12)'}
             />
             <text
               x={x + barW / 2} y={H + 16}
               textAnchor="middle"
-              style={{ fill: 'var(--text3)', fontFamily: 'JetBrains Mono', fontSize: 9 }}
+              style={{ fill: isAccent ? 'var(--text2)' : 'var(--text3)', fontFamily: 'JetBrains Mono', fontSize: 9 }}
             >
               {monthLabel(m.year, m.month)}
             </text>
-            {m.total > 0 && isCurrentMonth && (
+            {m.total > 0 && isAccent && (
               <text
                 x={x + barW / 2} y={y - 5}
                 textAnchor="middle"
@@ -177,6 +194,33 @@ export default function Insights({ showToast }) {
 
   const totalForMerchants = expenses.reduce((s, e) => s + (e.amount || 0), 0)
 
+  /* ── Interaction state ──────────────────────────── */
+  /* Index into recentMonths whose detail is open, or null for the overview. */
+  const [detailIndex, setDetailIndex] = useState(null)
+  /* Which stat card has its supporting detail expanded: 'day' | 'streak' | null. */
+  const [openStat, setOpenStat] = useState(null)
+
+  const expensesFor = useCallback(
+    key => allExpenses.filter(e => e.date?.startsWith(key)),
+    [allExpenses]
+  )
+
+  /* Supporting detail for "most expensive day": every expense this month that
+     fell on that weekday, newest first. */
+  const dayDetail = useMemo(() => {
+    if (maxDayName === null) return []
+    return expenses
+      .filter(e => parseISODate(e.date).getDay() === maxDayIdx)
+      .sort((a, b) => (a.date < b.date ? 1 : -1))
+  }, [expenses, maxDayIdx, maxDayName])
+
+  /* Supporting detail for the streak: the span it covers. */
+  const streakRange = useMemo(() => {
+    if (streak === 0) return null
+    const end = todayISO()
+    return { from: shiftISO(end, -(streak - 1)), to: end }
+  }, [streak])
+
   if (loadingData) return (
     <div className="screen">
       <div className="loading-wrap" style={{ height: '100dvh' }}>
@@ -197,7 +241,8 @@ export default function Insights({ showToast }) {
       <div className="section" >
         <div className="section-label">Spending trend</div>
         <div className="card" style={{ padding: '20px 20px 16px' }}>
-          <TrendChart months={recentMonths} />
+          <TrendChart months={recentMonths} selected={detailIndex} onSelect={setDetailIndex} />
+          <div className="trend-hint">tap a month for the breakdown</div>
         </div>
       </div>
 
@@ -220,17 +265,66 @@ export default function Insights({ showToast }) {
       {/* ── Stat pair row ─────────────────────────────── */}
       <div className="section" >
         <div className="stat-pair">
-          <div className="stat-card card">
+          <button
+            className={`stat-card card${openStat === 'day' ? ' open' : ''}`}
+            onClick={() => setOpenStat(openStat === 'day' ? null : 'day')}
+            disabled={!maxDayName}
+            aria-expanded={openStat === 'day'}
+          >
             <div className="stat-label">most expensive day</div>
             <div className="stat-value">{maxDayName || '—'}</div>
             {maxDayName && (
               <div className="stat-sub">{formatRM(Math.round(dayAvgs[maxDayIdx]))} avg</div>
             )}
-          </div>
-          <div className="stat-card card">
+          </button>
+          <button
+            className={`stat-card card${openStat === 'streak' ? ' open' : ''}`}
+            onClick={() => setOpenStat(openStat === 'streak' ? null : 'streak')}
+            disabled={streak === 0}
+            aria-expanded={openStat === 'streak'}
+          >
             <div className="stat-label">logging streak</div>
             <div className="stat-value">{streak}</div>
             <div className="stat-sub">{streak === 1 ? 'day' : 'days'}</div>
+          </button>
+        </div>
+
+        {/* Expands below the pair rather than inside a card, so neither card
+            changes size and the grid never reflows. */}
+        <div className={`stat-detail${openStat ? ' open' : ''}`}>
+          <div className="stat-detail-inner">
+            <div className="card stat-detail-card">
+              {openStat === 'day' && (
+                <>
+                  <div className="stat-detail-head">
+                    every {DAY_NAMES[maxDayIdx]} this month · {dayCounts[maxDayIdx]} {dayCounts[maxDayIdx] === 1 ? 'entry' : 'entries'} · {formatRM(Math.round(dayTotals[maxDayIdx]))} total
+                  </div>
+                  {dayDetail.map(e => {
+                    const meta = CAT_META[e.category]
+                    return (
+                      <div key={e.id} className="stat-detail-row">
+                        <span className="merchant-txn-dot" style={{ background: meta?.color || 'var(--text3)' }} />
+                        <span className="stat-detail-date">{formatDate(e.date)}</span>
+                        <span className="stat-detail-desc">{e.description}</span>
+                        <span className="stat-detail-amount">{formatRM(e.amount)}</span>
+                      </div>
+                    )
+                  })}
+                </>
+              )}
+              {openStat === 'streak' && streakRange && (
+                <>
+                  <div className="stat-detail-head">
+                    unbroken since {formatDate(streakRange.from)}
+                  </div>
+                  <div className="stat-detail-row">
+                    <span className="stat-detail-date">{formatDate(streakRange.from)}</span>
+                    <span className="stat-detail-desc">→ {formatDate(streakRange.to)}</span>
+                    <span className="stat-detail-amount">{streak} {streak === 1 ? 'day' : 'days'}</span>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -238,23 +332,7 @@ export default function Insights({ showToast }) {
       {/* ── Top merchants ─────────────────────────────── */}
       <div className="section" >
         <div className="section-label">Top merchants this month</div>
-        {merchants.length === 0 ? (
-          <div className="empty">no expenses yet</div>
-        ) : (
-          <div className="card">
-            {merchants.map(([desc, amount], i) => {
-              const pct = totalForMerchants > 0 ? Math.round((amount / totalForMerchants) * 100) : 0
-              return (
-                <div key={desc} className={`merchant-row ${i < merchants.length - 1 ? 'bordered' : ''}`}>
-                  <span className="merchant-rank">#{i + 1}</span>
-                  <span className="merchant-name">{desc}</span>
-                  <span className="merchant-pct">{pct}%</span>
-                  <span className="merchant-amount">{formatRM(amount)}</span>
-                </div>
-              )
-            })}
-          </div>
-        )}
+        <MerchantList rows={merchants} total={totalForMerchants} expenses={expenses} idPrefix="overview:" />
       </div>
 
       {/* ── Month comparison ──────────────────────────── */}
@@ -282,6 +360,16 @@ export default function Insights({ showToast }) {
           </div>
         </div>
       </div>
+
+      {detailIndex !== null && recentMonths[detailIndex] && (
+        <InsightsMonthDetail
+          months={recentMonths}
+          index={detailIndex}
+          expensesFor={expensesFor}
+          onIndex={setDetailIndex}
+          onClose={() => setDetailIndex(null)}
+        />
+      )}
     </div>
   )
 }
