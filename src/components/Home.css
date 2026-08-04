@@ -1,8 +1,7 @@
-/* No padding-bottom here. .home-screen is the scroller nested inside
-   .app-body, which already reserves --tabbar-height for the fixed nav
-   (App.css). Setting it in both places reserved the nav height twice —
-   and since --tabbar-height is measured from the rendered nav, that
-   double-counted its safe-area-inset-bottom too. */
+/* No padding-bottom here, and none on .app-body either — the nav is reserved
+   once, by .screen (App.css), which this element also carries. .home-screen
+   therefore runs the full height of .app-body and its content scrolls behind
+   the nav, which is opaque var(--bg) and occludes it cleanly. */
 .home-screen {
   height: 100%;
   overflow-y: auto;
@@ -474,12 +473,15 @@
   transition: opacity 0.3s ease 0.1s;
 }
 
+/* These overlays sit above the nav (z-index 700 vs 1), so the nav is not
+   below their content — the home indicator is. Reserving --tabbar-height here
+   left a nav-sized empty band under content that nothing was ever behind. */
 .spend-overlay-full {
-  padding: calc(env(safe-area-inset-top, 0px) + 12px) 20px var(--tabbar-height);
+  padding: calc(env(safe-area-inset-top, 0px) + 12px) 20px calc(env(safe-area-inset-bottom, 0px) + 24px);
 }
 
 .cal-overlay-full {
-  padding-bottom: var(--tabbar-height);
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 24px);
 }
 
 .spend-back,

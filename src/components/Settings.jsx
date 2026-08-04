@@ -474,8 +474,6 @@ export default function Settings({ showToast, onBack }) {
         </div>
       </div>
 
-      <div style={{ height: 40 }} />
-
       {recurringOpen && (
         <AddRecurringForm
           onSave={handleAddRecurring}

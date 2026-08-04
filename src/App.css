@@ -29,11 +29,12 @@
   pointer-events: none;
 }
 
+/* Reserves nothing for the fixed nav — .screen does, exactly once. See the
+   note on .screen below. */
 .app-body {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding-bottom: var(--tabbar-height);
 }
 
 /* ── Bottom nav ────────────────────────────────────── */
@@ -86,10 +87,31 @@
 }
 
 /* ── Screen shell ──────────────────────────────────── */
+/* THE ONE PLACE the fixed bottom nav is reserved for.
+ *
+ * .screen is the innermost thing in every scroll chain, so its bottom padding
+ * is the last scrollable content in whichever ancestor actually scrolls —
+ * .app-body on Insights/Settings, .home-screen on Home. Putting the reservation
+ * here means it lands inside the real scroller either way, and it cannot be
+ * counted twice: .app-body deliberately has no padding-bottom, and .home-screen
+ * deliberately has none either.
+ *
+ * The +16px is the visible breathing room between the last card and the nav.
+ * --tabbar-height is measured from the rendered nav (App.jsx), so it already
+ * includes the nav's safe-area-inset-bottom — never add that again here. */
 .screen {
-  padding: 0 0 2.5rem;
+  padding: 0 0 calc(var(--tabbar-height) + 16px);
   animation: fadeIn 0.15s ease;
   min-height: 100%;
+}
+
+/* The expand overlays are fixed at z-index 700 and paint *over* the nav, so
+   inside them the nav is not a thing to clear — only the home indicator is.
+   The overlay's own scroller reserves that; the .screen it wraps must not. */
+.spend-card-overlay .screen,
+.cal-card-overlay .screen {
+  padding-bottom: 0;
+  min-height: 0;
 }
 
 /* Used by Spending / Calendar / Settings — not Home */

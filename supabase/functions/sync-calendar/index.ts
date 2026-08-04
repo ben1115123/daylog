@@ -49,6 +49,54 @@ function extractHref(xml: string, tag: string): string | null {
   return m ? m[1].trim() : null
 }
 
+// iCloud serves WebDAV elements *unprefixed* with a default xmlns
+// (`<response xmlns="DAV:">`), not prefixed (`<D:response>`). Every element
+// matcher here therefore treats the `ns:` prefix as optional — requiring it is
+// what silently broke calendar discovery.
+const NS = '(?:[^:>\\s]*:)?'
+
+function elementRe(tag: string, flags = 'i'): RegExp {
+  return new RegExp(`<${NS}${tag}[\\s>][\\s\\S]*?</${NS}${tag}>`, flags)
+}
+
+function innerOf(block: string, tag: string): string | null {
+  const m = block.match(new RegExp(`<${NS}${tag}[^>]*>([\\s\\S]*?)</${NS}${tag}>`, 'i'))
+  return m ? m[1] : null
+}
+
+/**
+ * Picks the first collection that is a calendar and accepts VEVENTs.
+ *
+ * Both tests read the *inside* of their own element rather than scanning the
+ * whole response block — a block-wide search for "calendar" also hits the
+ * caldav namespace URI on unrelated properties, which would let the calendar
+ * home itself, or a VTODO-only list, win.
+ */
+function selectCalendarHref(listXml: string): { href: string | null; blocks: number; considered: unknown[] } {
+  const blocks = listXml.match(elementRe('response', 'gi')) || []
+  const considered: unknown[] = []
+  let href: string | null = null
+
+  for (const block of blocks) {
+    const selfHref = block.match(new RegExp(`<${NS}href[^>]*>([^<]+)</${NS}href>`, 'i'))?.[1]?.trim() || null
+    const resourcetype = innerOf(block, 'resourcetype') || ''
+    const isCalendar = new RegExp(`<${NS}calendar[\\s/>]`, 'i').test(resourcetype)
+    // Scheduling collections are calendars too, but they are not for storing events.
+    const isSchedulingBox = new RegExp(`<${NS}schedule-(inbox|outbox)`, 'i').test(resourcetype)
+    // Absent component set means "no restriction" — treat as VEVENT-capable.
+    const comps = innerOf(block, 'supported-calendar-component-set')
+    const acceptsEvents = comps === null ? true : /VEVENT/i.test(comps)
+
+    const displayname = innerOf(block, 'displayname')?.trim() || null
+    const usable = isCalendar && !isSchedulingBox && acceptsEvents
+    considered.push({ href: selfHref, displayname, isCalendar, isSchedulingBox, acceptsEvents, usable })
+
+    if (usable && selfHref && !href) href = selfHref
+  }
+
+  return { href, blocks: blocks.length, considered }
+}
+
 // Walks PROPFIND discovery: principal -> calendar-home-set -> first writable VEVENT calendar.
 async function discoverCalendarUrl(): Promise<string> {
   const principalRes = await davFetch(`${ROOT}/`, {
@@ -79,16 +127,64 @@ async function discoverCalendarUrl(): Promise<string> {
 <D:propfind xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav"><D:prop><D:resourcetype/><D:displayname/><C:supported-calendar-component-set/></D:prop></D:propfind>`,
   })
   const listXml = await listRes.text()
-  const responses = listXml.match(/<[^:>]*:response[^>]*>[\s\S]*?<\/[^:>]*:response>/gi) || []
-  let calHref: string | null = null
-  for (const block of responses) {
-    if (/resourcetype[^>]*>[\s\S]*?calendar/i.test(block) && /VEVENT/i.test(block)) {
-      const m = block.match(/<[^>]*href[^>]*>([^<]+)<\/[^>]*href>/i)
-      if (m) { calHref = m[1].trim(); break }
-    }
-  }
+  const { href: calHref } = selectCalendarHref(listXml)
   if (!calHref) throw new Error('CalDAV: no writable calendar found')
   return new URL(calHref, listRes.url).toString()
+}
+
+// Read-only diagnostic. Walks the same PROPFIND chain as discoverCalendarUrl()
+// but reports the status and a body excerpt at every hop instead of throwing on
+// the first failure, so a credential problem can be told apart from an
+// XML-parsing problem. Issues no PUT or DELETE.
+async function verifyCalDAV(): Promise<Record<string, unknown>> {
+  const steps: Record<string, unknown>[] = []
+  const record = async (name: string, res: Response) => {
+    const body = await res.text()
+    steps.push({
+      step: name,
+      status: res.status,
+      url: res.url,
+      wwwAuthenticate: res.headers.get('WWW-Authenticate'),
+      bodyExcerpt: body.slice(0, 600),
+    })
+    return body
+  }
+
+  const principalRes = await davFetch(`${ROOT}/`, {
+    method: 'PROPFIND',
+    headers: { Depth: '0', 'Content-Type': 'application/xml' },
+    body: `<?xml version="1.0" encoding="utf-8"?>
+<D:propfind xmlns:D="DAV:"><D:prop><D:current-user-principal/></D:prop></D:propfind>`,
+  })
+  const principalXml = await record('principal', principalRes)
+  const principalHref = extractHref(principalXml, 'current-user-principal')
+  steps.push({ step: 'principal.parsed', href: principalHref })
+  if (!principalHref) return { ok: false, failedAt: 'principal', steps }
+
+  const homeRes = await davFetch(new URL(principalHref, principalRes.url).toString(), {
+    method: 'PROPFIND',
+    headers: { Depth: '0', 'Content-Type': 'application/xml' },
+    body: `<?xml version="1.0" encoding="utf-8"?>
+<D:propfind xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav"><D:prop><C:calendar-home-set/></D:prop></D:propfind>`,
+  })
+  const homeXml = await record('calendar-home-set', homeRes)
+  const homeHref = extractHref(homeXml, 'calendar-home-set')
+  steps.push({ step: 'calendar-home-set.parsed', href: homeHref })
+  if (!homeHref) return { ok: false, failedAt: 'calendar-home-set', steps }
+
+  const listRes = await davFetch(new URL(homeHref, homeRes.url).toString(), {
+    method: 'PROPFIND',
+    headers: { Depth: '1', 'Content-Type': 'application/xml' },
+    body: `<?xml version="1.0" encoding="utf-8"?>
+<D:propfind xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav"><D:prop><D:resourcetype/><D:displayname/><C:supported-calendar-component-set/></D:prop></D:propfind>`,
+  })
+  const listXml = await record('calendar-list', listRes)
+  const { href: calHref, blocks, considered } = selectCalendarHref(listXml)
+  steps.push({ step: 'calendar-list.parsed', responseBlocks: blocks, considered })
+  steps.push({ step: 'calendar.selected', href: calHref })
+  if (!calHref) return { ok: false, failedAt: 'calendar-select', steps }
+
+  return { ok: true, calendarUrl: new URL(calHref, listRes.url).toString(), steps }
 }
 
 function addDays(dateStr: string, n: number): string {
@@ -153,6 +249,19 @@ Deno.serve(async (req: Request) => {
 
   try {
     const { action, event } = await req.json()
+
+    /* Read-only CalDAV diagnostic. Its output includes the iCloud principal
+       path and the full calendar list, and the anon key that authorises this
+       function ships in the client bundle — so it stays off unless DIAG_TOKEN
+       is set as a secret and the caller presents it. */
+    if (action === 'verify') {
+      const expected = Deno.env.get('DIAG_TOKEN')
+      if (!expected || event?.token !== expected) {
+        return json({ success: false, error: 'verify is disabled' })
+      }
+      const result = await verifyCalDAV()
+      return json({ success: result.ok === true, ...result })
+    }
 
     if (action === 'add') {
       const calUrl = await discoverCalendarUrl()

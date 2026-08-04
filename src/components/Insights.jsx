@@ -258,7 +258,7 @@ export default function Insights({ showToast }) {
       </div>
 
       {/* ── Month comparison ──────────────────────────── */}
-      <div className="section" style={{ paddingBottom: 32 }}>
+      <div className="section">
         <div className="section-label">Month comparison</div>
         <div className="card month-compare-card">
           <div className="month-col">
