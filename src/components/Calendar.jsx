@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useCallback } from 'react'
 import { db, expandEvents } from '../db.js'
 import { EVENT_CATS, EVENT_CAT_LIST, EVENT_CAT_META, REMINDER_OPTIONS, formatTime, formatDate } from '../utils.js'
-import { RepeatIcon, PlusIcon } from '../Icons.jsx'
+import { RepeatIcon, PlusIcon, SyncFailedIcon } from '../Icons.jsx'
 import { loadHolidaysForCalendar } from '../holidays.js'
 import { todayISO, shiftISO, parseISODate, daysBetween } from '../lib/dates.js'
 import DLMark from './DLMark.jsx'
@@ -309,6 +309,17 @@ export default function Calendar({ showToast }) {
 
   useEffect(() => { loadEvents() }, [loadEvents])
 
+  /* Apple Calendar sync resolves a second or two after the event is saved, so
+     patch the row in place rather than making the user reopen the screen. */
+  useEffect(() => {
+    const onSync = e => {
+      const { id, error } = e.detail
+      setEvents(prev => prev.map(ev => ev.id === id ? { ...ev, apple_sync_error: error } : ev))
+    }
+    window.addEventListener('daylog:sync', onSync)
+    return () => window.removeEventListener('daylog:sync', onSync)
+  }, [])
+
   useEffect(() => {
     loadHolidaysForCalendar(year, month).then(h => {
       console.log('[daylog] holidays loaded for', year, month + 1, h)
@@ -407,6 +418,11 @@ export default function Calendar({ showToast }) {
           <div className="ev-title-row">
             <span className="ev-title">{ev.title}</span>
             {ev.recurring && <span className="ev-repeat"><RepeatIcon size={11} /></span>}
+            {ev.apple_sync_error && (
+              <span className="ev-sync-failed" title={`Not in Apple Calendar — ${ev.apple_sync_error}`}>
+                <SyncFailedIcon size={11} />
+              </span>
+            )}
           </div>
           {ev.end_date && ev.end_date > ev.date && (
             <div className="ev-daterange">{formatDate(ev.date)} → {formatDate(ev.end_date)}</div>

@@ -38,6 +38,8 @@ create table if not exists events (
 alter table events add column if not exists end_date date;
 alter table events add column if not exists reminder_minutes integer;
 alter table events add column if not exists apple_uid text;
+-- Last Apple Calendar sync failure for this event; null once it syncs cleanly.
+alter table events add column if not exists apple_sync_error text;
 
 create table if not exists income (
   id          uuid primary key default gen_random_uuid(),

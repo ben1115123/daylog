@@ -412,12 +412,24 @@
 }
 
 .upcoming-pill-date {
+  display: flex;
+  align-items: center;
+  gap: 5px;
   font-family: var(--font-mono);
   font-size: 9px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--accent);
   margin-bottom: 4px;
+}
+
+/* Sits beside the date rather than replacing it — the date stays accent, the
+   marker stays --text3. A failed Apple push is information, not an alarm. */
+.pill-sync-failed {
+  display: flex;
+  align-items: center;
+  color: var(--text3);
+  flex-shrink: 0;
 }
 
 .upcoming-pill-title {

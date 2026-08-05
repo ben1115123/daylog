@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { parseInput } from '../ai.js'
 import { db, computeRecentMonths } from '../db.js'
 import { CAT_META, CATEGORIES, formatRM, formatRMParts, formatDate, formatTime } from '../utils.js'
-import { MicIcon, SendIcon, CAT_ICONS, BackIcon } from '../Icons.jsx'
+import { MicIcon, SendIcon, CAT_ICONS, BackIcon, SyncFailedIcon } from '../Icons.jsx'
 import { todayISO, shiftMonth } from '../lib/dates.js'
 import DLMark from './DLMark.jsx'
 import Sheet from './Sheet.jsx'
@@ -211,6 +211,19 @@ export default function Home({ showToast, onLogged }) {
   }, [])
 
   useEffect(() => { refreshRecent() }, [refreshRecent])
+
+  /* Apple Calendar sync resolves a second or two after the event is saved, so
+     patch the pill in place rather than waiting for the next refresh. */
+  useEffect(() => {
+    const onSync = e => {
+      const { id, error } = e.detail
+      const patch = list => list.map(it => it.id === id ? { ...it, apple_sync_error: error } : it)
+      setUpcoming(patch)
+      setRecent(patch)
+    }
+    window.addEventListener('daylog:sync', onSync)
+    return () => window.removeEventListener('daylog:sync', onSync)
+  }, [])
 
   const handleScroll = useCallback(() => {
     setScrolled((scrollRef.current?.scrollTop || 0) > 30)
@@ -433,7 +446,14 @@ export default function Home({ showToast, onLogged }) {
                     setEditingEntry({ ...ev, _type: 'event' })
                   }}
                 >
-                  <div className="upcoming-pill-date">{formatDate(ev.date)}</div>
+                  <div className="upcoming-pill-date">
+                    {formatDate(ev.date)}
+                    {ev.apple_sync_error && (
+                      <span className="pill-sync-failed" title={`Not in Apple Calendar — ${ev.apple_sync_error}`}>
+                        <SyncFailedIcon size={10} />
+                      </span>
+                    )}
+                  </div>
                   <div className="upcoming-pill-title">{ev.title}</div>
                 </div>
               ))}

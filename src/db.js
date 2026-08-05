@@ -51,14 +51,51 @@ async function setFlag(key, value) {
   try { await supabase.from('app_state').upsert({ key, value }) } catch {}
 }
 
+/* Records the outcome of a sync attempt on the row, in the offline cache, and
+   on the window so an open screen can show it without a refetch. Only writes
+   when the state actually changes — a successful sync of an event that was
+   already fine costs no round trip. */
+async function recordSyncOutcome(id, message) {
+  const cache = lsLoad(CACHE.events, [])
+  const idx = cache.findIndex(e => e.id === id)
+  const previous = idx === -1 ? undefined : cache[idx].apple_sync_error
+  if (previous === undefined ? message === null : previous === message) return
+
+  if (idx !== -1) {
+    cache[idx] = { ...cache[idx], apple_sync_error: message }
+    lsSave(CACHE.events, cache)
+  }
+  window.dispatchEvent(new CustomEvent('daylog:sync', { detail: { id, error: message } }))
+  try {
+    await supabase.from('events').update({ apple_sync_error: message }).eq('id', id)
+  } catch (err) {
+    console.error('[daylog] could not record sync outcome:', err)
+  }
+}
+
+/* Apple Calendar sync is deliberately non-blocking — the event is already in
+   Supabase before this runs, and a CalDAV failure must never fail a save.
+   It is no longer *silent*, though: a bare `catch {}` here is why a broken
+   namespace parser went unnoticed for two months. Failures are logged and
+   stored on the row as apple_sync_error, which the UI shows as a muted dot. */
 async function syncToAppleCalendar(action, event) {
+  let message = null
   try {
     const { data, error } = await supabase.functions.invoke('sync-calendar', { body: { action, event } })
-    if (error || !data?.success) return
-    if (action === 'add' && data.uid && event.id) {
+    if (error) message = error.message || String(error)
+    else if (!data?.success) message = data?.error || 'sync-calendar returned no result'
+    else if (action === 'add' && data.uid && event.id) {
       await supabase.from('events').update({ apple_uid: data.uid }).eq('id', event.id)
     }
-  } catch {}
+  } catch (err) {
+    message = err?.message || String(err)
+  }
+
+  if (message) console.error(`[daylog] Apple Calendar ${action} failed:`, message, { event })
+
+  /* A delete has no row left to annotate — the log line is the whole record. */
+  if (action === 'delete' || !event.id) return
+  await recordSyncOutcome(event.id, message)
 }
 
 export let offlineMode = false

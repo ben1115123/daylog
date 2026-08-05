@@ -235,6 +235,17 @@ export const RepeatIcon = ({ size = 12 }) => (
   </svg>
 )
 
+/* Shown when an event failed to reach Apple Calendar. Deliberately a plain
+   struck-through cloud, not a warning triangle — the entry itself saved fine,
+   so this is information, not an alarm. */
+export const SyncFailedIcon = ({ size = 12 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" {...s} strokeWidth="1.9">
+    <path d="M17.5 19H8a5 5 0 0 1-.6-9.96"/>
+    <path d="M10.2 5.5A5.5 5.5 0 0 1 18 9.5a4.75 4.75 0 0 1 3.4 2.2"/>
+    <line x1="3" y1="3" x2="21" y2="21"/>
+  </svg>
+)
+
 /* ── Nav icons ───────────────────────────────────────── */
 export const NavLogIcon = () => (
   <svg width="20" height="20" viewBox="0 0 24 24" {...s}>
