@@ -57,12 +57,14 @@ export default function useDragDismiss({
 
   const onPointerDown = useCallback(e => {
     if (e.pointerType === 'mouse' && e.button !== 0) return
-    gesture.current = { x: e.clientX, y: e.clientY, axis: null }
+    if (gesture.current) return
+    gesture.current = { x: e.clientX, y: e.clientY, axis: null, pointerId: e.pointerId }
+    try { e.target.setPointerCapture(e.pointerId) } catch {}
   }, [])
 
   const onPointerMove = useCallback(e => {
     const g = gesture.current
-    if (!g) return
+    if (!g || g.pointerId !== e.pointerId) return
     const { axis: locked, offset: raw } = resolveDrag(g, { x: e.clientX, y: e.clientY }, g.axis, axis)
     if (locked === null) return
     if (g.axis === null) {
@@ -73,7 +75,7 @@ export default function useDragDismiss({
     apply(raw)
   }, [axis, apply])
 
-  const end = useCallback(() => {
+  const onPointerUp = useCallback(() => {
     const g = gesture.current
     gesture.current = null
     setDragging(false)
@@ -84,9 +86,17 @@ export default function useDragDismiss({
     if (axis === 'y' ? final > threshold : Math.abs(final) > threshold) onDismiss?.()
   }, [axis, apply, onEnd, onDismiss, threshold])
 
+  /* Browser-initiated gesture interruption (e.g. iOS edge-swipe-back, system gesture)
+     aborts without calling callbacks. Only the pointerup path may dismiss. */
+  const onPointerCancel = useCallback(() => {
+    gesture.current = null
+    setDragging(false)
+    apply(0)
+  }, [apply])
+
   return {
     handlers: enabled
-      ? { onPointerDown, onPointerMove, onPointerUp: end, onPointerCancel: end }
+      ? { onPointerDown, onPointerMove, onPointerUp, onPointerCancel }
       : {},
     /* Under reduced motion nothing follows the finger — but `end` still reads
        the real offset from the ref, so a drag past the threshold still
