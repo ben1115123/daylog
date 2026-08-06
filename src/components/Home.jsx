@@ -12,6 +12,7 @@ import AmountInput from './AmountInput.jsx'
 import { DonutChart } from './Spending.jsx'
 import { useStaggeredEntries } from '../hooks/useStaggeredEntries.js'
 import { useCountUp } from '../hooks/useCountUp.js'
+import useDragDismiss from '../hooks/useDragDismiss.js'
 import './Home.css'
 
 /* ── Shared-element expand transition (FLIP) ──────────── */
@@ -29,19 +30,30 @@ function useExpand() {
 
   const close = useCallback(() => {
     setPhase('closing')
-    setTimeout(() => setPhase('closed'), 460)
+    /* Must outlast the .closing transition in Home.css (280ms). */
+    setTimeout(() => setPhase('closed'), 300)
   }, [])
+
+  const { handlers: dragHandlers, offset: dragOffset, dragging } = useDragDismiss({
+    axis: 'y',
+    threshold: 80,
+    onDismiss: close,
+  })
 
   let overlayStyle = null
   if (phase === 'opening') {
     overlayStyle = { top: rectRef.current.top, left: rectRef.current.left, width: rectRef.current.width, height: rectRef.current.height, borderRadius: '16px', transition: 'none' }
   } else if (phase === 'open') {
-    overlayStyle = { top: 0, left: 0, width: '100%', height: '100%', borderRadius: 0 }
+    overlayStyle = {
+      top: 0, left: 0, width: '100%', height: '100%', borderRadius: 0,
+      transform: dragOffset ? `translateY(${dragOffset}px)` : undefined,
+      transition: dragging ? 'none' : undefined,
+    }
   } else if (phase === 'closing') {
     overlayStyle = { top: rectRef.current.top, left: rectRef.current.left, width: rectRef.current.width, height: rectRef.current.height, borderRadius: '16px' }
   }
 
-  return { ref, phase, open, close, overlayStyle }
+  return { ref, phase, open, close, overlayStyle, dragHandlers, dragOffset }
 }
 
 /* ── Spending summary mini content (closed card + pinned overlay state) ── */
@@ -569,7 +581,9 @@ export default function Home({ showToast, onLogged }) {
         </div>
 
         <div className="spend-overlay-full" style={{ opacity: spend.phase === 'open' ? 1 : 0, pointerEvents: spend.phase === 'open' ? 'auto' : 'none' }}>
-          <button className="spend-back" onClick={spend.close}><BackIcon /> back</button>
+          <div className="overlay-drag-region" {...spend.dragHandlers}>
+            <button className="spend-back" onClick={spend.close}><BackIcon /> back</button>
+          </div>
 
           {(() => {
             const data = spendTabs?.[spendTab]
@@ -709,7 +723,9 @@ export default function Home({ showToast, onLogged }) {
         </div>
 
         <div className="cal-overlay-full" style={{ opacity: cal.phase === 'open' ? 1 : 0, pointerEvents: cal.phase === 'open' ? 'auto' : 'none' }}>
-          <button className="cal-back" onClick={cal.close}><BackIcon /> back</button>
+          <div className="overlay-drag-region" {...cal.dragHandlers}>
+            <button className="cal-back" onClick={cal.close}><BackIcon /> back</button>
+          </div>
           <div className="cal-overlay-body">
             <Calendar showToast={showToast} />
           </div>
