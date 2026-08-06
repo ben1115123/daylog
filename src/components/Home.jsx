@@ -11,6 +11,7 @@ import EditEntrySheet from './EditEntrySheet.jsx'
 import AmountInput from './AmountInput.jsx'
 import { DonutChart } from './Spending.jsx'
 import { useStaggeredEntries } from '../hooks/useStaggeredEntries.js'
+import { useCountUp } from '../hooks/useCountUp.js'
 import './Home.css'
 
 /* ── Shared-element expand transition (FLIP) ──────────── */
@@ -45,10 +46,11 @@ function useExpand() {
 
 /* ── Spending summary mini content (closed card + pinned overlay state) ── */
 function SpendMini({ data, label, budget }) {
+  const animTotal = useCountUp(data ? data.total : 0)
   if (!data) return <div className="loading-wrap"><div className="spinner"/></div>
   const savedPositive = data.saved >= 0
   const pct = budget > 0 ? Math.min(100, Math.round((data.total / budget) * 100)) : 0
-  const amount = formatRMParts(data.total)
+  const amount = formatRMParts(animTotal)
   return (
     <div className="spend-mini">
       <div className="spend-mini-pill">{budget > 0 ? `${pct}%` : '—'}</div>

@@ -464,9 +464,9 @@ export default function Spending({ showToast }) {
   )
   const runningTotal = savingsHistory.reduce((s, m) => s + Math.max(0, m.saved), 0)
 
-  const animTotal     = useCountUp(loadingData ? 0 : total, 1200)
-  const animRemaining = useCountUp(loadingData ? 0 : Math.abs(remaining), 1200)
-  const animPct       = useCountUp(loadingData ? 0 : pct, 1200)
+  const animTotal     = useCountUp(loadingData ? 0 : total)
+  const animRemaining = useCountUp(loadingData ? 0 : Math.abs(remaining))
+  const animPct       = useCountUp(loadingData ? 0 : pct)
   const isVisible     = useStaggeredEntries(loadingData ? [] : expenses)
 
   const ChevL = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
