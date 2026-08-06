@@ -9,6 +9,7 @@ import Sheet from './Sheet.jsx'
 import Calendar from './Calendar.jsx'
 import EditEntrySheet from './EditEntrySheet.jsx'
 import AmountInput from './AmountInput.jsx'
+import Skeleton from './Skeleton.jsx'
 import { DonutChart } from './Spending.jsx'
 import { useStaggeredEntries } from '../hooks/useStaggeredEntries.js'
 import { useCountUp } from '../hooks/useCountUp.js'
@@ -59,7 +60,14 @@ function useExpand() {
 /* ── Spending summary mini content (closed card + pinned overlay state) ── */
 function SpendMini({ data, label, budget }) {
   const animTotal = useCountUp(data ? data.total : 0)
-  if (!data) return <div className="loading-wrap"><div className="spinner"/></div>
+  if (!data) return (
+    <div className="spend-mini">
+      <div className="spend-mini-label"><Skeleton w={64} h={15} /></div>
+      <div className="big-number spend-mini-amount"><Skeleton w={150} h={40} /></div>
+      <div className="spend-mini-track"><Skeleton w="100%" h={4} r={99} /></div>
+      <div className="spend-mini-foot"><Skeleton w={100} h={19.5} /></div>
+    </div>
+  )
   const savedPositive = data.saved >= 0
   const pct = budget > 0 ? Math.min(100, Math.round((data.total / budget) * 100)) : 0
   const amount = formatRMParts(animTotal)
@@ -507,7 +515,20 @@ export default function Home({ showToast, onLogged }) {
       <div className="home-section" style={{ marginTop: 24 }}>
         <div className="section-label">Recent</div>
         {loadingData ? (
-          <div className="loading-wrap"><div className="spinner"/></div>
+          <div className="card">
+            {/* refreshRecent caps `recent` at 6 (.slice(0, 6)) — matching that
+                cap here, rather than an arbitrary smaller count, is what keeps
+                this zero-shift once real rows land. */}
+            {[0, 1, 2, 3, 4, 5].map(i => (
+              <div key={i} className={`entry-row${i < 5 ? ' bordered' : ''}`}>
+                <Skeleton w={30} h={30} />
+                <div className="entry-body">
+                  <Skeleton w="55%" h={21} />
+                  <Skeleton w="30%" h={16.5} style={{ marginTop: 2 }} />
+                </div>
+              </div>
+            ))}
+          </div>
         ) : recent.length === 0 ? (
           <div className="empty">nothing logged yet</div>
         ) : (
@@ -587,7 +608,58 @@ export default function Home({ showToast, onLogged }) {
 
           {(() => {
             const data = spendTabs?.[spendTab]
-            if (!data) return <div className="loading-wrap"><div className="spinner"/></div>
+            /* This branch is unreachable in the brief's description ("upcoming
+               pills") — that's a different part of the screen with no loading
+               state of its own. This is the real `.loading-wrap` that lived at
+               this line: the per-tab data inside the spending overlay. See the
+               task report for the reasoning. */
+            if (!data) return (
+              <>
+                <div className="spend-overlay-header">
+                  <div className="big-number spend-overlay-amount"><Skeleton w={170} h={40} /></div>
+                  <div className="spend-overlay-saved"><Skeleton w={110} h={18} /></div>
+                </div>
+
+                <div className="spend-tabs">
+                  {SPEND_TABS.map(([key]) => (
+                    <div key={key} className="spend-tab"><Skeleton w="100%" h={14} /></div>
+                  ))}
+                </div>
+
+                <div className="spend-overlay-donut">
+                  <Skeleton w={150} h={150} r={75} />
+                </div>
+
+                {/* Category count varies month to month (0 to ~18) — this
+                    can't be pixel-matched the way the other three skeletons
+                    are. 5 reflects a representative category count; see the
+                    task report for the residual layout-shift risk this
+                    carries when a month's category count differs. */}
+                <div className="spend-overlay-bars">
+                  {[0, 1, 2, 3, 4].map(i => (
+                    <div key={i} className="spend-bar-row">
+                      <div className="spend-bar-label"><Skeleton w={70} h={18} /></div>
+                      <div className="spend-bar-track"><Skeleton w="100%" h={5} r={99} /></div>
+                      <Skeleton w={50} h={11} />
+                    </div>
+                  ))}
+                </div>
+
+                <div className="spend-stat-grid">
+                  {[0, 1, 2, 3].map(i => (
+                    <div key={i} className="spend-stat-cell">
+                      <div className="spend-stat-label"><Skeleton w={50} h={13.5} /></div>
+                      <div className="spend-stat-val"><Skeleton w={64} h={27} /></div>
+                      {/* Matches "Biggest", the one stat cell with a sub-line
+                          when the month has at least one expense — mirrored
+                          here so the grid's first row doesn't grow when real
+                          data lands. */}
+                      {i === 0 && <div className="spend-stat-sub"><Skeleton w={70} h={15} /></div>}
+                    </div>
+                  ))}
+                </div>
+              </>
+            )
             const savedPositive = data.saved >= 0
             return (
               <>

@@ -5,6 +5,7 @@ import { todayISO, shiftISO, parseISODate, monthKey, shiftMonth } from '../lib/d
 import DLMark from './DLMark.jsx'
 import MerchantList from './MerchantList.jsx'
 import InsightsMonthDetail from './InsightsMonthDetail.jsx'
+import Skeleton from './Skeleton.jsx'
 import './Insights.css'
 
 /* ── Income vs Expenses dual bar chart ───────────────── */
@@ -221,14 +222,6 @@ export default function Insights({ showToast }) {
     return { from: shiftISO(end, -(streak - 1)), to: end }
   }, [streak])
 
-  if (loadingData) return (
-    <div className="screen">
-      <div className="loading-wrap" style={{ height: '100dvh' }}>
-        <div className="spinner"/>
-      </div>
-    </div>
-  )
-
   return (
     <div className="screen">
       <div className="screen-header">
@@ -241,8 +234,25 @@ export default function Insights({ showToast }) {
       <div className="section" >
         <div className="section-label">Spending trend</div>
         <div className="card" style={{ padding: '20px 20px 16px' }}>
-          <TrendChart months={recentMonths} selected={detailIndex} onSelect={setDetailIndex} />
-          <div className="trend-hint">tap a month for the breakdown</div>
+          {loadingData ? (
+            <>
+              {/* aspectRatio mirrors the real <svg>'s viewBox (300 x 118) so
+                  this matches at any card width. The wrapper's paddingBottom
+                  makes up for the baseline gap an inline-level <svg> leaves
+                  beneath itself that a block-level skeleton div doesn't —
+                  padding rather than margin so it can't collapse into
+                  .trend-hint's own margin-top below it. */}
+              <div style={{ paddingBottom: 6 }}>
+                <Skeleton w="100%" h="auto" style={{ aspectRatio: '300 / 118' }} />
+              </div>
+              <div className="trend-hint"><Skeleton w={140} h={13.5} style={{ margin: '0 auto' }} /></div>
+            </>
+          ) : (
+            <>
+              <TrendChart months={recentMonths} selected={detailIndex} onSelect={setDetailIndex} />
+              <div className="trend-hint">tap a month for the breakdown</div>
+            </>
+          )}
         </div>
       </div>
 
@@ -250,20 +260,46 @@ export default function Insights({ showToast }) {
       <div className="section" >
         <div className="section-label">Income vs expenses</div>
         <div className="card" style={{ padding: '20px 20px 16px' }}>
-          <div style={{ display: 'flex', gap: 16, marginBottom: 12 }}>
-            <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontFamily: 'JetBrains Mono', fontSize: 10, color: 'var(--text3)' }}>
-              <span style={{ width: 8, height: 8, borderRadius: 2, background: '#58a6ff', display: 'inline-block' }}/>income
-            </span>
-            <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontFamily: 'JetBrains Mono', fontSize: 10, color: 'var(--text3)' }}>
-              <span style={{ width: 8, height: 8, borderRadius: 2, background: 'var(--red)', opacity: 0.6, display: 'inline-block' }}/>expenses
-            </span>
-          </div>
-          <IncomeExpensesChart months={incomeExpensesMonths} />
+          {loadingData ? (
+            <>
+              <div style={{ display: 'flex', gap: 16, marginBottom: 12 }}>
+                <Skeleton w={54} h={15} />
+                <Skeleton w={64} h={15} />
+              </div>
+              <Skeleton w="100%" h="auto" style={{ aspectRatio: '300 / 120', marginBottom: 6 }} />
+            </>
+          ) : (
+            <>
+              <div style={{ display: 'flex', gap: 16, marginBottom: 12 }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontFamily: 'JetBrains Mono', fontSize: 10, color: 'var(--text3)' }}>
+                  <span style={{ width: 8, height: 8, borderRadius: 2, background: '#58a6ff', display: 'inline-block' }}/>income
+                </span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontFamily: 'JetBrains Mono', fontSize: 10, color: 'var(--text3)' }}>
+                  <span style={{ width: 8, height: 8, borderRadius: 2, background: 'var(--red)', opacity: 0.6, display: 'inline-block' }}/>expenses
+                </span>
+              </div>
+              <IncomeExpensesChart months={incomeExpensesMonths} />
+            </>
+          )}
         </div>
       </div>
 
       {/* ── Stat pair row ─────────────────────────────── */}
       <div className="section" >
+        {loadingData ? (
+          <div className="stat-pair">
+            <div className="stat-card card">
+              <div className="stat-label"><Skeleton w={90} h={12} /></div>
+              <div className="stat-value"><Skeleton w={50} h={26} /></div>
+              <div className="stat-sub"><Skeleton w={60} h={14} /></div>
+            </div>
+            <div className="stat-card card">
+              <div className="stat-label"><Skeleton w={90} h={12} /></div>
+              <div className="stat-value"><Skeleton w={50} h={26} /></div>
+              <div className="stat-sub"><Skeleton w={60} h={14} /></div>
+            </div>
+          </div>
+        ) : (
         <div className="stat-pair">
           <button
             className={`stat-card card${openStat === 'day' ? ' open' : ''}`}
@@ -288,6 +324,7 @@ export default function Insights({ showToast }) {
             <div className="stat-sub">{streak === 1 ? 'day' : 'days'}</div>
           </button>
         </div>
+        )}
 
         {/* Expands below the pair rather than inside a card, so neither card
             changes size and the grid never reflows. */}
@@ -330,12 +367,18 @@ export default function Insights({ showToast }) {
       </div>
 
       {/* ── Top merchants ─────────────────────────────── */}
+      {/* Unbounded list length — appended below the skeletoned cards above once
+          data lands, rather than skeletoned itself, so nothing already on
+          screen moves. */}
+      {!loadingData && (
       <div className="section" >
         <div className="section-label">Top merchants this month</div>
         <MerchantList rows={merchants} total={totalForMerchants} expenses={expenses} idPrefix="overview:" />
       </div>
+      )}
 
       {/* ── Month comparison ──────────────────────────── */}
+      {!loadingData && (
       <div className="section">
         <div className="section-label">Month comparison</div>
         <div className="card month-compare-card">
@@ -360,6 +403,7 @@ export default function Insights({ showToast }) {
           </div>
         </div>
       </div>
+      )}
 
       {detailIndex !== null && recentMonths[detailIndex] && (
         <InsightsMonthDetail
