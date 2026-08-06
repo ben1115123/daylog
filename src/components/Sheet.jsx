@@ -2,18 +2,20 @@ import { useState, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import './Sheet.css'
 import { XIcon } from '../Icons.jsx'
+import useDragDismiss from '../hooks/useDragDismiss.js'
 
-const DISMISS_THRESHOLD = 80
 // iOS shows a ‹ › Done accessory toolbar above the keyboard for text/number
 // inputs — it isn't reflected in visualViewport, so pad for it manually.
 const KEYBOARD_ACCESSORY_HEIGHT = 44
 
 export default function Sheet({ title, onClose, children, footer, className = '' }) {
-  const [dragY, setDragY] = useState(0)
-  const [dragging, setDragging] = useState(false)
+  const { handlers: dragHandlers, offset: dragY, dragging } = useDragDismiss({
+    axis: 'y',
+    threshold: 80,
+    onDismiss: onClose,
+  })
   const [kbOffset, setKbOffset] = useState(0)
   const [vvHeight, setVvHeight] = useState(() => window.visualViewport?.height ?? window.innerHeight)
-  const startY = useRef(0)
   const sheetRef = useRef(null)
 
   useEffect(() => {
@@ -48,21 +50,6 @@ export default function Sheet({ title, onClose, children, footer, className = ''
     return () => el.removeEventListener('focusin', onFocusIn)
   }, [])
 
-  const onTouchStart = (e) => {
-    startY.current = e.touches[0].clientY
-    setDragging(true)
-  }
-  const onTouchMove = (e) => {
-    if (!dragging) return
-    const delta = e.touches[0].clientY - startY.current
-    if (delta > 0) setDragY(delta)
-  }
-  const onTouchEnd = () => {
-    setDragging(false)
-    if (dragY > DISMISS_THRESHOLD) onClose()
-    setDragY(0)
-  }
-
   const keyboardOpen = kbOffset > 0
   const accessory = keyboardOpen ? KEYBOARD_ACCESSORY_HEIGHT : 0
   const transform = `translateY(${dragY}px)`
@@ -83,12 +70,7 @@ export default function Sheet({ title, onClose, children, footer, className = ''
         style={sheetStyle}
         onClick={e => e.stopPropagation()}
       >
-        <div
-          className="sheet-drag-region"
-          onTouchStart={onTouchStart}
-          onTouchMove={onTouchMove}
-          onTouchEnd={onTouchEnd}
-        >
+        <div className="sheet-drag-region" {...dragHandlers}>
           <div className="sheet-handle" />
           <div className="sheet-header">
             <div className="sheet-title">{title}</div>

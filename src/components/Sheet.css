@@ -36,6 +36,8 @@
   flex-shrink: 0;
 }
 
+/* touch-action: none is load-bearing — pointer events only deliver pointermove
+   for a gesture the browser has not already claimed as a scroll. */
 .sheet-drag-region { touch-action: none; }
 
 .sheet-header {
