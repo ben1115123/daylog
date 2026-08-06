@@ -1,13 +1,11 @@
-import { useRef, useState, useEffect, useMemo } from 'react'
+import { useRef, useEffect, useMemo, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { CAT_META, formatRM, monthLabel } from '../utils.js'
 import { CAT_ICONS, BackIcon } from '../Icons.jsx'
 import { parseISODate } from '../lib/dates.js'
 import MerchantList from './MerchantList.jsx'
+import useDragDismiss from '../hooks/useDragDismiss.js'
 
-/* Below this the gesture is a tap, not a swipe — and until it is exceeded we
-   don't know whether the finger is going sideways or scrolling the pane. */
-const LOCK_SLOP = 8
 /* Past a fifth of the pane (capped) the month commits on release. */
 const COMMIT_FRACTION = 0.2
 const COMMIT_MAX = 64
@@ -92,9 +90,6 @@ function MonthPane({ month, expenses, active }) {
 }
 
 export default function InsightsMonthDetail({ months, index, expensesFor, onIndex, onClose }) {
-  const [drag, setDrag] = useState(0)
-  const [dragging, setDragging] = useState(false)
-  const gesture = useRef(null)
   const viewportRef = useRef(null)
 
   const month = months[index]
@@ -109,40 +104,24 @@ export default function InsightsMonthDetail({ months, index, expensesFor, onInde
     return () => window.removeEventListener('keydown', onKey)
   }, [index, months.length, onIndex, onClose])
 
-  const onPointerDown = e => {
-    if (e.pointerType === 'mouse' && e.button !== 0) return
-    gesture.current = { x: e.clientX, y: e.clientY, axis: null }
-  }
+  /* Rubber-band past the first and last month instead of letting the track
+     drag freely off its own ends. */
+  const clamp = useCallback(raw => {
+    const atStart = index === 0 && raw > 0
+    const atEnd = index === months.length - 1 && raw < 0
+    return atStart || atEnd ? raw * OVERSCROLL : raw
+  }, [index, months.length])
 
-  const onPointerMove = e => {
-    const g = gesture.current
-    if (!g) return
-    const dx = e.clientX - g.x
-    const dy = e.clientY - g.y
-    if (g.axis === null) {
-      if (Math.abs(dx) < LOCK_SLOP && Math.abs(dy) < LOCK_SLOP) return
-      // Axis is locked once and never revisited, so a diagonal drift part-way
-      // through a vertical scroll can't start yanking the month sideways.
-      g.axis = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y'
-      if (g.axis === 'x') setDragging(true)
-    }
-    if (g.axis !== 'x') return
-    const atStart = index === 0 && dx > 0
-    const atEnd = index === months.length - 1 && dx < 0
-    setDrag(atStart || atEnd ? dx * OVERSCROLL : dx)
-  }
-
-  const endGesture = () => {
-    const g = gesture.current
-    gesture.current = null
-    setDragging(false)
-    if (!g || g.axis !== 'x') { setDrag(0); return }
-    const width = viewportRef.current?.clientWidth || 1
-    const commit = Math.min(COMMIT_MAX, width * COMMIT_FRACTION)
-    if (drag <= -commit && index < months.length - 1) onIndex(index + 1)
-    else if (drag >= commit && index > 0) onIndex(index - 1)
-    setDrag(0)
-  }
+  const { handlers: dragHandlers, offset: drag, dragging } = useDragDismiss({
+    axis: 'x',
+    clamp,
+    onEnd: ({ offset }) => {
+      const width = viewportRef.current?.clientWidth || 1
+      const commit = Math.min(COMMIT_MAX, width * COMMIT_FRACTION)
+      if (offset <= -commit && index < months.length - 1) onIndex(index + 1)
+      else if (offset >= commit && index > 0) onIndex(index - 1)
+    },
+  })
 
   return createPortal(
     /* Portalled to <body> for the same reason Sheet is: .screen runs a
@@ -176,10 +155,7 @@ export default function InsightsMonthDetail({ months, index, expensesFor, onInde
       <div
         className="md-viewport"
         ref={viewportRef}
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={endGesture}
-        onPointerCancel={endGesture}
+        {...dragHandlers}
       >
         <div
           className={`md-track${dragging ? ' dragging' : ''}`}
