@@ -75,20 +75,23 @@ export default function useDragDismiss({
     apply(raw)
   }, [axis, apply])
 
-  const onPointerUp = useCallback(() => {
+  const onPointerUp = useCallback((e) => {
     const g = gesture.current
+    if (!g || g.pointerId !== e.pointerId) return
     gesture.current = null
     setDragging(false)
     const final = offsetRef.current
     apply(0)
-    if (!g || g.axis !== axis) return
+    if (g.axis !== axis) return
     if (onEnd) { onEnd({ offset: final }); return }
     if (axis === 'y' ? final > threshold : Math.abs(final) > threshold) onDismiss?.()
   }, [axis, apply, onEnd, onDismiss, threshold])
 
   /* Browser-initiated gesture interruption (e.g. iOS edge-swipe-back, system gesture)
      aborts without calling callbacks. Only the pointerup path may dismiss. */
-  const onPointerCancel = useCallback(() => {
+  const onPointerCancel = useCallback((e) => {
+    const g = gesture.current
+    if (!g || g.pointerId !== e.pointerId) return
     gesture.current = null
     setDragging(false)
     apply(0)
@@ -98,7 +101,7 @@ export default function useDragDismiss({
     handlers: enabled
       ? { onPointerDown, onPointerMove, onPointerUp, onPointerCancel }
       : {},
-    /* Under reduced motion nothing follows the finger — but `end` still reads
+    /* Under reduced motion nothing follows the finger — but `onPointerUp` still reads
        the real offset from the ref, so a drag past the threshold still
        dismisses. The gesture works; only the animation is gone. */
     offset: prefersReducedMotion() ? 0 : offset,
