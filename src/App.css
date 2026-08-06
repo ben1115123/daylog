@@ -35,7 +35,9 @@
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
+  transition: opacity 0.1s ease;
 }
+.app-body.tab-fading { opacity: 0; }
 
 /* ── Bottom nav ────────────────────────────────────── */
 .bottom-nav {
@@ -178,6 +180,7 @@
 @media (prefers-reduced-motion: reduce) {
   .card { transition: none; }
   .card:active { transform: none; }
+  .app-body { transition: none; }
 }
 
 .card + .card { margin-top: 8px; }

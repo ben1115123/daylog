@@ -12,6 +12,9 @@ import { formatRM } from './utils.js'
 import { toISODate, monthRange, todayISO } from './lib/dates.js'
 import './App.css'
 
+const prefersReducedMotion = () =>
+  window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
+
 async function checkRecurring(showToast) {
   /* Every value below comes from the same local-time source. Previously the
      "already logged this month?" window was local while the date stamped on the
@@ -97,6 +100,7 @@ async function migrateFromLocalStorage(showToast) {
 export default function App() {
   const [splashDone, setSplashDone] = useState(false)
   const [tab, setTab]               = useState('home')
+  const [activeTab, setActiveTab]   = useState('home')
   const [toast, setToast]           = useState(null)
   const [refresh, setRefresh]       = useState(0)
   const [isOffline, setIsOffline]   = useState(false)
@@ -204,7 +208,33 @@ export default function App() {
     setRefresh(r => r + 1)
   }
 
-  const handleTabChange = (id) => { setTab(id) }
+  const [tabFading, setTabFading] = useState(false)
+  const fadeTimer = useRef(null)
+
+  /* Sequential fade rather than a true crossfade: a real crossfade needs both
+     screens mounted at once, which fires both components' Supabase fetches on
+     every tab press. At 180ms total the two read the same.
+
+     activeTab (pill) and tab (rendered body) are deliberately separate: the
+     pill jumps to the tapped id immediately so the tap feels acknowledged,
+     while tab — and therefore the body content — only catches up once the
+     fade-out finishes. The guard below compares against activeTab, not tab,
+     so a rapid tap back to the tab that's still mid-fade-out cancels and
+     reverses cleanly instead of no-op'ing against a body that hasn't moved
+     yet. */
+  const handleTabChange = (id) => {
+    if (id === activeTab) return
+    setActiveTab(id)
+    if (prefersReducedMotion()) { setTab(id); return }
+    clearTimeout(fadeTimer.current)
+    setTabFading(true)
+    fadeTimer.current = setTimeout(() => {
+      setTab(id)
+      setTabFading(false)
+    }, 80)
+  }
+
+  useEffect(() => () => clearTimeout(fadeTimer.current), [])
 
   const tabs = [
     { id: 'home',     label: 'Log',      Icon: NavLogIcon },
@@ -229,7 +259,7 @@ export default function App() {
   return (
     <div className="app" ref={appRef}>
       {isOffline && <div className="offline-badge">offline</div>}
-      <div className="app-body">
+      <div className={`app-body${tabFading ? ' tab-fading' : ''}`}>
         {tab === 'home'     && <Home     key={refresh} showToast={showToast} onLogged={onLogged} />}
         {tab === 'insights' && <Insights key={refresh} showToast={showToast} />}
         {tab === 'settings' && <Settings key={refresh} showToast={showToast} />}
@@ -238,7 +268,7 @@ export default function App() {
         {tabs.map(({ id, label, Icon }) => (
           <button
             key={id}
-            className={`nav-item ${tab === id ? 'active' : ''}`}
+            className={`nav-item ${activeTab === id ? 'active' : ''}`}
             onClick={() => handleTabChange(id)}
             aria-label={label}
           >
