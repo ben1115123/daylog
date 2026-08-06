@@ -441,11 +441,28 @@ export default function Home({ showToast, onLogged }) {
         <div className="section-label">Upcoming</div>
         <div
           ref={cal.ref}
-          className={`card upcoming-strip${upcoming.length === 0 ? ' upcoming-strip-empty' : ''}`}
+          className={`card upcoming-strip${!loadingData && upcoming.length === 0 ? ' upcoming-strip-empty' : ''}`}
           style={{ visibility: cal.phase === 'closed' ? 'visible' : 'hidden' }}
           onClick={cal.phase === 'closed' ? cal.open : undefined}
         >
-          {upcoming.length === 0 ? (
+          {loadingData ? (
+            /* The strip scrolls horizontally, so its height is one pill's
+               height regardless of how many pills land — three shells is
+               simply what fits the 390px viewport, not a count guess.
+               Bar heights are the real line boxes: the global line-height is
+               1.5, so .upcoming-pill-date's 9px renders 13.5px tall and
+               .upcoming-pill-title's 13px renders 19.5px. Wrapping the bars in
+               the real classes lets the date's own margin-bottom do the
+               spacing instead of us re-deriving it. */
+            <div className="upcoming-strip-row">
+              {[0, 1, 2].map(i => (
+                <div key={i} className="upcoming-pill">
+                  <div className="upcoming-pill-date"><Skeleton w={42} h={13.5} /></div>
+                  <div className="upcoming-pill-title"><Skeleton w={78} h={19.5} /></div>
+                </div>
+              ))}
+            </div>
+          ) : upcoming.length === 0 ? (
             <div className="empty">no upcoming events</div>
           ) : (
             <div className="upcoming-strip-row">
