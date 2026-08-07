@@ -100,7 +100,16 @@ async function recordSyncOutcome(id, message) {
  * Entries are dropped once settled. That is safe rather than racy: the
  * promise only resolves after the `apple_uid` write-back has been awaited,
  * so a `deleteEvent` that arrives too late to find the entry finds the
- * column populated instead, and the fallback select is correct again. */
+ * column populated instead, and the fallback select is correct again.
+ *
+ * KNOWN RESIDUAL — this Map is in memory, so it does not survive a reload or
+ * an iOS PWA suspend. If the tab dies between the CalDAV PUT succeeding and
+ * the `apple_uid` write-back landing, the registry is gone AND the column is
+ * null, and a later delete takes the fallback branch and orphans exactly as
+ * it did before this fix. The window is small and no in-memory mechanism can
+ * close it; closing it properly means a reconciliation sweep, or minting a
+ * deterministic uid client-side and writing it BEFORE the PUT so the row
+ * always knows what to delete. Not attempted here. */
 const pendingAppleAdd = new Map()
 
 /* Never rejects and never resolves to undefined — `deleteEvent` awaits this

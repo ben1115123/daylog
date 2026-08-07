@@ -403,6 +403,12 @@ export default function Home({ showToast, onLogged }) { // eslint-disable-line n
              swapped it in. `dropProvisional(list, null)` matches nothing, so
              the null case costs nothing. */
           setRecent(list => dropProvisional(dropProvisional(list, id), realId))
+          /* The Upcoming strip needs the same drop. It is otherwise only
+             corrected by the refetch below, which now waits on the CalDAV
+             delete — so an undone event would sit there, tappable, for ~2s. */
+          if (type === 'event') {
+            setUpcoming(list => dropProvisional(dropProvisional(list, id), realId))
+          }
           try {
             if (realId) await ADDERS[type].remove(realId)
           } catch (err) {
