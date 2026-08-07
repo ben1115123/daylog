@@ -147,6 +147,9 @@
 }
 .ev-btn:hover { color: var(--text2); }
 .ev-btn.del:hover { color: var(--red); }
+/* A row whose write has not landed yet: visibly inert, and no hover lift. */
+.ev-btn:disabled { opacity: 0.35; cursor: default; }
+.ev-btn:disabled:hover { color: var(--text3); }
 
 /* ── Event edit form ───────────────────────────────── */
 .ev-edit-wrap { padding: 14px 16px; }

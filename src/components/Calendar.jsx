@@ -5,7 +5,8 @@ import { RepeatIcon, PlusIcon, SyncFailedIcon } from '../Icons.jsx'
 import { loadHolidaysForCalendar } from '../holidays.js'
 import { todayISO, shiftISO, parseISODate, daysBetween } from '../lib/dates.js'
 import { tempId, insertProvisional, commitProvisional, dropProvisional } from '../lib/optimistic.js'
-import { undoTarget, UNDO_TIMED_OUT } from '../lib/undoDeadline.js'
+import { undoTarget, UNDO_TIMED_OUT, UNDO_STALLED_MSG } from '../lib/undoDeadline.js'
+import { beginFetch, markUndone, withoutUndone, releaseUndone } from '../lib/undoneRows.js'
 import DLMark from './DLMark.jsx'
 import Sheet from './Sheet.jsx'
 import ConfirmDialog from './ConfirmDialog.jsx'
@@ -303,8 +304,16 @@ export default function Calendar({ showToast }) {
 
   const todayStr = todayISO()
 
-  const loadEvents = useCallback(async () => {
-    const evs = await db.getEvents()
+  /* `authoritative` as in Home's refreshRecent: passed only by an UNDO whose
+     DELETE has resolved, so this fetch is the truth about those ids. Calendar
+     is the worst case for the race it guards — `db.deleteEvent` reads
+     `apple_uid` before deleting, which pushes the DELETE a whole round trip
+     later than the refetch racing it. See undoneRows.js. */
+  const loadEvents = useCallback(async ({ authoritative } = {}) => {
+    const fetchSeq = beginFetch()
+    const fetched = await db.getEvents()
+    if (authoritative?.length) releaseUndone(fetchSeq, authoritative)
+    const evs = withoutUndone(fetched, fetchSeq)
     /* Same guard as Home's refreshRecent: a provisional event is not in the
        database yet, so a wholesale replace would drop it and it would pop back
        when its write commits. Order does not matter here — expandEvents sorts
@@ -393,12 +402,20 @@ export default function Calendar({ showToast }) {
       onClick: async () => {
         const realId = await undoTarget(provisional)
         if (realId === UNDO_TIMED_OUT) {
-          showToast('Still saving — remove it from the list in a moment', 'error')
+          showToast(UNDO_STALLED_MSG, 'error')
           return
         }
+        /* Suppress before dropping — the refetch at the end of handleAddEvent
+           is already in flight and still counts this event. See
+           undoneRows.js. */
+        markUndone(id, realId)
         setEvents(list => dropProvisional(dropProvisional(list, id), realId))
-        if (realId) await db.deleteEvent(realId)
-        await loadEvents()
+        try {
+          if (realId) await db.deleteEvent(realId)
+        } catch (err) {
+          console.error('[daylog] undo delete failed:', err)
+        }
+        await loadEvents({ authoritative: [id, realId] })
       },
     })
 
@@ -446,6 +463,13 @@ export default function Calendar({ showToast }) {
   const renderEventRow = (ev, isLast) => {
     const baseId = ev._baseId ? ev._baseId + ev.date : ev.id
     const editTarget = ev._baseId || ev.id
+    /* The sheet has just closed with the user's finger where these buttons
+       now are, and for the next 0.3-2.5s the only id this row has is a
+       `temp:` one Supabase has never seen. `db.updateEvent` / `deleteEvent`
+       swallow the error and flip the app to the offline badge, so a mistimed
+       tap would look like a lost connection for no reason. Inert until the
+       write lands. */
+    const stillWriting = !!ev.pending
 
     if (editId === editTarget) {
       const baseEvent = events.find(e => e.id === editTarget)
@@ -481,7 +505,7 @@ export default function Calendar({ showToast }) {
         </div>
         <div className="ev-actions">
           {!ev.isRecurringInstance && (
-            <button className="ev-btn" onClick={() => setEditId(editTarget)} title="Edit">
+            <button className="ev-btn" onClick={() => setEditId(editTarget)} title="Edit" disabled={stillWriting}>
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
                 <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
@@ -489,7 +513,7 @@ export default function Calendar({ showToast }) {
             </button>
           )}
           {!ev.isRecurringInstance && (
-            <button className="ev-btn" onClick={() => exportICS(ev)} title="Export .ics">
+            <button className="ev-btn" onClick={() => exportICS(ev)} title="Export .ics" disabled={stillWriting}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                 <polyline points="7 10 12 15 17 10"/>
@@ -498,7 +522,7 @@ export default function Calendar({ showToast }) {
             </button>
           )}
           {!ev.isRecurringInstance && (
-            <button className="ev-btn del" onClick={() => handleDelete(ev.id)} title="Delete">
+            <button className="ev-btn del" onClick={() => handleDelete(ev.id)} title="Delete" disabled={stillWriting}>
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
               </svg>

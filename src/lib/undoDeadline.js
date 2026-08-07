@@ -26,6 +26,12 @@ export const UNDO_DEADLINE_MS = 8000
 /** Returned instead of an id when the write has not settled in time. */
 export const UNDO_TIMED_OUT = Symbol('undo-timed-out')
 
+/* The one thing every caller must say when it sees `UNDO_TIMED_OUT`. It lives
+   here, next to the symbol, because the sentence *is* the contract two
+   paragraphs up — the row is still on screen and it is still saving. Kept in
+   one place so Home and Calendar cannot drift into describing it differently. */
+export const UNDO_STALLED_MSG = 'Still saving — remove it from the list in a moment'
+
 /**
  * `resolveUndoTarget` with a deadline.
  *

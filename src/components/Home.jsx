@@ -5,7 +5,8 @@ import { CAT_META, CATEGORIES, formatRM, formatRMParts, formatDate, formatTime }
 import { MicIcon, SendIcon, CAT_ICONS, BackIcon, SyncFailedIcon } from '../Icons.jsx'
 import { todayISO, shiftMonth } from '../lib/dates.js'
 import { tempId, insertProvisional, commitProvisional, dropProvisional } from '../lib/optimistic.js'
-import { undoTarget, UNDO_TIMED_OUT } from '../lib/undoDeadline.js'
+import { undoTarget, UNDO_TIMED_OUT, UNDO_STALLED_MSG } from '../lib/undoDeadline.js'
+import { beginFetch, markUndone, withoutUndone, releaseUndone } from '../lib/undoneRows.js'
 import DLMark from './DLMark.jsx'
 import Sheet from './Sheet.jsx'
 import Calendar from './Calendar.jsx'
@@ -108,11 +109,6 @@ const ADDERS = {
   income:  { add: d => db.addIncome(d),  remove: id => db.deleteIncome(id) },
 }
 
-/* Message for the one outcome an UNDO cannot resolve: the write is still in
-   flight past the deadline, so we do not know what to delete. The row is left
-   on screen deliberately — see undoDeadline.js. */
-const UNDO_STALLED_MSG = 'Still saving — remove it from the list in a moment'
-
 /* `onLogged` is deliberately never called from this component any more.
  *
  * App.jsx implements it as `setRefresh(r => r + 1)` and renders us as
@@ -165,7 +161,8 @@ export default function Home({ showToast, onLogged }) { // eslint-disable-line n
     const y = now.getFullYear(), m = now.getMonth()
     const { year: py, month: pm } = shiftMonth(y, m, -1)
 
-    const [thisExp, thisInc, lastExp, lastInc, allExp, allInc, recurring] = await Promise.all([
+    const fetchSeq = beginFetch()
+    const [thisExp, thisInc, lastExp, lastInc, allExpRaw, allIncRaw, recurring] = await Promise.all([
       db.getMonthExpenses(y, m),
       db.getMonthIncome(y, m),
       db.getMonthExpenses(py, pm),
@@ -177,7 +174,17 @@ export default function Home({ showToast, onLogged }) { // eslint-disable-line n
 
     setCommittedTotal(recurring.filter(r => r.active).reduce((s, r) => s + (r.amount || 0), 0))
 
-    const buildTab = (exp, inc) => {
+    /* The undo race reaches the total as well as the list: a fetch issued
+       before the UNDO's DELETE lands still counts the row, so the spending
+       card counts *up* to include an entry the user has just undone and then
+       counts back down a couple of seconds later. Same suppression, same
+       reason — see undoneRows.js. */
+    const allExp = withoutUndone(allExpRaw, fetchSeq)
+    const allInc = withoutUndone(allIncRaw, fetchSeq)
+
+    const buildTab = (fetchedExp, fetchedInc) => {
+      const exp = withoutUndone(fetchedExp, fetchSeq)
+      const inc = withoutUndone(fetchedInc, fetchSeq)
       const total       = exp.reduce((s, e) => s + (e.amount || 0), 0)
       const incomeTotal = inc.reduce((s, i) => s + (i.amount || 0), 0)
       const saved       = incomeTotal - total
@@ -243,13 +250,30 @@ export default function Home({ showToast, onLogged }) { // eslint-disable-line n
     setArcsDrawn(false)
   }, [spend.phase])
 
-  const refreshRecent = useCallback(async () => {
-    const [exp, evt, inc, evtStrip] = await Promise.all([
+  /* `authoritative` names the ids this particular refetch is allowed to settle:
+     it is passed only by an UNDO handler whose DELETE has already resolved, so
+     this fetch — and every fetch issued after it — tells the truth about them:
+     gone if the delete worked, still there if it silently did not. Released
+     before the result is applied, so a failed delete puts the row back on
+     screen rather than hiding it forever. See undoneRows.js. */
+  const refreshRecent = useCallback(async ({ authoritative } = {}) => {
+    const fetchSeq = beginFetch()
+    const [expRaw, evtRaw, incRaw, evtStripRaw] = await Promise.all([
       db.getExpenses(),
       db.getUpcomingEvents(3),
       db.getIncome(),
       db.getUpcomingEvents(5),
     ])
+    if (authoritative?.length) releaseUndone(fetchSeq, authoritative)
+
+    /* Filtered on the way out, against the number taken on the way in: the
+       fetch this guards against was issued before the row was undone and comes
+       back after. */
+    const exp      = withoutUndone(expRaw, fetchSeq)
+    const evt      = withoutUndone(evtRaw, fetchSeq)
+    const inc      = withoutUndone(incRaw, fetchSeq)
+    const evtStrip = withoutUndone(evtStripRaw, fetchSeq)
+
     const items = [
       ...exp.slice(0, 4).map(e => ({ ...e, _type: 'expense' })),
       ...evt.map(e => ({ ...e, _type: 'event' })),
@@ -354,6 +378,7 @@ export default function Home({ showToast, onLogged }) { // eslint-disable-line n
     showToast(msg, 'success', {
       label: 'UNDO',
       onClick: async () => {
+        const authoritative = []
         for (const { type, id, provisional } of created) {
           /* Resolve before deleting — UNDO can land while the write is still
              in flight, when the only id we have is one Supabase has never
@@ -361,14 +386,26 @@ export default function Home({ showToast, onLogged }) { // eslint-disable-line n
              the real one orphaned in the database. */
           const realId = await undoTarget(provisional)
           if (realId === UNDO_TIMED_OUT) { showToast(UNDO_STALLED_MSG, 'error'); continue }
+          /* Suppress before dropping. The refetch this handler's own commit
+             path started is already in flight and still counts this row; left
+             alone it lands in a couple of seconds and puts the row back. */
+          markUndone(id, realId)
+          authoritative.push(id, realId)
           /* Drop by both ids: the row still carries its temp id if the write
              has not landed, and its real one if the commit below already
              swapped it in. `dropProvisional(list, null)` matches nothing, so
              the null case costs nothing. */
           setRecent(list => dropProvisional(dropProvisional(list, id), realId))
-          if (realId) await ADDERS[type].remove(realId)
+          try {
+            if (realId) await ADDERS[type].remove(realId)
+          } catch (err) {
+            /* db.js swallows delete errors today, so this is belt and braces —
+               but a throw here must not skip the release below and strand the
+               row in a suppressed state no refetch can clear. */
+            console.error('[daylog] undo delete failed:', err)
+          }
         }
-        await refreshRecent()
+        await refreshRecent({ authoritative })
         loadSpendOverview()
       },
     })
@@ -445,9 +482,16 @@ export default function Home({ showToast, onLogged }) { // eslint-disable-line n
       onClick: async () => {
         const realId = await undoTarget(provisional)
         if (realId === UNDO_TIMED_OUT) { showToast(UNDO_STALLED_MSG, 'error'); return }
+        /* Suppress before dropping — the refetch below this handler is already
+           in flight and still counts this row. See undoneRows.js. */
+        markUndone(id, realId)
         setRecent(list => dropProvisional(dropProvisional(list, id), realId))
-        if (realId) await ADDERS.expense.remove(realId)
-        await refreshRecent()
+        try {
+          if (realId) await ADDERS.expense.remove(realId)
+        } catch (err) {
+          console.error('[daylog] undo delete failed:', err)
+        }
+        await refreshRecent({ authoritative: [id, realId] })
         loadSpendOverview()
       },
     })
