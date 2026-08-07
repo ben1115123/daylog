@@ -4,6 +4,8 @@ import { db, computeRecentMonths } from '../db.js'
 import { CAT_META, CATEGORIES, formatRM, formatRMParts, formatDate, formatTime } from '../utils.js'
 import { MicIcon, SendIcon, CAT_ICONS, BackIcon, SyncFailedIcon } from '../Icons.jsx'
 import { todayISO, shiftMonth } from '../lib/dates.js'
+import { tempId, insertProvisional, commitProvisional, dropProvisional } from '../lib/optimistic.js'
+import { undoTarget, UNDO_TIMED_OUT } from '../lib/undoDeadline.js'
 import DLMark from './DLMark.jsx'
 import Sheet from './Sheet.jsx'
 import Calendar from './Calendar.jsx'
@@ -97,7 +99,35 @@ const SPEND_TABS = [
   ['avg',       'Avg'],
 ]
 
-export default function Home({ showToast, onLogged }) {
+/* Both halves of each pair together: an UNDO has to reverse whichever add it
+   started, and pairing them here is what lets the send loop stay generic over
+   the three entry types the parser can return. */
+const ADDERS = {
+  expense: { add: d => db.addExpense(d), remove: id => db.deleteExpense(id) },
+  event:   { add: d => db.addEvent(d),   remove: id => db.deleteEvent(id) },
+  income:  { add: d => db.addIncome(d),  remove: id => db.deleteIncome(id) },
+}
+
+/* Message for the one outcome an UNDO cannot resolve: the write is still in
+   flight past the deadline, so we do not know what to delete. The row is left
+   on screen deliberately — see undoDeadline.js. */
+const UNDO_STALLED_MSG = 'Still saving — remove it from the list in a moment'
+
+/* `onLogged` is deliberately never called from this component any more.
+ *
+ * App.jsx implements it as `setRefresh(r => r + 1)` and renders us as
+ * `<Home key={refresh}>` — calling it does not refresh Home, it *remounts*
+ * Home. That is fatal to everything below: the provisional row is thrown away
+ * the instant it is inserted, the UNDO closure is left holding setters from a
+ * destroyed instance, and `useCountUp` restarts from 0 so the spending total
+ * snaps up from zero instead of easing from the old figure to the new one.
+ *
+ * Everything it used to buy us is now done locally and precisely:
+ * `refreshRecent()` for the list, `loadSpendOverview()` for the total. The
+ * prop is kept on the signature so App's contract is unchanged; the other two
+ * tabs are conditionally rendered and so remount on tab switch regardless.
+ */
+export default function Home({ showToast, onLogged }) { // eslint-disable-line no-unused-vars
   const settings = db.getSettings()
   const userName = settings.name || 'You'
 
@@ -227,7 +257,25 @@ export default function Home({ showToast, onLogged }) {
     ]
       .sort((a, b) => new Date(b.created_at || b.createdAt) - new Date(a.created_at || a.createdAt))
       .slice(0, 6)
-    setRecent(items)
+    /* A provisional row is not in the database yet, so replacing the list
+       wholesale would drop it and it would pop back a moment later when its
+       write commits. Keep every row still carrying a pending promise, ahead of
+       the fetched ones — that is where the newest entry belongs anyway.
+       Committed rows have no `pending` and so are not kept twice: by then the
+       fetch returns them itself.
+
+       `upcoming` gets no such guard: nothing inserts a provisional row into
+       it. Events logged here go into `recent` only, and the strip catches up
+       on the refetch that follows the commit.
+
+       All three setters stay in one synchronous block after the single await,
+       so React still batches them into a single render — the skeletons must
+       not clear a tick before the rows they are standing in for. */
+    setRecent(prev => {
+      const fetchedIds = new Set(items.map(it => it.id))
+      const inFlight = prev.filter(it => it.pending && !fetchedIds.has(it.id))
+      return [...inFlight, ...items]
+    })
     setUpcoming(evtStrip)
     setLoadingData(false)
   }, [])
@@ -265,32 +313,91 @@ export default function Home({ showToast, onLogged }) {
     if (!input || loading) return
     setText('')
     setLoading(true)
+
+    /* The parse gets its own try: only it can fail with "check API key". The
+       writes below report their own failures, and folding them in here made a
+       dropped Supabase insert look like a bad API key. */
+    let parsed
     try {
-      const parsed = await parseInput(input)
-      const created = []
-      if (parsed.expense) created.push(['expense', await db.addExpense(parsed.expense)])
-      if (parsed.event)   created.push(['event',   await db.addEvent(parsed.event)])
-      if (parsed.income)  created.push(['income',  await db.addIncome(parsed.income)])
-      if (created.length === 0) { showToast('Could not parse that', 'error'); setLoading(false); return }
-      triggerBurst()
-      const msg =
-        created.length === 2 ? 'Logged expense + event' :
-        created[0][0] === 'expense' ? 'Expense logged' :
-        created[0][0] === 'income'  ? 'Income logged' : 'Event added'
-      showToast(msg, 'success', {
-        label: 'UNDO',
-        onClick: async () => {
-          for (const [type, row] of created) {
-            if (type === 'expense') await db.deleteExpense(row.id)
-            else if (type === 'income') await db.deleteIncome(row.id)
-            else await db.deleteEvent(row.id)
-          }
-          onLogged()
-        },
-      })
-      await refreshRecent(); onLogged()
-    } catch { showToast('Parse failed — check API key', 'error') }
+      parsed = await parseInput(input)
+    } catch {
+      showToast('Parse failed — check API key', 'error')
+      setLoading(false)
+      return
+    }
+
+    /* The entry is unknown until the parse resolves, so the optimism starts
+       here — what it saves is the database round trip, not the parse. */
+    const created = []
+    for (const type of ['expense', 'event', 'income']) {
+      const draft = parsed?.[type]
+      if (!draft) continue
+      const id = tempId()
+      const pending = ADDERS[type].add(draft)
+      const provisional = { ...draft, id, pending, _type: type, created_at: new Date().toISOString() }
+      created.push({ type, id, provisional })
+      setRecent(list => insertProvisional(list, provisional))
+    }
+
+    if (created.length === 0) { showToast('Could not parse that', 'error'); setLoading(false); return }
+
+    /* The burst and the released input are feedback for the tap, not for the
+       database — both fire now, while the writes are still in flight. */
+    triggerBurst()
     setLoading(false)
+
+    const msg =
+      created.length === 2 ? 'Logged expense + event' :
+      created[0].type === 'expense' ? 'Expense logged' :
+      created[0].type === 'income'  ? 'Income logged' : 'Event added'
+
+    showToast(msg, 'success', {
+      label: 'UNDO',
+      onClick: async () => {
+        for (const { type, id, provisional } of created) {
+          /* Resolve before deleting — UNDO can land while the write is still
+             in flight, when the only id we have is one Supabase has never
+             seen. Deleting that would clear the row from the list and leave
+             the real one orphaned in the database. */
+          const realId = await undoTarget(provisional)
+          if (realId === UNDO_TIMED_OUT) { showToast(UNDO_STALLED_MSG, 'error'); continue }
+          /* Drop by both ids: the row still carries its temp id if the write
+             has not landed, and its real one if the commit below already
+             swapped it in. `dropProvisional(list, null)` matches nothing, so
+             the null case costs nothing. */
+          setRecent(list => dropProvisional(dropProvisional(list, id), realId))
+          if (realId) await ADDERS[type].remove(realId)
+        }
+        await refreshRecent()
+        loadSpendOverview()
+      },
+    })
+
+    /* Mapped rather than looped so every handler attaches in this tick — an
+       await-in-a-loop leaves the later promises unhandled until their turn
+       comes, and a rejection in that window is an unhandled rejection. */
+    await Promise.all(created.map(async ({ id, provisional }) => {
+      try {
+        const row = await provisional.pending
+        /* A resolved-but-empty result means no row was created. Committing it
+           would leave the entry holding its temp id with `pending` stripped,
+           and a later UNDO would have nothing left to resolve — the orphan
+           case. Take the drop path instead. */
+        if (!row?.id) throw new Error('write returned no row')
+        setRecent(list => commitProvisional(list, id, row))
+      } catch (err) {
+        console.error('[daylog] NLP write failed:', err)
+        setRecent(list => dropProvisional(list, id))
+        showToast('Could not save — try again', 'error')
+      }
+    }))
+
+    /* Refetch only now that the writes have settled: it re-sorts and re-caps
+       the list at 6, and picks a new event up into the Upcoming strip. Run
+       before the commit it would have replaced the provisional row with a
+       list that cannot contain it yet. */
+    await refreshRecent()
+    loadSpendOverview()
   }
 
   const handleKey = (e) => {
@@ -317,18 +424,45 @@ export default function Home({ showToast, onLogged }) {
     const amount = parseFloat(amountVal)
     if (isNaN(amount) || amount <= 0) return
     const chip = amountChip
-    const row = await db.addExpense({
+    const draft = {
       description: chip.label,
       amount,
       category: chip.category,
       date: todayISO(),
-    })
+    }
+
+    /* Show it before the write, not after. The pending promise rides along on
+       the row so an UNDO tapped in the next second can wait for the real id
+       instead of deleting a temp one Supabase has never seen. */
+    const id = tempId()
+    const pending = ADDERS.expense.add(draft)
+    const provisional = { ...draft, id, pending, _type: 'expense', created_at: new Date().toISOString() }
+    setRecent(list => insertProvisional(list, provisional))
+    setAmountChip(null)
+
     showToast(`${chip.label} — ${formatRM(amount)}`, 'success', {
       label: 'UNDO',
-      onClick: async () => { await db.deleteExpense(row.id); onLogged() },
+      onClick: async () => {
+        const realId = await undoTarget(provisional)
+        if (realId === UNDO_TIMED_OUT) { showToast(UNDO_STALLED_MSG, 'error'); return }
+        setRecent(list => dropProvisional(dropProvisional(list, id), realId))
+        if (realId) await ADDERS.expense.remove(realId)
+        await refreshRecent()
+        loadSpendOverview()
+      },
     })
-    setAmountChip(null)
-    refreshRecent(); onLogged()
+
+    try {
+      const row = await pending
+      if (!row?.id) throw new Error('write returned no row')
+      setRecent(list => commitProvisional(list, id, row))
+    } catch (err) {
+      console.error('[daylog] quick-log write failed:', err)
+      setRecent(list => dropProvisional(list, id))
+      showToast('Could not save — try again', 'error')
+    }
+    await refreshRecent()
+    loadSpendOverview()
   }
 
   const handleChipDown = (e, label) => {

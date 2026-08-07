@@ -4,6 +4,8 @@ import { EVENT_CATS, EVENT_CAT_LIST, EVENT_CAT_META, REMINDER_OPTIONS, formatTim
 import { RepeatIcon, PlusIcon, SyncFailedIcon } from '../Icons.jsx'
 import { loadHolidaysForCalendar } from '../holidays.js'
 import { todayISO, shiftISO, parseISODate, daysBetween } from '../lib/dates.js'
+import { tempId, insertProvisional, commitProvisional, dropProvisional } from '../lib/optimistic.js'
+import { undoTarget, UNDO_TIMED_OUT } from '../lib/undoDeadline.js'
 import DLMark from './DLMark.jsx'
 import Sheet from './Sheet.jsx'
 import ConfirmDialog from './ConfirmDialog.jsx'
@@ -303,7 +305,15 @@ export default function Calendar({ showToast }) {
 
   const loadEvents = useCallback(async () => {
     const evs = await db.getEvents()
-    setEvents(evs)
+    /* Same guard as Home's refreshRecent: a provisional event is not in the
+       database yet, so a wholesale replace would drop it and it would pop back
+       when its write commits. Order does not matter here — expandEvents sorts
+       the whole list by date before anything renders. */
+    setEvents(prev => {
+      const fetchedIds = new Set(evs.map(e => e.id))
+      const inFlight = prev.filter(e => e.pending && !fetchedIds.has(e.id))
+      return [...inFlight, ...evs]
+    })
     setLoadingData(false)
   }, [])
 
@@ -365,11 +375,51 @@ export default function Calendar({ showToast }) {
   }
 
   const handleAddEvent = async (event) => {
-    const saved = await db.addEvent(event)
-    console.log('[daylog] event added:', saved)
+    /* Show it before the write, not after, and close the sheet on the tap
+       rather than on the round trip. The pending promise rides along on the
+       row so an UNDO tapped in the next second can wait for the real id
+       instead of deleting a temp one Supabase has never seen. */
+    const id = tempId()
+    const pending = db.addEvent(event)
+    const provisional = { ...event, id, pending }
+    setEvents(list => insertProvisional(list, provisional))
     setAddOpen(false)
+
+    /* This toast had no UNDO before. It has one now because it is the third
+       entry point V1 tests, and the race it tests is only reachable through an
+       UNDO — a sheet save with no way back could not be verified at all. */
+    showToast('Event added', 'success', {
+      label: 'UNDO',
+      onClick: async () => {
+        const realId = await undoTarget(provisional)
+        if (realId === UNDO_TIMED_OUT) {
+          showToast('Still saving — remove it from the list in a moment', 'error')
+          return
+        }
+        setEvents(list => dropProvisional(dropProvisional(list, id), realId))
+        if (realId) await db.deleteEvent(realId)
+        await loadEvents()
+      },
+    })
+
+    try {
+      const row = await pending
+      /* A resolved-but-empty result means no row was created; committing it
+         would leave the entry on its temp id with `pending` stripped, which a
+         later UNDO could not resolve. Drop it instead. */
+      if (!row?.id) throw new Error('write returned no row')
+      console.log('[daylog] event added:', row)
+      setEvents(list => commitProvisional(list, id, row))
+    } catch (err) {
+      console.error('[daylog] event save failed:', err)
+      setEvents(list => dropProvisional(list, id))
+      showToast('Could not save — try again', 'error')
+    }
+
+    /* The refetch moved to after the commit. Run before it, as it was, it
+       replaced `events` with a list that cannot contain the provisional row
+       yet, so the event blinked out and back. */
     await loadEvents()
-    showToast('Event added')
   }
 
   const exportICS = (event) => {

@@ -13,7 +13,14 @@
   font-weight: 400;
   letter-spacing: 0.04em;
   white-space: nowrap;
-  z-index: 100;
+  /* Above the expand overlays (700) and the sheets (1000), below the offline
+     badge (9999). At 100 the toast painted *underneath* the Spending and
+     Calendar overlays: every toast raised from inside one — "Event added",
+     "Deleted", ".ics downloaded" — was invisible, and now that the add toast
+     carries an UNDO, its button was unclickable too (an event row's Edit
+     button sat on top of it and swallowed the tap). A toast is transient
+     top-level feedback; nothing the app draws should cover it. */
+  z-index: 1100;
   animation: slideUp 0.18s ease;
   pointer-events: none;
 }
