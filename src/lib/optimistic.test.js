@@ -29,12 +29,14 @@ describe('list reconciliation', () => {
     expect(out.map(e => e.id)).toEqual(['t1', 'a'])
   })
 
+  /* Compared whole, not by id — an in-place edit to any other field would
+   * break React's identity check just as badly and must not slip through. */
   it('does not mutate the list it was given', () => {
-    const list = [{ id: 'a' }]
+    const list = [{ id: 'a', amount: 10, pending: 'p' }]
     insertProvisional(list, { id: 't1' })
     dropProvisional(list, 'a')
-    commitProvisional(list, 'a', { id: 'real' })
-    expect(list.map(e => e.id)).toEqual(['a'])
+    commitProvisional(list, 'a', { id: 'real', amount: 99 })
+    expect(list).toEqual([{ id: 'a', amount: 10, pending: 'p' }])
   })
 
   it('replaces the provisional entry with the real row, keeping position', () => {
@@ -103,7 +105,11 @@ describe('resolveUndoTarget — UNDO tapped before the write lands', () => {
     }
   })
 
+  /* Null is the only "nothing" this returns — never undefined, so a caller
+   * comparing `=== null` cannot sail past it and delete undefined. */
   it('returns null rather than throwing when handed nothing', async () => {
     expect(await resolveUndoTarget(undefined)).toBe(null)
+    expect(await resolveUndoTarget({})).toBe(null)
+    expect(await resolveUndoTarget({ id: undefined })).toBe(null)
   })
 })

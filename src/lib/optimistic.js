@@ -73,7 +73,11 @@ export function dropProvisional(list, id) {
  */
 export async function resolveUndoTarget(entry) {
   if (!entry) return null
-  if (!isTempId(entry.id)) return entry.id
+  /* `?? null` matters: an entry with no id at all would otherwise return
+   * undefined, and a caller written as `if (id === null) return` would sail
+   * past it and try to delete undefined. Null is the only "nothing" this
+   * returns. */
+  if (!isTempId(entry.id)) return entry.id ?? null
   if (!entry.pending) {
     console.warn('[optimistic] undo on a provisional entry with no pending write; a row may be orphaned:', entry.id)
     return null
