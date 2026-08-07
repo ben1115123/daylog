@@ -127,6 +127,21 @@ export default function App() {
     return () => window.removeEventListener('daylog:offline', handler)
   }, [])
 
+  /* A failed Apple Calendar *delete* has no row left to carry
+     apple_sync_error — the row is what was deleted. The window event is the
+     surviving channel of that mechanism, and this is where it becomes
+     visible: without it the only record is a console line nobody reads, and
+     the iCloud copy stays behind unannounced. Listened for here rather than
+     in Home/Calendar because App owns the toast and is always mounted. */
+  useEffect(() => {
+    const onSync = (e) => {
+      if (e.detail?.action !== 'delete' || !e.detail?.error) return
+      showToast('Removed here, but not from Apple Calendar', 'error')
+    }
+    window.addEventListener('daylog:sync', onSync)
+    return () => window.removeEventListener('daylog:sync', onSync)
+  }, [showToast])
+
   useEffect(() => {
     migrateFromLocalStorage(showToast)
     db.seedRecurring()

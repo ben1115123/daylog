@@ -333,7 +333,9 @@ export default function Calendar({ showToast }) {
      patch the row in place rather than making the user reopen the screen. */
   useEffect(() => {
     const onSync = e => {
-      const { id, error } = e.detail
+      const { id, error, action } = e.detail
+      /* A delete outcome has no row to land on — App raises a toast for it. */
+      if (action === 'delete') return
       setEvents(prev => prev.map(ev => ev.id === id ? { ...ev, apple_sync_error: error } : ev))
     }
     window.addEventListener('daylog:sync', onSync)

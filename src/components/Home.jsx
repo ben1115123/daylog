@@ -315,7 +315,9 @@ export default function Home({ showToast, onLogged }) { // eslint-disable-line n
      patch the pill in place rather than waiting for the next refresh. */
   useEffect(() => {
     const onSync = e => {
-      const { id, error } = e.detail
+      const { id, error, action } = e.detail
+      /* A delete outcome has no row to land on — App raises a toast for it. */
+      if (action === 'delete') return
       const patch = list => list.map(it => it.id === id ? { ...it, apple_sync_error: error } : it)
       setUpcoming(patch)
       setRecent(patch)

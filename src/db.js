@@ -73,18 +73,64 @@ async function recordSyncOutcome(id, message) {
   }
 }
 
+/* ── In-flight Apple Calendar add syncs ────────────────────────────────
+ *
+ * The orphan this exists to stop: `addEvent` fires the CalDAV add without
+ * awaiting it, and the add writes `apple_uid` back onto the row when it
+ * lands — seconds later. `deleteEvent` used to read that column once and
+ * act on whatever it found. Under optimistic UNDO the delete runs first
+ * every time, read `null`, dropped the Supabase row, and left the iCloud
+ * VEVENT with nothing in the database pointing at it. Measured in task 9:
+ * the read at +4247ms, the write-back at +4317ms.
+ *
+ * So the fix is to stop guessing: park on the sync instead of polling the
+ * row it has not written to yet. This map holds, per event id, a promise of
+ * that add's outcome — the CalDAV resource URL, or null if no resource was
+ * ever created (the invoke failed, the function reported failure, or it
+ * returned no uid). `deleteEvent` awaits it when one is present.
+ *
+ * It is one registry, in the layer that owns the sync, deliberately. The
+ * optimistic layer already parks on a promise for the *row* id
+ * (`resolveUndoTarget`), and reusing that promise here would not work: it is
+ * `addEvent`'s promise, and `addEvent` returns at the same moment it fires
+ * the sync, so it resolves before the sync has even started. Same shape, a
+ * different fact, one owner each — rather than two mechanisms racing to
+ * answer one question.
+ *
+ * Entries are dropped once settled. That is safe rather than racy: the
+ * promise only resolves after the `apple_uid` write-back has been awaited,
+ * so a `deleteEvent` that arrives too late to find the entry finds the
+ * column populated instead, and the fallback select is correct again. */
+const pendingAppleAdd = new Map()
+
+/* Never rejects and never resolves to undefined — `deleteEvent` awaits this
+   inside its own try, and a throw here would skip the row delete entirely. */
+function trackAppleAdd(id, promise) {
+  const settled = promise.then(uid => uid ?? null, () => null)
+  pendingAppleAdd.set(id, settled)
+  settled.then(() => {
+    if (pendingAppleAdd.get(id) === settled) pendingAppleAdd.delete(id)
+  })
+  return settled
+}
+
 /* Apple Calendar sync is deliberately non-blocking — the event is already in
    Supabase before this runs, and a CalDAV failure must never fail a save.
    It is no longer *silent*, though: a bare `catch {}` here is why a broken
    namespace parser went unnoticed for two months. Failures are logged and
-   stored on the row as apple_sync_error, which the UI shows as a muted dot. */
+   stored on the row as apple_sync_error, which the UI shows as a muted dot.
+
+   Resolves to the CalDAV resource URL on a successful add, and to null on
+   anything else — that value is what `pendingAppleAdd` hands `deleteEvent`. */
 async function syncToAppleCalendar(action, event) {
   let message = null
+  let uid = null
   try {
     const { data, error } = await supabase.functions.invoke('sync-calendar', { body: { action, event } })
     if (error) message = error.message || String(error)
     else if (!data?.success) message = data?.error || 'sync-calendar returned no result'
     else if (action === 'add' && data.uid && event.id) {
+      uid = data.uid
       await supabase.from('events').update({ apple_uid: data.uid }).eq('id', event.id)
     }
   } catch (err) {
@@ -93,9 +139,22 @@ async function syncToAppleCalendar(action, event) {
 
   if (message) console.error(`[daylog] Apple Calendar ${action} failed:`, message, { event })
 
-  /* A delete has no row left to annotate — the log line is the whole record. */
-  if (action === 'delete' || !event.id) return
+  /* A delete has no row left to annotate — apple_sync_error is a column on
+     the row that was just removed, so that channel is structurally closed.
+     The other two channels of the same mechanism are not: the console line
+     above, and the `daylog:sync` window event, which App.jsx turns into an
+     error toast so a failed iCloud delete is visible rather than silent. */
+  if (action === 'delete') {
+    if (message) {
+      window.dispatchEvent(new CustomEvent('daylog:sync', {
+        detail: { id: event.id ?? null, error: message, action: 'delete' },
+      }))
+    }
+    return null
+  }
+  if (!event.id) return uid
   await recordSyncOutcome(event.id, message)
+  return uid
 }
 
 export let offlineMode = false
@@ -255,7 +314,10 @@ export const db = {
       cache.push(data)
       cache.sort((a, b) => (a.date + (a.time || '')) < (b.date + (b.time || '')) ? -1 : 1)
       lsSave(CACHE.events, cache)
-      syncToAppleCalendar('add', data)
+      /* Still fire-and-forget as far as the save is concerned — but the
+         promise is kept now instead of discarded, so an UNDO landing in the
+         next second has something to wait on. */
+      trackAppleAdd(data.id, syncToAppleCalendar('add', data))
       return data
     } catch (err) {
       console.error('[daylog] addEvent error:', err)
@@ -281,10 +343,31 @@ export const db = {
     if (idx !== -1) { cache[idx] = { ...cache[idx], ...updates }; lsSave(CACHE.events, cache) }
   },
 
+  /* Slower than it looks, and deliberately so: the Supabase row is not
+     removed until this knows the event's true Apple Calendar state. That
+     costs nothing on screen — every UNDO handler calls `dropProvisional`
+     before it awaits this, so the row is already gone from the list and the
+     cleanup finishes behind it. */
   async deleteEvent(id) {
     try {
-      const { data: existing } = await supabase.from('events').select('apple_uid').eq('id', id).single()
-      if (existing?.apple_uid) syncToAppleCalendar('delete', { id, apple_uid: existing.apple_uid })
+      const inFlight = pendingAppleAdd.get(id)
+      /* An add still in flight: wait for it. The select below cannot answer
+         for this event — the write-back has not happened yet, which is the
+         whole bug. With no add in flight (the common case, deleting an older
+         event) the column is authoritative and the select is right. */
+      let appleUid = null
+      if (inFlight) {
+        appleUid = await inFlight
+      } else {
+        const { data: existing } = await supabase.from('events').select('apple_uid').eq('id', id).single()
+        appleUid = existing?.apple_uid ?? null
+      }
+      /* Awaited, not fired and forgotten: iCloud first, then the row, so the
+         uid is never destroyed before the resource it points at. A CalDAV
+         failure is reported inside syncToAppleCalendar and does not throw,
+         so the row still gets deleted either way. A resolved-null uid means
+         no resource was ever created, and there is nothing to remove. */
+      if (appleUid) await syncToAppleCalendar('delete', { id, apple_uid: appleUid })
       const { error } = await supabase.from('events').delete().eq('id', id)
       if (error) throw error
     } catch {
