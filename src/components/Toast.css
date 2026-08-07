@@ -47,3 +47,10 @@
   color: var(--red);
   border: 0.5px solid rgba(248,113,113,0.25);
 }
+
+/* The toast now carries an UNDO with a 5s window, so under reduced motion it
+   must appear at once rather than slide in — the tap target should be there
+   the instant the toast is. */
+@media (prefers-reduced-motion: reduce) {
+  .toast { animation: none; }
+}

@@ -28,6 +28,16 @@
   to   { transform: translateY(0); }
 }
 
+/* The sheet is the most motion-heavy surface in the app — a 320ms spring with
+   deliberate overshoot — and it had no reduced-motion path. `animation: none`
+   leaves it at its final position, so it simply appears where it belongs. The
+   drag-to-dismiss gesture is unaffected: useDragDismiss suppresses the visual
+   offset under reduced motion but still reads the real one, so a swipe down
+   dismisses exactly as it does otherwise. */
+@media (prefers-reduced-motion: reduce) {
+  .sheet, .sheet-backdrop { animation: none; }
+}
+
 .sheet-handle {
   width: 36px; height: 4px;
   background: var(--bg4);
