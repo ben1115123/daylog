@@ -311,8 +311,9 @@ export default function Calendar({ showToast }) {
      later than the refetch racing it. See undoneRows.js. */
   const loadEvents = useCallback(async ({ authoritative } = {}) => {
     const fetchSeq = beginFetch()
-    const fetched = await db.getEvents()
+    /* Released at issue time — see the note in Home's refreshRecent. */
     if (authoritative?.length) releaseUndone(fetchSeq, authoritative)
+    const fetched = await db.getEvents()
     const evs = withoutUndone(fetched, fetchSeq)
     /* Same guard as Home's refreshRecent: a provisional event is not in the
        database yet, so a wholesale replace would drop it and it would pop back

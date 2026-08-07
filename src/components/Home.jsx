@@ -258,13 +258,18 @@ export default function Home({ showToast, onLogged }) { // eslint-disable-line n
      screen rather than hiding it forever. See undoneRows.js. */
   const refreshRecent = useCallback(async ({ authoritative } = {}) => {
     const fetchSeq = beginFetch()
+    /* Released at issue time, not after the await. The caller only passes
+       `authoritative` once its DELETE has settled, so these ids are already
+       decided — and holding the release until this fetch's four legs return
+       (~5s throttled) would wrongly suppress any shorter fetch issued during
+       that window, which has a higher seq and is entitled to the row. */
+    if (authoritative?.length) releaseUndone(fetchSeq, authoritative)
     const [expRaw, evtRaw, incRaw, evtStripRaw] = await Promise.all([
       db.getExpenses(),
       db.getUpcomingEvents(3),
       db.getIncome(),
       db.getUpcomingEvents(5),
     ])
-    if (authoritative?.length) releaseUndone(fetchSeq, authoritative)
 
     /* Filtered on the way out, against the number taken on the way in: the
        fetch this guards against was issued before the row was undone and comes
